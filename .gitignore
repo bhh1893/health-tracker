@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Tool caches
+.pytest_cache/
+
+# Secrets and local config
+.env
+*.pem
+*.key
+
+# Editor and OS junk
+*.log
