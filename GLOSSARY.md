@@ -13,7 +13,7 @@ A quantity of one Food, in grams or a count, eaten as part of a Meal.
 _Avoid_: Food item, ingredient
 
 **Exercise Entry**:
-One Set of one Exercise: reps, and weight in pounds (none for bodyweight).
+One Set of one Exercise: reps, and weight in pounds of external load (none for pure bodyweight).
 _Avoid_: Workout, set log
 
 **Occurred At**:
@@ -25,7 +25,7 @@ The moment the system received the Entry. Set by the server, never edited.
 _Avoid_: Created, submitted
 
 **Day**:
-A calendar date in the user's local timezone at an Occurred At. The unit all queries are asked in.
+The calendar date at an Occurred At, in the timezone the user was in at that moment. Fixed once logged, even if the user later travels. The unit all queries are asked in.
 _Avoid_: Date (ambiguous across timezones)
 
 ## Groupings
@@ -51,3 +51,7 @@ _Avoid_: Movement list
 **Restaurant Catalog**:
 The user's growing list of distinct Restaurants. A restaurant Meal refers to one Restaurant in it.
 _Avoid_: Place, venue
+
+**Archived**:
+A Catalog item hidden from suggestions because the user no longer wants it offered, while past Entries that refer to it keep showing it.
+_Avoid_: Deleted, removed
