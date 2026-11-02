@@ -18,7 +18,8 @@ services/
   web/                  static client
     src/  k8s/  Dockerfile
 iac/
-  vagrant/              Vagrantfile for all VMs
+  vagrant/cluster/      Vagrantfile for the 3 cluster nodes (ADR 0004)
+  vagrant/dev/          Vagrantfile for the dev VM, separate so a cluster destroy never touches it
   ansible/              node provisioning
   terraform/            later, cloud only; provider specifics live only under iac/
 k8s/

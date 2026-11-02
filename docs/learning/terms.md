@@ -50,3 +50,14 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Overcommit**: allocating more virtual resources than physically exist; safe for CPU (idle VMs yield it), risky for RAM (it cannot be reclaimed quickly).
 - **Node eviction**: the kubelet killing pods when a node runs low on memory or disk, to protect the node itself.
 - **L2 announcement**: a node answering ARP requests for a LoadBalancer IP so other LAN devices send traffic for that IP to it (Cilium's MetalLB-style feature).
+- **Provisioning**: turning a blank machine into a configured one (packages, settings, services).
+- **Ansible control node**: the machine that runs `ansible-playbook` and connects over SSH to the managed hosts (here, the dev VM).
+- **Ansible inventory**: the file listing managed hosts, their groups (e.g. `workers`), and how to reach them.
+- **Ansible role**: a reusable bundle of tasks, templates and defaults for one concern (e.g. `containerd`), composed by a playbook.
+- **Idempotent**: running an operation twice leaves the system the same as running it once; for Ansible, the second run reports `changed=0`.
+- **cloud-init**: the standard first-boot hook on cloud VMs that injects SSH keys and runs a short bootstrap script.
+- **kubeadm join token**: a short-lived bearer token a new node presents to the control plane to join the cluster.
+- **`StrictHostKeyChecking=accept-new`**: SSH trusts a host's key the first time it is seen and refuses if that key later changes.
+- **`apt-mark hold`**: pins an installed Debian/Ubuntu package so automatic or manual upgrades skip it.
+- **Kubespray**: the Kubernetes SIGs Ansible project that installs production kubeadm clusters; highly configurable.
+- **Molecule**: a framework for testing Ansible roles in throwaway containers or VMs.
