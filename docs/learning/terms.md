@@ -61,3 +61,16 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`apt-mark hold`**: pins an installed Debian/Ubuntu package so automatic or manual upgrades skip it.
 - **Kubespray**: the Kubernetes SIGs Ansible project that installs production kubeadm clusters; highly configurable.
 - **Molecule**: a framework for testing Ansible roles in throwaway containers or VMs.
+- **StatefulSet**: a Kubernetes workload whose pods keep a stable name and their own volume across restarts.
+- **Operator**: an in-cluster controller that runs one piece of software for you (failover, backups, upgrades) from a declared desired state.
+- **CRD** (Custom Resource Definition): a new object type added to the Kubernetes API, e.g. CNPG's `Cluster`, that an operator watches.
+- **CloudNativePG (CNPG)**: the CNCF Postgres operator; handles replication, failover, backups to object storage and point-in-time restore.
+- **Streaming replica**: a read-only Postgres copy that replays the primary's WAL as it is written.
+- **Failover**: promoting a replica to primary when the primary is lost.
+- **WAL** (write-ahead log): the journal Postgres writes before changing data files; used for crash recovery, replication and point-in-time restore.
+- **Pod anti-affinity**: a scheduling rule that keeps matching pods off the same node; "required" makes it a hard rule.
+- **Shared-nothing replication**: each database instance keeps its own local disk and the database itself copies data between them, instead of sharing network storage.
+- **CPU limit throttling**: a container with a CPU limit is paused when it hits the limit, even if the node has idle CPU.
+- **`shared_buffers`**: Postgres' in-memory cache of table and index pages.
+- **PgBouncer**: a lightweight proxy that multiplexes many client connections onto a few Postgres connections.
+- **Barman Cloud**: the tool CNPG uses to ship base backups and WAL to S3-compatible object storage.
