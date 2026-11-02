@@ -17,3 +17,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Rolling update**: Kubernetes' default deploy, replacing old pods with new ones gradually, so old and new code run at the same time for a while.
 - **Expand/contract** (parallel change): make schema changes in backward-compatible steps (expand, migrate code, then contract) so old and new code both work mid-rollout.
 - **Shared database anti-pattern**: several services reading/writing the same tables, which couples them through the schema.
+- **`.gitattributes`**: a committed file that tells Git how to treat paths (line endings, binary vs text, diff drivers) the same way on every machine.
+- **`core.autocrlf`**: a per-machine Git setting that converts LF to CRLF on checkout; `.gitattributes` overrides it so the repo, not each laptop, decides.
