@@ -19,3 +19,19 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Shared database anti-pattern**: several services reading/writing the same tables, which couples them through the schema.
 - **`.gitattributes`**: a committed file that tells Git how to treat paths (line endings, binary vs text, diff drivers) the same way on every machine.
 - **`core.autocrlf`**: a per-machine Git setting that converts LF to CRLF on checkout; `.gitattributes` overrides it so the repo, not each laptop, decides.
+- **UUIDv7**: a 128-bit ID whose leading bits are a timestamp, so it is unguessable yet sorts roughly by creation time (index-friendly, unlike random UUIDv4).
+- **IDOR** (Insecure Direct Object Reference): a bug where changing an ID in a URL lets one user read or edit another user's row because ownership is not checked.
+- **Single-table inheritance**: storing several related entity kinds in one table with a type column and nullable columns for each kind.
+- **Polymorphic table**: one table holding rows of several kinds (e.g. all Catalog items with a `type` column); foreign keys can no longer guarantee they point at the right kind.
+- **IANA timezone**: a named region with its full DST history, e.g. `America/Los_Angeles`; unlike a fixed offset like `-08:00`, it stays correct across daylight saving changes.
+- **Generated column**: a column Postgres computes from other columns on write; only immutable expressions are allowed.
+- **Soft delete**: marking a row deleted (`deleted_at`) instead of removing it; every query must then filter it out.
+- **`ON DELETE CASCADE` / `RESTRICT`**: foreign key rules: deleting the parent deletes children automatically, or the database refuses while children exist.
+- **CHECK constraint**: a boolean rule the database evaluates on every insert/update, rejecting rows that violate it.
+- **Composite foreign key**: a foreign key over several columns, e.g. `(meal_id, meal_kind)` referencing `meals(id, kind)`, used to enforce cross-table rules.
+- **Normalization**: structuring tables so each fact is stored once; duplication is only a problem when copies must stay in sync.
+
+- **Denormalization**: deliberately storing a derivable fact a second time (e.g. a Sessions table) for speed or convenience, at the cost of keeping the copies in sync.
+- **Materialized view**: a query result Postgres stores as a table and refreshes on demand; the read-speed step before hand-maintained denormalized tables.
+- **Row-Level Security (RLS)**: Postgres policies that automatically filter which rows a session can read or write, e.g. only rows whose `user_id` matches the current user.
+- **Immutable function**: a Postgres function guaranteed to return the same output for the same input forever; only these may feed generated columns and indexes.
