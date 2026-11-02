@@ -17,7 +17,7 @@ From a mobile website, the user logs a meal or strength exercise through a struc
 ## Hard constraints
 
 - **Portable infra.** First target: local VMs via Vagrant. Later: AWS, Azure, or others with no service code changes. Keep services cloud-agnostic: config comes from env vars, no provider SDKs in service code, and provider specifics live only in IaC.
-- **Monorepo, nested layout.** Each service owns its `src/`, `iac/`, and `Dockerfile`. Shared infra (`k8s/`, `iac/`) lives at the root. Exact layout is decided in the planning map, not here.
+- **Monorepo, nested layout.** Services live in `services/<svc>/` and own their `src/`, `k8s/`, and `Dockerfile`; platform infra (`iac/`, `k8s/`) lives at the root. Services share only the generated OpenAPI contract, never code. See `docs/adr/0003-monorepo-layout.md`.
 
 ## Teaching framework
 

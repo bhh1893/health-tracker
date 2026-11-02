@@ -35,3 +35,9 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Materialized view**: a query result Postgres stores as a table and refreshes on demand; the read-speed step before hand-maintained denormalized tables.
 - **Row-Level Security (RLS)**: Postgres policies that automatically filter which rows a session can read or write, e.g. only rows whose `user_id` matches the current user.
 - **Immutable function**: a Postgres function guaranteed to return the same output for the same input forever; only these may feed generated columns and indexes.
+- **Docker build context**: the directory sent to `docker build`; the Dockerfile cannot read files outside it.
+- **Drift check**: a CI step that regenerates an artifact (e.g. `openapi.json`) and fails if it differs from the committed copy.
+- **Helm**: the Kubernetes package manager; a chart is templated YAML plus a `values.yaml`, installed as a versioned release.
+- **Kustomize**: built into `kubectl`; applies per-environment patches (overlays) to plain-YAML manifests (a base) without templating.
+- **GitOps**: an in-cluster agent (e.g. Argo CD) continuously pulls the cluster to match what is committed in Git, instead of CI pushing changes in.
+- **Rancher**: SUSE's platform for provisioning and managing many Kubernetes clusters from one UI.
