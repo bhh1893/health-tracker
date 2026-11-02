@@ -30,7 +30,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **CHECK constraint**: a boolean rule the database evaluates on every insert/update, rejecting rows that violate it.
 - **Composite foreign key**: a foreign key over several columns, e.g. `(meal_id, meal_kind)` referencing `meals(id, kind)`, used to enforce cross-table rules.
 - **Normalization**: structuring tables so each fact is stored once; duplication is only a problem when copies must stay in sync.
-
 - **Denormalization**: deliberately storing a derivable fact a second time (e.g. a Sessions table) for speed or convenience, at the cost of keeping the copies in sync.
 - **Materialized view**: a query result Postgres stores as a table and refreshes on demand; the read-speed step before hand-maintained denormalized tables.
 - **Row-Level Security (RLS)**: Postgres policies that automatically filter which rows a session can read or write, e.g. only rows whose `user_id` matches the current user.
@@ -41,3 +40,13 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Kustomize**: built into `kubectl`; applies per-environment patches (overlays) to plain-YAML manifests (a base) without templating.
 - **GitOps**: an in-cluster agent (e.g. Argo CD) continuously pulls the cluster to match what is committed in Git, instead of CI pushing changes in.
 - **Rancher**: SUSE's platform for provisioning and managing many Kubernetes clusters from one UI.
+- **Control plane**: the Kubernetes components that run the cluster (API server, scheduler, controller manager, etcd); workers run the app pods.
+- **etcd quorum**: etcd needs a majority of members alive to accept writes; 3 members tolerate 1 failure, 1 member tolerates none.
+- **Taint / toleration**: a taint on a node repels pods; only pods with a matching toleration may schedule there (kubeadm taints the control plane by default).
+- **NAT NIC (VirtualBox)**: gives a VM outbound internet through the host; nothing can connect in. Vagrant requires it as NIC 1.
+- **Host-only NIC (VirtualBox)**: a private network visible only to the host and its VMs (here `192.168.56.0/24`).
+- **Bridged NIC (VirtualBox)**: puts the VM directly on the physical LAN as its own device, reachable from other machines such as a phone.
+- **CIDR**: an IP range written as base/prefix length; `10.244.0.0/16` fixes the first 16 bits, giving 65,536 addresses.
+- **Overcommit**: allocating more virtual resources than physically exist; safe for CPU (idle VMs yield it), risky for RAM (it cannot be reclaimed quickly).
+- **Node eviction**: the kubelet killing pods when a node runs low on memory or disk, to protect the node itself.
+- **L2 announcement**: a node answering ARP requests for a LoadBalancer IP so other LAN devices send traffic for that IP to it (Cilium's MetalLB-style feature).
