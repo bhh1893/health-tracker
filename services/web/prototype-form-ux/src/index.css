@@ -1,0 +1,3 @@
+@import "tailwindcss";
+/* Inputs >= 16px stop iOS Safari zooming the page on focus. */
+input, select, button { font-size: 16px; }
