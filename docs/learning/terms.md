@@ -90,3 +90,17 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Readiness probe**: a Kubernetes check that the pod can serve traffic; failing it removes the pod from Service endpoints without restarting it.
 - **`operationId`**: the unique, stable name of one endpoint in an OpenAPI schema; code generators and MCP wrappers use it as the function or tool name.
 - **Additive change**: an API change old clients safely ignore (new optional field, new endpoint); removing or renaming something is breaking.
+- **SPA (single-page app)**: the browser loads one HTML page and a JS bundle once; JS draws every screen and fetches data as JSON.
+- **TypeScript**: JavaScript plus type annotations checked at build time, then stripped to plain JS.
+- **React**: a UI library where components describe what the screen should look like for the current state, and React updates the DOM to match.
+- **Vite**: a front-end build tool: a fast dev server, plus a production bundler that emits static files.
+- **`openapi-typescript` / `openapi-fetch`**: the first turns `openapi.json` into a TypeScript types file; the second is a tiny `fetch` wrapper that type-checks every call against it.
+- **Multi-stage Dockerfile**: one stage builds (with compilers, Node), a later stage copies only the output, so build tools never ship in the final image.
+- **Content-hashed assets**: build output named by a hash of its contents (`app.3f9a1c.js`), so it can be cached forever; a change gets a new name.
+- **SPA fallback**: the web server answers any unknown path with `index.html` so client-side routes survive a refresh or a bookmark.
+- **Client-side routing**: the JS app maps URLs to screens and changes the URL without a page load (React Router).
+- **TanStack Query**: a library that fetches, caches, retries and refetches server data, so components don't hand-manage loading and error state.
+- **PWA (progressive web app)**: a website that can be installed to the home screen and, with a service worker, work offline.
+- **Web app manifest**: a JSON file giving a site its home-screen name, icon and full-screen launch.
+- **Service worker**: a background script the browser runs for a site; it can intercept requests to serve offline or queue writes.
+- **ESLint / Prettier**: a linter that flags bug-prone code, and a formatter that rewrites code to one style so diffs show only real changes.
