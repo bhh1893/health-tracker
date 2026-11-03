@@ -104,3 +104,11 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Web app manifest**: a JSON file giving a site its home-screen name, icon and full-screen launch.
 - **Service worker**: a background script the browser runs for a site; it can intercept requests to serve offline or queue writes.
 - **ESLint / Prettier**: a linter that flags bug-prone code, and a formatter that rewrites code to one style so diffs show only real changes.
+- **Headless UI library**: components that supply behaviour, keyboard handling and screen-reader roles but no styling (React Aria).
+- **React Aria Components**: Adobe's headless React library for accessible widgets (combobox, dialog, listbox); exposes state as `data-*` attributes to style against.
+- **Utility-first CSS (Tailwind)**: styling with many small single-purpose classes in the markup (`rounded-xl px-3`) instead of a separate stylesheet per component.
+- **Combobox**: a text input joined to a suggestion list, with a defined keyboard and screen-reader pattern (WAI-ARIA).
+- **Bottom sheet**: a panel that slides up from the bottom of a phone screen over the current page; the mobile form of a dialog.
+- **Secure context**: a page served over HTTPS or from `localhost`; browsers expose some APIs (`crypto.randomUUID`, clipboard, service workers) only there.
+- **HMR (hot module replacement)**: the dev server swaps a changed module into the running page without a full reload; it relies on a file watcher noticing every save.
+- **Out-of-order responses**: a slower, older request answering after a newer one; a search box must discard it or show stale results.
