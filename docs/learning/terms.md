@@ -74,3 +74,19 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`shared_buffers`**: Postgres' in-memory cache of table and index pages.
 - **PgBouncer**: a lightweight proxy that multiplexes many client connections onto a few Postgres connections.
 - **Barman Cloud**: the tool CNPG uses to ship base backups and WAL to S3-compatible object storage.
+- **Aggregate**: a cluster of objects always read and written together as one unit through its root (a Meal and its Food Entries), so its rules are checked in one place.
+- **Debounce**: wait until input pauses (e.g. 150 ms after the last keystroke) before acting, so fast typing sends one request instead of many.
+- **Typeahead**: suggestions that update as the user types.
+- **Trigram**: a 3-character chunk of text; `pg_trgm` ranks strings by how many trigrams they share, which tolerates typos.
+- **Subsequence matching**: fzf-style fuzzy match where the query's letters appear in order but not adjacent ("chkbrst" finds "chicken breast").
+- **Inverted index**: a search-engine structure mapping each term to the documents containing it; the core of Lucene and OpenSearch.
+- **Dual write**: writing the same change to two systems (e.g. Postgres and a search engine) and keeping them in sync; breaks when one write succeeds and the other fails.
+- **Keyset (cursor) pagination**: fetch the next page as "rows after this sort key" instead of "skip N rows"; stable under inserts and fast at any depth.
+- **RFC 9457 Problem Details**: a standard JSON error body (`type`, `title`, `status`, `detail`) served as `application/problem+json`.
+- **"/me" pattern**: the API infers the caller from their credentials instead of taking a user ID in the URL.
+- **Optimistic concurrency**: a write carries the version it read (`If-Match: <ETag>`); the server refuses with `412` if someone changed it since.
+- **ETag**: a response header holding an opaque version tag of a resource.
+- **Liveness probe**: a Kubernetes check that the process is alive; failing it restarts the container.
+- **Readiness probe**: a Kubernetes check that the pod can serve traffic; failing it removes the pod from Service endpoints without restarting it.
+- **`operationId`**: the unique, stable name of one endpoint in an OpenAPI schema; code generators and MCP wrappers use it as the function or tool name.
+- **Additive change**: an API change old clients safely ignore (new optional field, new endpoint); removing or renaming something is breaking.
