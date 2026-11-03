@@ -112,3 +112,11 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Secure context**: a page served over HTTPS or from `localhost`; browsers expose some APIs (`crypto.randomUUID`, clipboard, service workers) only there.
 - **HMR (hot module replacement)**: the dev server swaps a changed module into the running page without a full reload; it relies on a file watcher noticing every save.
 - **Out-of-order responses**: a slower, older request answering after a newer one; a search box must discard it or show stale results.
+- **tmux**: a terminal multiplexer: split panes and windows inside one terminal, in sessions that keep running after you disconnect.
+- **VS Code Remote-SSH**: an extension that runs VS Code's backend on a remote machine over SSH, so the editor on Windows edits files on the VM.
+- **SSHFS**: mounts a remote machine's folder over SSH so it looks like a local drive; convenient but slower and weaker at file watching.
+- **`connection: local` (Ansible)**: Ansible runs tasks directly on the machine it is invoked on instead of over SSH.
+- **uv**: Astral's fast Python package and version manager; installs Python itself from a `.python-version` file.
+- **SSH agent forwarding**: a remote machine borrows the keys in your local SSH agent for the life of the connection, so no key is stored remotely.
+- **GNU Stow**: a symlink manager; each package folder mirrors `$HOME`, and `stow <pkg>` links every file to the same path under `$HOME`.
+- **Runbook**: a written step-by-step procedure for an operational task, for whoever runs it next (often you, months later).
