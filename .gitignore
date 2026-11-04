@@ -1,0 +1,23 @@
+# Secrets live outside the repo (ADR 0015); this is a second net.
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Per-machine Claude Code state.
+.claude/worktrees/
+.claude/settings.local.json
+
+# Editors and OS.
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Tooling output.
+node_modules/
+__pycache__/
+.venv/
+.vagrant/

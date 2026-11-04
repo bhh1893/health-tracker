@@ -199,3 +199,17 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Drift (GitOps)**: the cluster no longer matches git.
 - **Rollback by revert**: undoing a deploy by reverting the git commit, so the same pipeline redeploys the old version.
 - **`docker buildx` layer cache**: reuses unchanged image layers between builds to speed up CI.
+- **GitHub Actions**: GitHub's built-in automation; a workflow file in `.github/workflows/` runs jobs on GitHub-hosted machines when events like a PR happen.
+- **Workflow / job / step**: a workflow is one YAML file; it holds jobs (each on its own fresh runner, in parallel unless chained with `needs`); a job holds steps run in order.
+- **Runner**: the machine that executes a job (`ubuntu-24.04` is a GitHub-hosted Linux VM, thrown away afterward).
+- **Path filter**: a check of which files a PR changed, used to skip jobs that have nothing to do (here via `dorny/paths-filter`).
+- **Status check / required check**: a pass/fail result shown on a PR; a required one blocks merge until it passes.
+- **`ci-gate`**: our single required check; it always runs and fails only if a job it waits for failed, so skipped jobs never leave the PR stuck "pending".
+- **`needs` / `if: always()`**: `needs` makes a job wait for others; by default it is skipped if one of them failed or was skipped, so `always()` forces the gate to run and judge the results itself.
+- **Concurrency group**: a label so a newer run of the same workflow cancels the older one.
+- **Branch ruleset**: GitHub rules on a branch (require a check, block force-push); on free plans they need a public repo.
+- **gitleaks**: a scanner that searches files and git history for strings shaped like secrets (API keys, tokens, private keys).
+- **Redaction (`--redact`)**: hiding the matched secret in scan output so the CI log does not leak it a second time.
+- **yamllint**: a linter for YAML syntax and style.
+- **`.editorconfig`**: a file editors read so every contributor gets the same indentation, line endings and final newline.
+- **`.gitignore`**: patterns for files git must never track (secrets, caches, editor state).
