@@ -153,6 +153,10 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`similarity` vs `word_similarity`**: whole-string vs "does the query match part of the name" scoring; typeahead needs the second, duplicate checks the first.
 - **`SET LOCAL`**: changes a Postgres setting for the current transaction only, used for per-query trigram thresholds.
 - **Seed data**: deterministic synthetic rows loaded to make query plans realistic when real data is too small.
+- **URL state**: keeping a view's parameters (such as the viewed Day) in the address (`?day=...`) rather than in memory, so reload, back button and links from other screens land in the same place.
+- **Deep link**: a URL that opens the app directly at a specific screen and state, e.g. a Day.
+- **Disclosure row (accordion)**: a collapsed summary row that expands in place on tap to show its detail, keeping long lists short.
+- **Native date picker**: `<input type="date">`, which the phone renders as its own OS date chooser, so we write no calendar widget.
 - **Integration test**: exercises several real parts together (here HTTP handler, SQL and a real Postgres) instead of mocking the neighbors.
 - **Unit test**: tests one pure function in isolation; cheap, but blind to how pieces connect.
 - **Testcontainers**: a library that starts a throwaway Docker container (here Postgres 18) from inside the test run and removes it afterward.
