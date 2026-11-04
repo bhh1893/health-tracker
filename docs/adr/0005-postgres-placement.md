@@ -28,7 +28,7 @@ Postgres runs inside the Kubernetes cluster, managed by the CloudNativePG (CNPG)
 
 ## Consequences
 
-- local-path has no volume snapshots, so CNPG backups must go to S3-compatible object storage (Barman Cloud plugin) somewhere off the node VMs. Where that lives is the backups decision.
+- local-path has no volume snapshots, so CNPG backups must go to S3-compatible object storage (Barman Cloud plugin) somewhere off the node VMs. Where that lives is decided in ADR 0011 (MinIO on the dev VM).
 - Each worker carries one Postgres instance; a worker's RAM budget includes 512 Mi for it.
 - The DDL (migration) vs read/write (`api`) role split is not modeled here; it belongs to the secrets decision, and `initdb` will gain a second role then.
 - v2 on a managed database: delete `Cluster` `pg` and the CNPG chart, point the overlay's `DATABASE_URL` at the managed endpoint. Backups and failover become the provider's job.

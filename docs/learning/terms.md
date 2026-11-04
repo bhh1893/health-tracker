@@ -132,3 +132,14 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **DNS rebinding protection**: a router feature that drops DNS answers pointing at private IPs; can break "public name, LAN address" setups.
 - **DNS-01 challenge**: Let's Encrypt proves you own a domain by checking a TXT record in its DNS, so no public server is needed.
 - **`RequestRedirect` (Gateway API)**: an `HTTPRoute` filter that answers with a redirect, used for HTTP to HTTPS.
+- **WAL (write-ahead log)**: Postgres writes every change to a sequential log before the data files; shipping this log elsewhere is how you copy the database continuously.
+- **Base backup**: a full copy of the database files at one moment; restorable only together with the WAL written after it.
+- **PITR (point-in-time recovery)**: restoring a base backup and replaying WAL up to a chosen timestamp, e.g. just before a mistake.
+- **WAL archiving**: continuously copying finished WAL segments to backup storage (roughly every minute under light load).
+- **MinIO**: software that serves an S3-compatible object storage API from a plain disk; here the backup target on the dev VM.
+- **S3-compatible**: speaks Amazon S3's HTTP API, so tools written for S3 work against MinIO, B2, R2 or AWS by changing endpoint and credentials.
+- **Barman Cloud plugin**: CNPG's plugin that sends base backups and WAL to S3-compatible storage and restores from it.
+- **`serverName` (CNPG)**: the folder name a cluster uses in the backup bucket; a recovered cluster needs a new one, since two histories cannot share a folder.
+- **Recovery bootstrap (CNPG)**: creating a new `Cluster` from a backup instead of an empty database; only possible at creation, never in place.
+- **Retention policy**: how long backups are kept before the operator deletes them (7 days here).
+- **Restore drill**: deliberately restoring from backup to prove it works before you need it.
