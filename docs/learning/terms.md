@@ -143,3 +143,13 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Recovery bootstrap (CNPG)**: creating a new `Cluster` from a backup instead of an empty database; only possible at creation, never in place.
 - **Retention policy**: how long backups are kept before the operator deletes them (7 days here).
 - **Restore drill**: deliberately restoring from backup to prove it works before you need it.
+- **btree index**: Postgres's default index, a sorted tree; serves equality, ranges and `ORDER BY` when the column order matches the query, and can be read backwards.
+- **Composite index and column order**: one index over several columns, usable only left to right; `(user_id, day, occurred_at)` serves `user_id`, then `user_id + day`, but not `day` alone.
+- **Index-only scan / `INCLUDE`**: extra columns stored in the index leaf so a query can be answered without touching the table.
+- **Foreign keys are not auto-indexed (Postgres)**: the child column needs its own index, or joins and cascading deletes scan the whole table.
+- **`EXPLAIN (ANALYZE, BUFFERS)`**: runs the query and prints the chosen plan with real timings and page reads; the evidence that an index is used.
+- **Trigram (`pg_trgm`)**: a 3-letter chunk of a string; strings sharing many trigrams are similar, which gives typo-tolerant matching.
+- **GIN vs GiST**: two index types for composite values like trigrams; GIN looks up faster, GiST is larger but can return nearest matches in order.
+- **`similarity` vs `word_similarity`**: whole-string vs "does the query match part of the name" scoring; typeahead needs the second, duplicate checks the first.
+- **`SET LOCAL`**: changes a Postgres setting for the current transaction only, used for per-query trigram thresholds.
+- **Seed data**: deterministic synthetic rows loaded to make query plans realistic when real data is too small.
