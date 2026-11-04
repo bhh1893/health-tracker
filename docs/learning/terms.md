@@ -214,3 +214,14 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`.editorconfig`**: a file editors read so every contributor gets the same indentation, line endings and final newline.
 - **`.gitignore`**: patterns for files git must never track (secrets, caches, editor state).
 - **`fetch-depth: 0` / `--log-opts`**: `fetch-depth: 0` makes the checkout download all history and branches; `--log-opts` tells gitleaks which commit range (a `git log` argument) to scan, so a PR is judged only on its own commits.
+- **Vagrant**: a CLI that creates and destroys VMs from a committed text file, so a machine can be rebuilt instead of hand-maintained.
+- **Vagrantfile**: the Ruby file describing one or more VMs (image, CPU, RAM, network); Vagrant commands act on the one in the current folder.
+- **Vagrant box**: the prebuilt VM image a machine starts from; pinning `box_version` means every rebuild starts from the same bytes.
+- **Vagrant provisioner**: a step Vagrant runs inside the VM after boot (upload a file, run a script); by default only on the first `vagrant up`.
+- **Synced folder**: a host folder mounted inside the VM; turned off here so the VM depends on nothing from the host.
+- **`.vagrant/`**: Vagrant's per-folder state, linking the folder to its VM and holding that VM's generated SSH private key; never committed.
+- **SSH key pair**: a private key that stays secret and a public key placed on servers; a server admits you by checking you hold the private half.
+- **ed25519**: the modern, short, fast SSH key type, and the default choice for new keys.
+- **Host key / `known_hosts`**: a server's own identity key, and the file where your SSH client remembers it, so an impostor at the same IP gets noticed.
+- **`StrictHostKeyChecking accept-new`**: trust a host's key the first time, refuse if it later changes; a rebuilt VM has a new key, so clear the old entry with `ssh-keygen -R`.
+- **Git worktree**: a second folder attached to the same repo with its own branch checked out, so two pieces of work do not disturb each other.
