@@ -55,3 +55,4 @@ _Avoid_: Place, venue
 **Archived**:
 A Catalog item hidden from suggestions because the user no longer wants it offered, while past Entries that refer to it keep showing it.
 _Avoid_: Deleted, removed
+<!-- ci docs-only test -->
