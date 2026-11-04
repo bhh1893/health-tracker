@@ -183,3 +183,19 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`cnpg.io/reload` label**: marks a Secret so CNPG applies changes to it immediately rather than at a later reconciliation.
 - **gitleaks**: a scanner that searches commits for strings that look like credentials.
 - **Guardrail vs boundary**: a guardrail stops accidents but can be stepped around; a boundary is enforced, such as by a separate user account.
+- **GitOps**: the cluster's desired state lives in git, and an in-cluster agent continuously makes the cluster match it.
+- **Push vs pull deploy**: push means an outside system runs `kubectl apply` against the cluster; pull means an agent inside the cluster fetches changes, so no outside system needs cluster credentials.
+- **Argo CD**: the GitOps agent that watches a git path and applies it to the cluster.
+- **Argo CD `Application`**: one Argo resource saying "keep this git path synced to this namespace".
+- **Auto-sync / self-heal**: Argo applies new commits by itself / reverts manual changes made in the cluster.
+- **Sync hooks (`PreSync`, `PostSync`)**: Jobs Argo runs before or after applying the app; the sync waits for them and stops if they fail.
+- **`hook-delete-policy: BeforeHookCreation`**: Argo deletes the previous hook Job before creating a new one, so a fixed Job name works every sync.
+- **Expand-then-contract migration**: add new schema first and remove old schema in a later deploy, so old and new code both work during a rollout.
+- **GHCR**: GitHub Container Registry, which stores container images next to the repo.
+- **Image tag vs digest**: a tag is a movable label (`:abc123`); a digest is the immutable content hash.
+- **Immutable SHA tag**: tagging an image with its git commit SHA so a tag always means the same build.
+- **Branch ruleset / bypass actor**: GitHub rules protecting a branch; a bypass actor is allowed past them (here, the Actions bot).
+- **Deploy key**: an SSH key that grants access to a single repo, read-only unless you say otherwise.
+- **Drift (GitOps)**: the cluster no longer matches git.
+- **Rollback by revert**: undoing a deploy by reverting the git commit, so the same pipeline redeploys the old version.
+- **`docker buildx` layer cache**: reuses unchanged image layers between builds to speed up CI.
