@@ -213,3 +213,4 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **yamllint**: a linter for YAML syntax and style.
 - **`.editorconfig`**: a file editors read so every contributor gets the same indentation, line endings and final newline.
 - **`.gitignore`**: patterns for files git must never track (secrets, caches, editor state).
+- **`fetch-depth: 0` / `--log-opts`**: `fetch-depth: 0` makes the checkout download all history and branches; `--log-opts` tells gitleaks which commit range (a `git log` argument) to scan, so a PR is judged only on its own commits.

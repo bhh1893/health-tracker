@@ -47,7 +47,15 @@ jobs:
           sha256sum --ignore-missing -c "gitleaks_${VERSION}_checksums.txt"
           tar -xzf "gitleaks_${VERSION}_linux_x64.tar.gz" gitleaks
       - name: Scan
-        run: ./gitleaks git --redact --verbose .
+        env:
+          # PR: only the commits the PR adds. Push to main: the history reachable
+          # from main. Without this, gitleaks scans every branch and one bad
+          # branch fails every unrelated PR.
+          LOG_OPTS: >-
+            ${{ github.event_name == 'pull_request'
+            && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha)
+            || 'HEAD' }}
+        run: ./gitleaks git --redact --verbose --log-opts="${LOG_OPTS}" .
 
   yamllint:
     needs: changes
