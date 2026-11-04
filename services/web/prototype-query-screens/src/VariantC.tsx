@@ -2,7 +2,7 @@
 // Variant C, "Ask screen": a sentence-shaped query builder. "Show [Exercise|Food|Everything] [name] for [range]".
 // Results are grouped by Day; an Exercise query can flip to "Last N Sessions" mode (progression, ignores the range).
 import { useState } from "react";
-import { EXERCISES, FOOD_NAMES, TODAY, dayOffset, daysBack, fmtDay, hasFood, lastSessions, mealsOn, sessionsOn } from "./data";
+import { EXERCISES, FOOD_NAMES, TODAY, dayOffset, daysBack, fmtDay, fmtSet, hasFood, lastSessions, mealsOn, sessionsOn, type SetE } from "./data";
 import { MealCard, Progression, SessionCard, chip } from "./ui";
 
 type What = "everything" | "exercise" | "food";
@@ -21,6 +21,7 @@ export function VariantC() {
   const [from, setFrom] = useState(dayOffset(10));
   const [to, setTo] = useState(TODAY);
   const [lastN, setLastN] = useState<number | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
 
   const pickWhat = (w: What) => { setWhat(w); setName(w === "exercise" ? EXERCISES[0] : w === "food" ? FOOD_NAMES[0] : ""); setLastN(null); };
   const days =
@@ -84,13 +85,31 @@ export function VariantC() {
         ) : (
           <>
             <p className="text-sm text-stone-500">{results.length} Day(s) match</p>
-            {results.map((r) => (
-              <div key={r.day} className="flex flex-col gap-2">
-                <h2 className="mt-1 font-semibold text-stone-600">{fmtDay(r.day)}</h2>
-                {r.ss.map((s) => <SessionCard key={s.exercise} s={s} hi={what === "exercise"} />)}
-                {r.ms.map((m) => <MealCard key={m.id} m={m} hiFood={what === "food" ? name : null} />)}
-              </div>
-            ))}
+            {results.map((r) => {
+              const nSets = r.ss.reduce((a, s) => a + s.sets.length, 0);
+              const top = r.ss.flatMap((s) => s.sets).reduce<SetE | null>((a, b) => (!a || (b.weight_lb ?? 0) > (a.weight_lb ?? 0) ? b : a), null);
+              const summary = [
+                what === "exercise" && top ? `${nSets} sets · top ${fmtSet(top)}` : r.ss.length ? `${r.ss.length} exercises · ${nSets} sets` : "",
+                r.ms.length ? `${r.ms.length} meal${r.ms.length > 1 ? "s" : ""}` : "",
+              ].filter(Boolean).join(" · ");
+              return (
+                <div key={r.day} className="rounded-2xl bg-white shadow-sm">
+                  <button onClick={() => setOpen(open === r.day ? null : r.day)} className="flex w-full items-center justify-between p-3 text-left">
+                    <span>
+                      <span className="block font-semibold">{fmtDay(r.day)}</span>
+                      <span className="text-sm text-stone-500">{summary}</span>
+                    </span>
+                    <span className="text-stone-400">{open === r.day ? "▴" : "▾"}</span>
+                  </button>
+                  {open === r.day && (
+                    <div className="flex flex-col gap-2 px-3 pb-3">
+                      {r.ss.map((s) => <SessionCard key={s.exercise} s={s} />)}
+                      {r.ms.map((m) => <MealCard key={m.id} m={m} hiFood={what === "food" ? name : null} />)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </>
         )}
       </section>
