@@ -2,7 +2,7 @@
 status: accepted
 ---
 
-# Dev VM setup: Claude Code inside the VM, configured by a local Ansible playbook, holding no unique state (except backups, ADR 0011)
+# Dev VM setup: Claude Code inside the VM, configured by a local Ansible playbook, holding no unique state (except backups, ADR 0011, and secrets, ADR 0015)
 
 The Ubuntu dev VM (ADR 0004) is the daily workstation. Claude Code, the repo checkout, Docker, kubectl and Ansible all live on it, so the agent works on the same Linux the nodes and CI run. It is reached from Windows Terminal with `ssh dev` and worked in tmux, so sessions survive a disconnect; VS Code Remote-SSH is optional for reading diffs. The VM is configured by a committed Ansible playbook run against itself, and it holds nothing that cannot be rebuilt from git, the Windows host and two logins, except the database backups (ADR 0011) ([Dev VM setup](https://github.com/bhh1893/health-tracker/issues/15)).
 
@@ -24,13 +24,14 @@ The Ubuntu dev VM (ADR 0004) is the daily workstation. Claude Code, the repo che
   - needs Node (`npx`) for skill restore, so `dev.yml` runs it after installing Node.
 - **GitHub access:** the per-machine key from the bootstrap, registered from Windows with `gh ssh-key add` (titled "health-tracker dev VM") so it can be revoked alone; `gh auth login` by hand.
 - **`ssh dev` alias on Windows:** `HostName 192.168.56.20`, user `vagrant`, the Vagrant-generated key under `iac/vagrant/dev/.vagrant/`, `StrictHostKeyChecking accept-new`. Dev servers bind `0.0.0.0` and are browsed at `http://192.168.56.20:<port>`; no port forwarding.
-- **Almost no unique state:** destroying the dev VM loses unpushed commits **and the database backups**, because MinIO runs here (amended by ADR 0011; the runbook warns before `vagrant destroy`). Everything else is rebuildable. Project knowledge lives in the repo (CLAUDE.md, ADRs, terms), not Claude's per-machine memory; the ops key's source of truth is Windows (`~/.ssh/health-tracker-ops`); the kubeconfig comes from Ansible.
+- **Almost no unique state:** destroying the dev VM loses unpushed commits **and the database backups**, because MinIO runs here (amended by ADR 0011; the runbook warns before `vagrant destroy`). It also loses the generated secrets in `~/.config/health-tracker/`, which are replaced by new values (ADR 0015). Everything else is rebuildable. Project knowledge lives in the repo (CLAUDE.md, ADRs, terms), not Claude's per-machine memory; the ops key's source of truth is Windows (`~/.ssh/health-tracker-ops`); the kubeconfig comes from Ansible.
 - **Rebuild:** a runbook, `docs/runbooks/dev-vm.md`, no script:
   1. `ssh-keygen -R 192.168.56.20`, then `vagrant destroy -f && vagrant up` in `iac/vagrant/dev/`.
   2. On Windows: `ssh dev cat ~/.ssh/id_ed25519.pub | gh ssh-key add - --title "health-tracker dev VM"` (delete the old VM's key on GitHub).
   3. `ssh dev`, `git clone` the repo over SSH.
   4. `ansible-playbook iac/ansible/dev.yml -e dotfiles_repo=<url>`.
   5. `gh auth login`, then `claude` and log in.
+  6. If the cluster is running (ADR 0015): run `apply-secrets`, restart the pods, re-paste the token on the phone, and take a base backup straight away, because the bucket is now empty.
 
 ## Considered Options
 

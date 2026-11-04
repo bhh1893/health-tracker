@@ -9,7 +9,7 @@ status: accepted
 ## Shape
 
 - **`api` tests (`pytest`):** about 80% are integration tests through FastAPI's `TestClient` into a real Postgres. Plain unit tests only for pure logic (timezone and `day` math, validation edge cases). The database is never mocked: the risk lives in SQL, composite FKs, the DB-enforced Meal kind and `pg_trgm` thresholds.
-- **Real Postgres:** `testcontainers-python` starts `postgres:18` from inside pytest; the schema is built by `alembic upgrade head` (so every run tests the migrations); each test runs in a transaction that is rolled back. Same command on the dev VM (Docker is already in ADR 0009) and on GitHub-hosted runners.
+- **Real Postgres:** `testcontainers-python` starts `postgres:18` from inside pytest; the schema is built by `alembic upgrade head` (so every run tests the migrations); each test runs in a transaction that is rolled back. Migrations run as the owner role and tests connect as the limited `api_rw` role, so a missing grant fails here and not in production (ADR 0015). Same command on the dev VM (Docker is already in ADR 0009) and on GitHub-hosted runners.
 - **Contract fuzzing:** Schemathesis reads `openapi.json` and fuzzes every endpoint against the real `api` + Postgres, checking responses match the schema and nothing returns 5xx. One CI job.
 - **`web` tests:** Vitest + React Testing Library, API calls intercepted by MSW (Mock Service Worker) with handlers typed from `schema.d.ts`, so a contract change breaks compilation. Aimed at the risky UI: Meal bottom sheet, ComboBox, one-tap repeat Set, Day pager URL behavior. `tsc --noEmit` is required. No snapshot tests.
 - **End-to-end:** no Playwright in v1. A post-deploy **smoke script** runs against the real cluster with the real token: `PUT` a Meal, read it back, check a missing token gives 401, delete the Meal. The 7-day phone trial is the UI end-to-end test. Revisit Playwright in v2 if UI regressions hurt.
@@ -18,6 +18,7 @@ status: accepted
   - `api`: `ruff` lint and format, `pyright` strict, `pytest`, `openapi.json` drift, `operationId` lint, Schemathesis, `docker build` (no push).
   - `web`: ESLint, Prettier, `tsc`, Vitest, `schema.d.ts` drift, `vite build`, `docker build`.
   - Platform: `kustomize build` + `kubeconform` on every overlay including `fresh` and `restore`; `ansible-lint` and `yamllint` (ADR 0004).
+  - Repo-wide: `gitleaks` secret scan (ADR 0015).
   - Jobs are path-filtered (ADR 0003, ADR 0007's cross-trigger). `ci-gate` always runs and passes when every filtered job passed or was skipped.
   - No numeric coverage threshold. Failing or flaky checks are fixed when found, even if unrelated.
 - **Config location:** test and lint config lives inside each service (ADR 0003); no root workspace.

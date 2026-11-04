@@ -167,3 +167,19 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **kubeconform**: validates Kubernetes manifests against the official schemas without needing a cluster.
 - **Required status check / `ci-gate`**: branch protection blocks merges until named checks pass; one always-running gate job avoids path-filtered checks hanging as pending.
 - **Flaky test**: a test that sometimes fails with no code change; erodes trust in CI, so it is fixed or removed.
+- **Threat model**: a short list of who or what you defend against and what you deliberately do not; it decides how much security machinery is justified.
+- **Kubernetes Secret**: a cluster object holding sensitive values for pods to read as env vars or files; base64-encoded, which is an encoding, not encryption.
+- **etcd encryption at rest**: an API server setting that encrypts Secrets inside etcd; off by default, and skipped here because reaching etcd already takes host access.
+- **Least privilege**: give each component only the access it needs, so a bug or breach in it can do limited damage.
+- **DDL vs DML**: SQL that changes the schema (`CREATE`, `DROP`) vs SQL that changes rows (`INSERT`, `UPDATE`, `DELETE`).
+- **`ALTER DEFAULT PRIVILEGES`**: tells Postgres which grants to apply automatically to tables a given role creates later.
+- **SOPS + age**: SOPS encrypts values inside YAML files so they can be committed; age is the small encryption tool that holds the key.
+- **SealedSecrets**: a cluster controller that decrypts secrets committed to git, using a private key held in that cluster.
+- **External Secrets Operator**: a controller that copies values from an outside store (AWS, Azure, Vault) into Kubernetes Secrets.
+- **Secret rotation**: replacing a secret with a new value so the old one stops working.
+- **`CreateContainerConfigError`**: a pod state meaning a Secret or ConfigMap it needs is missing; Kubernetes keeps retrying, so it recovers once the object exists.
+- **`managed.roles` (CNPG)**: Postgres roles declared on the `Cluster` itself, which the operator creates and regularly compares with the database.
+- **`DatabaseRole` (CNPG)**: a separate resource for one role, applied only when it or its Secret changes.
+- **`cnpg.io/reload` label**: marks a Secret so CNPG applies changes to it immediately rather than at a later reconciliation.
+- **gitleaks**: a scanner that searches commits for strings that look like credentials.
+- **Guardrail vs boundary**: a guardrail stops accidents but can be stepped around; a boundary is enforced, such as by a separate user account.
