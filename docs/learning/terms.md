@@ -157,3 +157,13 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Deep link**: a URL that opens the app directly at a specific screen and state, e.g. a Day.
 - **Disclosure row (accordion)**: a collapsed summary row that expands in place on tap to show its detail, keeping long lists short.
 - **Native date picker**: `<input type="date">`, which the phone renders as its own OS date chooser, so we write no calendar widget.
+- **Integration test**: exercises several real parts together (here HTTP handler, SQL and a real Postgres) instead of mocking the neighbors.
+- **Unit test**: tests one pure function in isolation; cheap, but blind to how pieces connect.
+- **Testcontainers**: a library that starts a throwaway Docker container (here Postgres 18) from inside the test run and removes it afterward.
+- **Test transaction rollback**: each test runs inside a database transaction that is rolled back at the end, so tests stay isolated without re-creating the schema.
+- **MSW (Mock Service Worker)**: intercepts network calls in tests and returns canned responses, so UI tests need no real server.
+- **Schemathesis**: reads an OpenAPI file and generates many requests to check every endpoint matches its schema and never crashes.
+- **Smoke test**: a tiny post-deploy check that the core path works on the real system.
+- **kubeconform**: validates Kubernetes manifests against the official schemas without needing a cluster.
+- **Required status check / `ci-gate`**: branch protection blocks merges until named checks pass; one always-running gate job avoids path-filtered checks hanging as pending.
+- **Flaky test**: a test that sometimes fails with no code change; erodes trust in CI, so it is fixed or removed.
