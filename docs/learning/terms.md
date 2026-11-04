@@ -120,3 +120,15 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **SSH agent forwarding**: a remote machine borrows the keys in your local SSH agent for the life of the connection, so no key is stored remotely.
 - **GNU Stow**: a symlink manager; each package folder mirrors `$HOME`, and `stow <pkg>` links every file to the same path under `$HOME`.
 - **Runbook**: a written step-by-step procedure for an operational task, for whoever runs it next (often you, months later).
+- **Gateway API**: the Kubernetes standard for routing outside traffic into the cluster: a `Gateway` (listener on a port/IP) plus `HTTPRoute`s (path/header rules to Services); Cilium implements it with Envoy.
+- **Sidecar**: a second container in the same Pod as the app, sharing its network (`localhost`); used to add a concern (auth, proxying, logging) without changing the app.
+- **Bearer token**: a secret sent as `Authorization: Bearer <token>`; whoever holds the token is let in.
+- **HTTP Basic Auth**: browser-native username/password prompt sent as a base64 header; unreliable in iOS home-screen apps.
+- **ext_authz**: an Envoy filter that asks an external service to allow or deny each request before it is forwarded.
+- **WireGuard (Cilium transparent encryption)**: encrypts pod-to-pod traffic between nodes with a kernel VPN, enabled by one Cilium setting; no certificates or app changes.
+- **mTLS**: both sides of a connection present certificates, so each proves its identity as well as encrypting traffic.
+- **`BackendTLSPolicy`**: Gateway API object that makes the Gateway use TLS to the backend Service, verifying its certificate.
+- **HSTS**: a response header telling a browser to use only HTTPS for a host for a set time; a broken certificate then cannot be clicked through.
+- **DNS rebinding protection**: a router feature that drops DNS answers pointing at private IPs; can break "public name, LAN address" setups.
+- **DNS-01 challenge**: Let's Encrypt proves you own a domain by checking a TXT record in its DNS, so no public server is needed.
+- **`RequestRedirect` (Gateway API)**: an `HTTPRoute` filter that answers with a redirect, used for HTTP to HTTPS.
