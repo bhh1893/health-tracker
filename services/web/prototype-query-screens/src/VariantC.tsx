@@ -2,7 +2,7 @@
 // Variant C, "Ask screen": a sentence-shaped query builder. "Show [Exercise|Food|Everything] [name] for [range]".
 // Results are grouped by Day; an Exercise query can flip to "Last N Sessions" mode (progression, ignores the range).
 import { useState } from "react";
-import { EXERCISES, FOOD_NAMES, TODAY, dayOffset, daysBack, fmtDay, fmtSet, hasFood, lastSessions, mealsOn, sessionsOn, type SetE } from "./data";
+import { EXERCISES, FOOD_NAMES, TODAY, dayOffset, daysBack, fmtDay, fmtSet, hasFood, lastSessions, mealsOn, sessionsOn, suggest, type SetE } from "./data";
 import { MealCard, Progression, SessionCard, chip } from "./ui";
 
 type What = "everything" | "exercise" | "food";
@@ -16,20 +16,24 @@ const RANGES = [
 
 export function VariantC() {
   const [what, setWhat] = useState<What>("exercise");
-  const [name, setName] = useState("Bench press");
+  const [name, setName] = useState(""); // committed pick; results only show for a picked suggestion
+  const [text, setText] = useState("");
+  const [focus, setFocus] = useState(false);
   const [range, setRange] = useState("7");
   const [from, setFrom] = useState(dayOffset(10));
   const [to, setTo] = useState(TODAY);
   const [lastN, setLastN] = useState<number | null>(null);
   const [open, setOpen] = useState<string | null>(null);
 
-  const pickWhat = (w: What) => { setWhat(w); setName(w === "exercise" ? EXERCISES[0] : w === "food" ? FOOD_NAMES[0] : ""); setLastN(null); };
+  const pickWhat = (w: What) => { setWhat(w); setName(""); setText(""); setLastN(null); };
+  const options = suggest(what === "exercise" ? EXERCISES : FOOD_NAMES, text);
+  const needsPick = what !== "everything" && !name;
   const days =
     range === "yest" ? [dayOffset(1)]
     : range === "custom" ? daysBack(60).filter((d) => d >= from && d <= to)
     : daysBack(RANGES.find((r) => r.key === range)!.n);
 
-  const results = days
+  const results = (needsPick ? [] : days)
     .map((day) => ({
       day,
       ss: what === "food" ? [] : sessionsOn(day).filter((s) => what === "everything" || s.exercise === name),
@@ -47,15 +51,32 @@ export function VariantC() {
           ))}
         </div>
         {what !== "everything" && (
-          <select value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl border border-stone-300 px-3 py-2">
-            {(what === "exercise" ? EXERCISES : FOOD_NAMES).map((n) => <option key={n}>{n}</option>)}
-          </select>
+          <div className="relative">
+            <input
+              value={text}
+              placeholder={what === "exercise" ? "Search exercises" : "Search foods"}
+              onFocus={() => setFocus(true)}
+              onBlur={() => setTimeout(() => setFocus(false), 150)}
+              onChange={(e) => { setText(e.target.value); setName(""); setLastN(null); setFocus(true); }}
+              className="w-full rounded-xl border border-stone-300 px-3 py-2"
+            />
+            {focus && !name && (
+              <ul className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
+                {options.length === 0 && <li className="px-3 py-2 text-stone-400">No match</li>}
+                {options.map((n) => (
+                  <li key={n}>
+                    <button onMouseDown={(e) => e.preventDefault()} onClick={() => { setName(n); setText(n); setFocus(false); }} className="w-full px-3 py-2 text-left active:bg-stone-100">{n}</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
         <div className="flex flex-wrap gap-2">
           {RANGES.map((r) => (
             <button key={r.key} onClick={() => { setRange(r.key); setLastN(null); }} className={chip(!lastN && range === r.key)}>{r.label}</button>
           ))}
-          {what === "exercise" && (
+          {what === "exercise" && name && (
             <button onClick={() => setLastN(lastN ?? 5)} className={chip(!!lastN)}>Last N Sessions</button>
           )}
         </div>
@@ -84,7 +105,7 @@ export function VariantC() {
           </div>
         ) : (
           <>
-            <p className="text-sm text-stone-500">{results.length} Day(s) match</p>
+            <p className="text-sm text-stone-500">{needsPick ? "Pick a suggestion to see results" : `${results.length} Day(s) match`}</p>
             {results.map((r) => {
               const nSets = r.ss.reduce((a, s) => a + s.sets.length, 0);
               const top = r.ss.flatMap((s) => s.sets).reduce<SetE | null>((a, b) => (!a || (b.weight_lb ?? 0) > (a.weight_lb ?? 0) ? b : a), null);

@@ -105,3 +105,35 @@ export const shiftDay = (day: string, by: number) => {
   d.setDate(d.getDate() + by);
   return fmt(d);
 };
+
+// pg_trgm-style similarity (same idea as ADR 0006's server-side typeahead): pad words, 3-char chunks, Jaccard overlap.
+const trigrams = (s: string) => {
+  const out = new Set<string>();
+  for (const w of s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)) {
+    const p = `  ${w} `;
+    for (let i = 0; i < p.length - 2; i++) out.add(p.slice(i, i + 3));
+  }
+  return out;
+};
+const similarity = (a: string, b: string) => {
+  const A = trigrams(a);
+  const B = trigrams(b);
+  let inter = 0;
+  A.forEach((t) => B.has(t) && inter++);
+  return inter / (A.size + B.size - inter || 1);
+};
+// GET /{kind}s?q= : empty q = recently used first; else prefix hits then typo-tolerant matches. No "create" row when searching.
+export function suggest(names: string[], q: string, limit = 6): string[] {
+  const query = q.trim().toLowerCase();
+  if (!query) return names.slice(0, limit);
+  return names
+    .map((n) => {
+      const l = n.toLowerCase();
+      const prefix = l.startsWith(query) || l.split(" ").some((w) => w.startsWith(query));
+      return { n, score: (prefix ? 1 : 0) + similarity(query, l) };
+    })
+    .filter((x) => x.score >= 0.25)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((x) => x.n);
+}
