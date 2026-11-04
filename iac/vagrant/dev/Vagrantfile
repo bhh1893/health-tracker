@@ -1,0 +1,37 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# The dev VM: the daily workstation (ADR 0009). It has its own Vagrantfile so
+# that destroying the cluster can never destroy it (ADR 0004).
+#
+# Vagrant only creates the machine here. Everything above the bootstrap belongs
+# to iac/ansible/dev.yml, so a cloud move replaces this folder and nothing else.
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-26.04"
+  config.vm.box_version = "202606.01.0"
+
+  config.vm.hostname = "dev"
+
+  # Host-only: reachable from Windows and the cluster nodes, never from the LAN.
+  config.vm.network "private_network", ip: "192.168.56.20"
+
+  # Off on purpose: the working checkout lives inside the VM (ADR 0009).
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  config.vm.provider "virtualbox" do |vb|
+    # Not plain "dev": VirtualBox names are global to the host, and the prior-art
+    # VM already holds that name.
+    vb.name = "health-tracker-dev"
+    vb.cpus = 4
+    vb.memory = 4096
+  end
+
+  # Lands in ~/.ssh, which is mode 700, so the key is never readable by others
+  # between this upload and the chmod in bootstrap.sh.
+  config.vm.provision "file",
+    source: "~/.ssh/health-tracker-ops",
+    destination: "/home/vagrant/.ssh/health-tracker-ops"
+
+  config.vm.provision "shell", path: "bootstrap.sh"
+end
