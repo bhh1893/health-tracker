@@ -278,3 +278,14 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Router advertisement (RA)**: how an IPv6 router announces itself; hosts that accept it gain an address and a default route, with no DHCP involved.
 - **SSH drop-in**: a file in `/etc/ssh/sshd_config.d/`; for most settings sshd keeps the first value it reads, so name order decides who wins.
 - **kubeadm preflight**: kubeadm's own checks that a machine is ready to join a cluster; `kubeadm init phase preflight --dry-run` runs them alone.
+- **`kubeadm init` / `join`**: `init` creates the control plane (certificates, API server, etcd) on one node; `join` connects another node's kubelet to it.
+- **kubeconfig**: a file holding a cluster's address and a credential; `kubectl` and Helm read `~/.kube/config`. The admin one is full control of the cluster.
+- **CNI (Container Network Interface)**: the plugin standard that gives pods their IPs and connectivity; nodes stay NotReady until one is installed. Cilium is ours.
+- **kube-proxy**: the default per-node program that implements Services, usually with iptables rules.
+- **eBPF**: small verified programs loaded into the running Linux kernel, here to route and load-balance packets without a userspace hop.
+- **kube-proxy replacement**: Cilium implementing Services in eBPF, so kube-proxy is not installed.
+- **IPAM (IP Address Management)**: how pods get IPs. `ipam.mode: kubernetes` uses the per-node `podCIDR` slices cut from kubeadm's `podSubnet`.
+- **ARP**: how a device on a LAN asks "who has this IP?" and learns the MAC address to send to.
+- **Gratuitous ARP**: an unprompted ARP announcement that tells neighbours an IP has moved to a new MAC.
+- **Lease (Kubernetes)**: a small API object used for leader election; the node holding a Service's lease answers ARP for its IP.
+- **Server-side apply**: `kubectl apply --server-side`: the API server merges the change and tracks field ownership, with no size-limited annotation on the object.

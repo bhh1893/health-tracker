@@ -1,0 +1,4 @@
+control_plane_kubernetes_version: v1.36.6  # same pin as kube_packages_version
+control_plane_pod_subnet: 10.244.0.0/16
+control_plane_service_subnet: 10.96.0.0/12
+control_plane_kubeadm_config: /etc/kubernetes/kubeadm-config.yaml

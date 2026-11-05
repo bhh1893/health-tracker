@@ -1,0 +1,35 @@
+- name: Create the Cilium CLI version directory
+  become: true
+  ansible.builtin.file:
+    path: "/opt/cilium-cli/{{ dev_workstation_cilium_cli_version }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# The sha256 is pinned here, not fetched, so a tampered release fails the run.
+- name: Download the Cilium CLI
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ dev_workstation_cilium_cli_release }}/cilium-linux-amd64.tar.gz"
+    dest: "/opt/cilium-cli/{{ dev_workstation_cilium_cli_version }}/cilium.tar.gz"
+    checksum: "sha256:{{ dev_workstation_cilium_cli_sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Unpack the Cilium CLI
+  become: true
+  ansible.builtin.unarchive:
+    src: "/opt/cilium-cli/{{ dev_workstation_cilium_cli_version }}/cilium.tar.gz"
+    dest: "/opt/cilium-cli/{{ dev_workstation_cilium_cli_version }}"
+    remote_src: true
+    creates: "/opt/cilium-cli/{{ dev_workstation_cilium_cli_version }}/cilium"
+
+# One directory per version: bumping the pin repoints this link.
+- name: Link the Cilium CLI onto the PATH
+  become: true
+  ansible.builtin.file:
+    src: "/opt/cilium-cli/{{ dev_workstation_cilium_cli_version }}/cilium"
+    dest: /usr/local/bin/cilium
+    state: link

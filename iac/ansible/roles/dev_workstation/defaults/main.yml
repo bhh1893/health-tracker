@@ -9,6 +9,10 @@ dev_workstation_kubectl_minor: "1.36"  # same pin as the nodes (ADR 0004)
 dev_workstation_kubectl_version: "1.36.6-1.1"
 dev_workstation_helm_version: "4.3.0-1"
 dev_workstation_gh_version: "2.103.3"
+dev_workstation_cilium_cli_version: "0.20.2"
+dev_workstation_cilium_cli_sha256: b7224a62bfed0e84f1a84567d274fefc5017df76a936e067c42012bb7fc30856
+dev_workstation_cilium_cli_release: >-
+  https://github.com/cilium/cilium-cli/releases/download/v{{ dev_workstation_cilium_cli_version }}
 
 dev_workstation_uv_version: "0.13.7"
 dev_workstation_uv_sha256: c5221ff41b7892bfc223543883600125f6a47fe845093e0f5bdff4f359196d83

@@ -4,3 +4,5 @@ collections:
     version: 2.2.2
   - name: community.general  # modprobe
     version: 14.0.0
+  - name: kubernetes.core  # helm
+    version: 6.6.0
