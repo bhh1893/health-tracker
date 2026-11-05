@@ -77,7 +77,8 @@ def upgrade() -> None:
             unit text NOT NULL CHECK (unit IN ('g', 'count')),
             logged_at timestamptz NOT NULL DEFAULT now(),
             updated_at timestamptz NOT NULL DEFAULT now(),
-            -- Both Meal FKs must cascade: a RESTRICT on either would block the Meal delete.
+            -- Both Meal FKs must cascade. With a RESTRICT on one, a Meal delete would pass or
+            -- fail depending on which FK's trigger fires first, which follows creation order.
             FOREIGN KEY (meal_id, user_id) REFERENCES meals (id, user_id) ON DELETE CASCADE,
             FOREIGN KEY (meal_id, meal_kind) REFERENCES meals (id, kind) ON DELETE CASCADE,
             FOREIGN KEY (food_id, user_id) REFERENCES foods (id, user_id) ON DELETE RESTRICT
