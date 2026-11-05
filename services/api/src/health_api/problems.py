@@ -28,6 +28,7 @@ class Problem(BaseModel):
     status: int
     detail: str | None = None
     errors: list[FieldError] | None = None
+    instance: str | None = None
 
 
 def problem_response(
