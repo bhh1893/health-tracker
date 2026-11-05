@@ -1,5 +1,9 @@
 extends: default
 
+# Third-party files, not ours to lint.
+ignore: |
+  node_modules/
+
 rules:
   # GitHub Actions uses `on:` as a key; yamllint would flag it as a truthy value.
   truthy:

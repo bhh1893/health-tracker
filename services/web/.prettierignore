@@ -1,0 +1,4 @@
+dist/
+package-lock.json
+# Generated: its formatting belongs to openapi-typescript.
+src/api/schema.d.ts
