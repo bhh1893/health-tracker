@@ -7,3 +7,4 @@
     - role: dev_workstation
       vars:
         dev_workstation_dotfiles_repo: "{{ dotfiles_repo | default('') }}"
+    - role: garage

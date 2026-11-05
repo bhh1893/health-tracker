@@ -136,8 +136,15 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Base backup**: a full copy of the database files at one moment; restorable only together with the WAL written after it.
 - **PITR (point-in-time recovery)**: restoring a base backup and replaying WAL up to a chosen timestamp, e.g. just before a mistake.
 - **WAL archiving**: continuously copying finished WAL segments to backup storage (roughly every minute under light load).
-- **MinIO**: software that serves an S3-compatible object storage API from a plain disk; here the backup target on the dev VM.
-- **S3-compatible**: speaks Amazon S3's HTTP API, so tools written for S3 work against MinIO, B2, R2 or AWS by changing endpoint and credentials.
+- **Object storage**: stores whole files ("objects") under a key in a flat bucket, read and written over HTTP; no directories, no editing in place.
+- **Bucket**: a named container of objects; access keys are granted per bucket.
+- **Garage**: software that serves an S3-compatible object storage API from a plain disk; here the backup target on the dev VM.
+- **MinIO**: the object store first chosen here; its open-source edition was archived, so Garage replaced it (ADR 0011).
+- **Garage layout**: the record of which nodes store data and their share of it; nothing works until one is applied.
+- **systemd unit**: a small file telling Linux's service manager how to run a program, restart it and start it at boot.
+- **fsync**: forces written data from memory onto the disk, so a power cut cannot lose it; slower, but safe.
+- **`no_log`**: tells Ansible not to print a task's values, so secrets stay out of its output.
+- **S3-compatible**: speaks Amazon S3's HTTP API, so tools written for S3 work against Garage, B2, R2 or AWS by changing endpoint and credentials.
 - **Barman Cloud plugin**: CNPG's plugin that sends base backups and WAL to S3-compatible storage and restores from it.
 - **`serverName` (CNPG)**: the folder name a cluster uses in the backup bucket; a recovered cluster needs a new one, since two histories cannot share a folder.
 - **Recovery bootstrap (CNPG)**: creating a new `Cluster` from a backup instead of an empty database; only possible at creation, never in place.

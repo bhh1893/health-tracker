@@ -1,0 +1,10 @@
+galaxy_info:
+  author: bhh1893
+  description: S3-compatible backup target on the dev VM (ADR 0011)
+  license: MIT
+  min_ansible_version: "2.20"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - resolute
+dependencies: []

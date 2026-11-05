@@ -1,0 +1,208 @@
+- name: Create the garage system user
+  become: true
+  ansible.builtin.user:
+    name: garage
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ garage_data_dir }}"
+    create_home: false
+
+- name: Create the data directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: garage
+    group: garage
+    mode: "0750"
+  loop:
+    - "{{ garage_data_dir }}"
+    - "{{ garage_data_dir }}/meta"
+    - "{{ garage_data_dir }}/data"
+
+- name: Create the Garage version directory
+  become: true
+  ansible.builtin.file:
+    path: "/opt/garage/{{ garage_version }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download Garage
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ garage_release }}"
+    dest: "/opt/garage/{{ garage_version }}/garage"
+    checksum: "sha256:{{ garage_sha256 }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+# One directory per version: bumping the pin repoints this link.
+- name: Link Garage onto the PATH
+  become: true
+  ansible.builtin.file:
+    src: "/opt/garage/{{ garage_version }}/garage"
+    dest: /usr/local/bin/garage
+    state: link
+  notify: Restart garage
+
+# Authenticates the CLI to the daemon. Never needed outside this machine.
+- name: Generate the RPC secret once
+  become: true
+  ansible.builtin.shell:
+    cmd: "umask 077 && openssl rand -hex 32 > {{ garage_rpc_secret_file }}"
+    creates: "{{ garage_rpc_secret_file }}"
+  notify: Restart garage
+
+# Garage refuses to start if this file is readable by anyone else.
+- name: Restrict the RPC secret
+  become: true
+  ansible.builtin.file:
+    path: "{{ garage_rpc_secret_file }}"
+    owner: garage
+    group: garage
+    mode: "0600"
+
+# /etc/garage.toml is the CLI's default path, so `sudo garage status` just works.
+- name: Write the Garage config
+  become: true
+  ansible.builtin.template:
+    src: garage.toml.j2
+    dest: /etc/garage.toml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart garage
+
+- name: Write the systemd unit
+  become: true
+  ansible.builtin.template:
+    src: garage.service.j2
+    dest: /etc/systemd/system/garage.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart garage
+
+- name: Enable and start Garage
+  become: true
+  ansible.builtin.systemd_service:
+    name: garage
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# Run a pending restart now: the CLI tasks below need the final config.
+- name: Apply pending Garage restart
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for the Garage daemon
+  become: true
+  ansible.builtin.command:
+    cmd: garage status
+  register: garage_status
+  changed_when: false
+  retries: 10
+  delay: 2
+  until: garage_status.rc == 0
+
+- name: Read the node ID
+  become: true
+  ansible.builtin.command:
+    cmd: garage node id -q
+  register: garage_node_id
+  changed_when: false
+
+# A layout says which nodes store data. Nothing works until one is applied.
+- name: Assign this node to the layout
+  become: true
+  ansible.builtin.command:
+    cmd: >-
+      garage layout assign -z {{ garage_zone }} -c {{ garage_capacity }}
+      {{ garage_node_id.stdout.split('@') | first }}
+  when: "'NO ROLE ASSIGNED' in garage_status.stdout"
+  changed_when: true
+
+- name: Apply the layout
+  become: true
+  ansible.builtin.command:
+    cmd: garage layout apply --version 1
+  when: "'NO ROLE ASSIGNED' in garage_status.stdout"
+  changed_when: true
+
+# Only a real "not found" may lead to creating something. Any other failure,
+# such as the daemon being busy, must stop the run, not create a duplicate.
+- name: Look up the backup bucket
+  become: true
+  ansible.builtin.command:
+    cmd: "garage bucket info {{ garage_bucket }}"
+  register: garage_bucket_lookup
+  changed_when: false
+  failed_when:
+    - garage_bucket_lookup.rc != 0
+    - "'NoSuchBucket' not in garage_bucket_lookup.stderr"
+
+- name: Create the backup bucket
+  become: true
+  ansible.builtin.command:
+    cmd: "garage bucket create {{ garage_bucket }}"
+  when: garage_bucket_lookup.rc != 0
+  changed_when: true
+
+- name: Look up the backup key
+  become: true
+  ansible.builtin.command:
+    cmd: "garage key info --show-secret {{ garage_key_name }}"
+  register: garage_key_lookup
+  changed_when: false
+  failed_when:
+    - garage_key_lookup.rc != 0
+    - "'NoSuchAccessKey' not in garage_key_lookup.stderr"
+  no_log: true
+
+- name: Create the backup key
+  become: true
+  ansible.builtin.command:
+    cmd: "garage key create {{ garage_key_name }}"
+  register: garage_key_create
+  when: garage_key_lookup.rc != 0
+  changed_when: true
+  no_log: true
+
+- name: Pick the key output
+  ansible.builtin.set_fact:
+    garage_key_output: "{{ garage_key_lookup.stdout if garage_key_lookup.rc == 0 else garage_key_create.stdout }}"
+  no_log: true
+
+# `first` fails the run if the CLI's format ever changes, rather than writing
+# an empty credential to backup.env.
+- name: Parse the backup key
+  ansible.builtin.set_fact:
+    garage_key_id: >-
+      {{ garage_key_output | regex_search('Key ID:\s+(\S+)', '\1') | first }}
+    garage_key_secret: >-
+      {{ garage_key_output | regex_search('Secret key:\s+(\S+)', '\1') | first }}
+  no_log: true
+
+# Read and write on this bucket only: no owner flag, no access to other buckets.
+- name: Limit the backup key to the bucket
+  become: true
+  ansible.builtin.command:
+    cmd: "garage bucket allow --read --write --key {{ garage_key_name }} {{ garage_bucket }}"
+  when: garage_key_output is not search('RW\s+\S+\s+' ~ garage_bucket)
+  changed_when: true
+
+- name: Create the secrets directory
+  ansible.builtin.file:
+    path: "{{ garage_env_dir }}"
+    state: directory
+    mode: "0700"
+
+- name: Write backup.env
+  ansible.builtin.template:
+    src: backup.env.j2
+    dest: "{{ garage_env_dir }}/backup.env"
+    mode: "0600"
+  no_log: true
