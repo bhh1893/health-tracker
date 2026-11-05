@@ -12,7 +12,7 @@ The Ubuntu dev VM (ADR 0004) is the daily workstation. Claude Code, the repo che
 - **Vagrant bootstrap** (the cloud-init equivalent, amends ADR 0004): install `ansible-core`, place the ops private key, and generate a per-machine GitHub ed25519 key if none exists. Nothing else.
 - **Playbook:** `iac/ansible/dev.yml`, one role `dev_workstation`, `connection: local` (Ansible runs the tasks on the machine it is invoked on, no SSH). Same `ansible-lint` / `yamllint` CI and the same `changed=0` contract as the cluster roles.
 - **Toolchain (project tools only), every version pinned:**
-  - Python via `uv`, version from a committed `.python-version`; lint CLIs (`ansible-lint`, `yamllint`) via `uv tool install`. No system pip.
+  - Python via `uv`, version from a committed `services/api/.python-version`; lint CLIs (`ansible-lint`, `yamllint`) via `uv tool install`. No system pip.
   - Node LTS from the NodeSource apt repo, one pinned major matching `engines` in `services/web/package.json`.
   - Docker Engine + buildx from Docker's apt repo; the user joins the `docker` group.
   - kubectl 1.36 from `pkgs.k8s.io` (same pin as the nodes), `helm`, `gh`, `git`.

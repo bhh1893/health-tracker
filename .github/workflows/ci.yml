@@ -21,6 +21,7 @@ jobs:
     outputs:
       yaml: ${{ steps.filter.outputs.yaml }}
       ansible: ${{ steps.filter.outputs.ansible }}
+      api: ${{ steps.filter.outputs.api }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -34,6 +35,9 @@ jobs:
               - 'iac/ansible/**'
               - '.ansible-lint'
               - '.yamllint.yml'
+            api:
+              - 'services/api/**'
+              - '.github/workflows/ci.yml'
 
   # Repo-wide, so no path filter: a secret can hide in any file (ADR 0015).
   gitleaks:
@@ -83,11 +87,79 @@ jobs:
       - run: pipx inject ansible-lint ansible-core==2.20.1
       - run: ansible-lint iac/ansible
 
+  # `--locked` fails if uv.lock no longer matches pyproject.toml. uv pin matches the
+  # dev_workstation role defaults; Python comes from services/api/.python-version.
+  api-lint:
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: 0.13.7
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pyright
+      - name: Dockerfile uses the same Python as .python-version
+        run: |
+          expected="FROM python:$(cat .python-version)-"
+          if grep '^FROM python:' Dockerfile | grep -vF "${expected}"; then
+            echo "these lines do not match ${expected}"
+            exit 1
+          fi
+
+  # Real Postgres through testcontainers, same command as the dev VM (ADR 0014).
+  api-test:
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: 0.13.7
+      - run: uv sync --locked
+      - run: uv run pytest
+
+  # Regenerates the contract; a diff means a model changed without openapi.json (ADR 0003).
+  api-openapi-drift:
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: 0.13.7
+      - run: uv sync --locked
+      - run: uv run python -m health_api.export_openapi
+      - run: git diff --exit-code -- openapi.json
+
+  # Build only: pushing to the registry happens on merge (ADR 0016).
+  api-image:
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build services/api
+
   # The only required check. Always runs; passes when every job it waits on
   # passed or was skipped (ADR 0014).
   ci-gate:
     if: always()
-    needs: [changes, gitleaks, yamllint, ansible-lint]
+    needs: [changes, gitleaks, yamllint, ansible-lint, api-lint, api-test, api-openapi-drift, api-image]
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if any needed job failed or was cancelled
