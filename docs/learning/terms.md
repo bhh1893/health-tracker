@@ -116,7 +116,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **VS Code Remote-SSH**: an extension that runs VS Code's backend on a remote machine over SSH, so the editor on Windows edits files on the VM.
 - **SSHFS**: mounts a remote machine's folder over SSH so it looks like a local drive; convenient but slower and weaker at file watching.
 - **`connection: local` (Ansible)**: Ansible runs tasks directly on the machine it is invoked on instead of over SSH.
-- **uv**: Astral's fast Python package and version manager; installs Python itself from a `.python-version` file.
+- **uv / `uv.lock`**: Astral's fast Python package and version manager; installs Python itself from a `.python-version` file, and the lockfile records the exact version and hash of every dependency.
 - **SSH agent forwarding**: a remote machine borrows the keys in your local SSH agent for the life of the connection, so no key is stored remotely.
 - **GNU Stow**: a symlink manager; each package folder mirrors `$HOME`, and `stow <pkg>` links every file to the same path under `$HOME`.
 - **Runbook**: a written step-by-step procedure for an operational task, for whoever runs it next (often you, months later).
@@ -246,6 +246,19 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`private_network` / `public_network`**: Vagrant's names for a VirtualBox host-only NIC and a bridged NIC.
 - **Default route**: where a machine sends traffic for any address it has no more specific route to; normally there should be exactly one.
 - **Route metric**: the priority of a route, lower wins; two default routes with equal metrics leave the choice to the order they were added.
+- **FastAPI**: a Python web framework that builds routes, validation and the OpenAPI schema from type hints.
+- **Pydantic**: a library that validates data against typed Python classes; FastAPI uses it for request and response bodies.
+- **Dependency injection (`Depends`)**: a route declares what it needs and FastAPI supplies it, so tests can swap in a replacement through `dependency_overrides`.
+- **SQLAlchemy engine / session**: the engine owns the connection pool; a session is one unit of work on a connection.
+- **psycopg**: the driver that speaks the Postgres protocol for Python; SQLAlchemy sits on top of it.
+- **Savepoint**: a marker inside a transaction that can be rolled back to; it lets code "commit" inside a test whose outer transaction is later undone.
+- **Structured logging**: each log line is a JSON object, so tools can filter by field instead of parsing text.
+- **`ruff`**: a fast Python linter and formatter.
+- **`pyright`**: a static type checker; strict mode rejects anything whose type it cannot determine.
+- **ASGI**: the standard interface between a Python async web server and a web app.
+- **Uvicorn**: the ASGI server that listens on the port and hands each request to FastAPI.
+- **Lifespan**: FastAPI's startup and shutdown hook, used here to create and close the connection pool.
+- **TCP keepalive / `tcp_user_timeout`**: keepalives probe an idle connection; `tcp_user_timeout` caps how long sent data may go unacknowledged; both detect a peer that vanished without closing.
 - **`ansible.cfg`**: Ansible's settings file, read from the directory you run in; here it names the inventory and SSH options.
 - **Ansible collection**: a versioned package of modules from Ansible Galaxy, pinned in `requirements.yml`; `community.general.modprobe` comes from one.
 - **`reset_connection`**: closes Ansible's open SSH connection to a host, so the next task connects fresh.

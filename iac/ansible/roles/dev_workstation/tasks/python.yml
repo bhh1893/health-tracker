@@ -39,9 +39,9 @@
     - uv
     - uvx
 
-- name: Install the Python from .python-version
+- name: Install the Python from services/api/.python-version
   ansible.builtin.command:
-    cmd: "uv python install {{ lookup('ansible.builtin.file', playbook_dir ~ '/../../.python-version') }}"
+    cmd: "uv python install {{ lookup('ansible.builtin.file', playbook_dir ~ '/../../services/api/.python-version') }}"
   register: dev_workstation_python_install
   changed_when: "'Installed' in dev_workstation_python_install.stderr"
 

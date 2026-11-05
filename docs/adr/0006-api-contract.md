@@ -27,7 +27,7 @@ The v1 API is a JSON REST API under `/api/v1`, described by the generated OpenAP
 - **Identity:** implicit, the "/me" pattern. No `user_id` in paths or bodies; one `current_user` dependency scopes every query. v1 returns the seeded user.
 - **Versioning:** `/api/v1` prefix. Within v1 only additive changes; a breaking change ships as `/api/v2` alongside v1.
 - **MCP readiness:** hand-set `operationId` (`list_meals`, `put_meal`, `suggest_foods`, `get_exercise_sessions`, ...) and a one-line description per endpoint, enforced by a CI lint on `openapi.json`.
-- **Health:** `/healthz` (liveness, no DB) and `/readyz` (DB reachable, migrations applied), outside `/api/v1` and not routed by the edge.
+- **Health:** `/healthz` (liveness, no DB) and `/readyz` (DB reachable, migrations applied), outside `/api/v1` and not routed by the edge. "Applied" means the database is at or ahead of the image's latest revision: the migration Job runs before rollout (ADR 0016), so an old pod seeing a revision it does not know stays ready. Only a database behind the image, or unmigrated, fails.
 
 ## Considered Options
 

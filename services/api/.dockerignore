@@ -1,0 +1,6 @@
+# Keeps the build context small and stops local state reaching the image.
+.venv/
+.pytest_cache/
+.ruff_cache/
+**/__pycache__/
+tests/
