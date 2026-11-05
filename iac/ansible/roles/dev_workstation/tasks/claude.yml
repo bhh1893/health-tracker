@@ -1,0 +1,12 @@
+# Not pinned on purpose: Claude Code auto-updates and is never in images or CI
+# (ADR 0009). The installer is saved first so a failed download fails the task.
+- name: Download the Claude Code installer
+  ansible.builtin.get_url:
+    url: https://claude.ai/install.sh
+    dest: "{{ ansible_facts['user_dir'] }}/.cache/claude-install.sh"
+    mode: "0755"
+
+- name: Install Claude Code
+  ansible.builtin.command:
+    cmd: "{{ ansible_facts['user_dir'] }}/.cache/claude-install.sh"
+    creates: "{{ ansible_facts['user_dir'] }}/.local/bin/claude"

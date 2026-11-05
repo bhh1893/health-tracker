@@ -223,3 +223,14 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Host key / `known_hosts`**: a server's own identity key, and the file where your SSH client remembers it, so an impostor at the same IP gets noticed.
 - **`StrictHostKeyChecking accept-new`**: trust a host's key the first time, refuse if it later changes; a rebuilt VM has a new key, so clear the old entry with `ssh-keygen -R`.
 - **Git worktree**: a second folder attached to the same repo with its own branch checked out, so two pieces of work do not disturb each other.
+- **Ansible playbook**: a YAML file mapping hosts to the roles and tasks to run on them; `dev.yml` is one.
+- **Ansible task / module**: a task is one step; it calls a module (`apt`, `file`, `git`) that checks current state and changes only what differs.
+- **Ansible handler / `flush_handlers`**: a task that runs only when another task notifies it, normally at the end of the play; `flush_handlers` runs pending ones immediately.
+- **`changed_when` / `creates`**: `command` cannot know if it changed anything, so `changed_when` decides from its output and `creates` skips it if a file exists; both keep `changed=0` honest.
+- **`become`**: run an Ansible task as root through sudo; everything else runs as the login user.
+- **ansible-lint profile**: a named strictness level; `production` is the strictest.
+- **deb822 source**: the modern apt repo file format (`/etc/apt/sources.list.d/*.sources`), one block of `URIs`, `Suites`, `Components`, `Signed-By`.
+- **apt signing key**: the publisher key tied to a repo; apt refuses packages it did not sign.
+- **apt version pin (`pkg=version`)**: installs that exact package version, so a rebuild does not silently pick up a newer one.
+- **`docker` group**: members can use the Docker socket without sudo, which is effectively root on the machine; group changes apply at the next login.
+- **Checksum pin**: a committed sha256 of a download, so a changed or tampered file fails the install.

@@ -1,0 +1,16 @@
+# Clone once, then leave it alone: the user edits this checkout, and a playbook
+# run must not fail on or overwrite local changes.
+- name: Clone the dotfiles repo
+  ansible.builtin.git:
+    repo: "{{ dev_workstation_dotfiles_repo }}"
+    dest: "{{ dev_workstation_dotfiles_dest }}"
+    version: "{{ dev_workstation_dotfiles_version }}"
+    update: false
+
+# The install.sh contract is in ADR 0009.
+- name: Run the dotfiles installer
+  ansible.builtin.command:
+    cmd: ./install.sh
+    chdir: "{{ dev_workstation_dotfiles_dest }}"
+  register: dev_workstation_dotfiles_install
+  changed_when: "'DOTFILES_CHANGED' in dev_workstation_dotfiles_install.stdout"

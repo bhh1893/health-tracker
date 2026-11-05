@@ -8,3 +8,12 @@ rules:
   line-length:
     max: 120
   document-start: disable
+  # The rest are required by ansible-lint, which refuses a looser config.
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: false
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true

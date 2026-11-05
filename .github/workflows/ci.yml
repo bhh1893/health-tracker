@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       yaml: ${{ steps.filter.outputs.yaml }}
+      ansible: ${{ steps.filter.outputs.ansible }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -29,6 +30,10 @@ jobs:
             yaml:
               - '**/*.yml'
               - '**/*.yaml'
+            ansible:
+              - 'iac/ansible/**'
+              - '.ansible-lint'
+              - '.yamllint.yml'
 
   # Repo-wide, so no path filter: a secret can hide in any file (ADR 0015).
   gitleaks:
@@ -66,11 +71,23 @@ jobs:
       - run: pipx install yamllint==1.38.0
       - run: yamllint --strict .
 
+  # No real VMs here: GitHub runners cannot run VirtualBox, so this is static
+  # analysis only (ADR 0004). Pins match the dev_workstation role defaults.
+  ansible-lint:
+    needs: changes
+    if: needs.changes.outputs.ansible == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: pipx install ansible-lint==26.10.1
+      - run: pipx inject ansible-lint ansible-core==2.20.1
+      - run: ansible-lint iac/ansible
+
   # The only required check. Always runs; passes when every job it waits on
   # passed or was skipped (ADR 0014).
   ci-gate:
     if: always()
-    needs: [changes, gitleaks, yamllint]
+    needs: [changes, gitleaks, yamllint, ansible-lint]
     runs-on: ubuntu-24.04
     steps:
       - name: Fail if any needed job failed or was cancelled
