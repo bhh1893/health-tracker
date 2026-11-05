@@ -1,0 +1,3 @@
+# Keeps the build context small and stops local state reaching the image.
+node_modules/
+dist/

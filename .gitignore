@@ -18,6 +18,7 @@ Thumbs.db
 
 # Tooling output.
 node_modules/
+dist/
 __pycache__/
 .venv/
 .vagrant/

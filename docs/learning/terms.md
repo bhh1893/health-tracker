@@ -278,6 +278,16 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Router advertisement (RA)**: how an IPv6 router announces itself; hosts that accept it gain an address and a default route, with no DHCP involved.
 - **SSH drop-in**: a file in `/etc/ssh/sshd_config.d/`; for most settings sshd keeps the first value it reads, so name order decides who wins.
 - **kubeadm preflight**: kubeadm's own checks that a machine is ready to join a cluster; `kubeadm init phase preflight --dry-run` runs them alone.
+- **`package-lock.json` / `npm ci`**: the lockfile records the exact version of every direct and indirect dependency; `npm ci` installs precisely that and fails if it disagrees with `package.json`.
+- **`engines`**: the `package.json` field naming the Node versions a project supports; `engine-strict` in `.npmrc` turns a mismatch into a failed install.
+- **Content hash**: a fingerprint of a file's bytes put in its name (`index-CZaudM2M.js`), so new content means a new URL and old URLs can be cached forever.
+- **`Cache-Control: no-cache`**: the browser may store the file but must ask the server if it changed before using it; despite the name, this is not `no-store`.
+- **`try_files`**: nginx tries each path in order and serves the first that exists; the last entry is the fallback, a URI or a status such as `=404`.
+- **`tsc --noEmit`**: runs the TypeScript compiler as a checker only; Vite strips types without checking them, so this is the only step that catches type errors.
+- **jsdom**: a simulated browser DOM in Node, so component tests run without a real browser.
+- **Vitest / React Testing Library**: Vite's test runner, and helpers that find elements the way a user does (by role and name), not by internals.
+- **`DataView`**: reads and writes numbers at byte offsets in a buffer, big-endian by default; used to lay out the UUIDv7 bytes.
+- **`npm audit`**: checks installed packages against known advisories; `--omit=dev` limits it to what ships to users.
 - **`kubeadm init` / `join`**: `init` creates the control plane (certificates, API server, etcd) on one node; `join` connects another node's kubelet to it.
 - **kubeconfig**: a file holding a cluster's address and a credential; `kubectl` and Helm read `~/.kube/config`. The admin one is full control of the cluster.
 - **CNI (Container Network Interface)**: the plugin standard that gives pods their IPs and connectivity; nodes stay NotReady until one is installed. Cilium is ours.
