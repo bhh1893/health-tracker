@@ -20,7 +20,7 @@ Vagrant does only what Terraform plus cloud-init will do in a cloud: create the 
 - **Ansible stops at:** all nodes Ready with Cilium healthy. cert-manager, local-path-provisioner, any GitOps agent and apps belong to CD.
 - **Idempotency:** modules over `shell`; init guarded by `/etc/kubernetes/admin.conf`, join by `/etc/kubernetes/kubelet.conf`. Contract: a second consecutive run reports `changed=0`.
 - **Updates:** unattended security updates stay on; containerd, kubelet, kubeadm, kubectl are `apt-mark hold`. Changing the Kubernetes version in v1 means a rebuild, not `kubeadm upgrade`.
-- **One-command rebuild:** `iac/rebuild-cluster.ps1` on Windows destroys and recreates the 3 nodes, clears their host keys, runs the playbook twice over `ssh dev` (failing if the second run changes anything), then waits for all nodes Ready and Cilium healthy, exiting non-zero otherwise. The dev VM is never touched.
+- **One-command rebuild:** `iac/rebuild-cluster.ps1` on Windows destroys and recreates the 3 nodes, clears their host keys, runs the playbook twice over `ssh dev` (failing if the second run changes anything), then waits for all nodes Ready and Cilium healthy, exiting non-zero otherwise. Ansible runs from `~/rebuild-checkout`, a detached worktree on the dev VM set to `origin/main` (or `-Ref`), because the working checkout can be on any branch with any edits, and a rebuild must test what is committed. The dev VM is never rebuilt.
 - **Testing:** CI runs `ansible-lint` and `yamllint` on `iac/ansible/**`. GitHub-hosted runners cannot run VirtualBox, so the real test is the rebuild script on real VMs. No Molecule.
 
 ## Considered Options
@@ -38,6 +38,6 @@ Vagrant does only what Terraform plus cloud-init will do in a cloud: create the 
 ## Consequences
 
 - "Rebuild all VMs" in the v1 definition of done means the 3 cluster nodes; the dev VM is rebuilt deliberately and separately.
-- Two checkouts exist: one on Windows (Vagrant only) and the working one on the dev VM.
+- Three checkouts exist: one on Windows (Vagrant only), the working one on the dev VM, and the rebuild worktree on the dev VM, which nobody edits. The Vagrantfile comes from the Windows checkout, so a rebuild uses whatever is checked out there.
 - The ops private key is a long-lived credential on the dev VM; losing the dev VM means regenerating it and re-running `vagrant up --provision`.
 - In a cloud, Ansible needs a network path to private VMs (bastion or similar); that is a v2 decision.
