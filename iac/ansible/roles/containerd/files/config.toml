@@ -1,0 +1,9 @@
+# Managed by Ansible. Only what differs from containerd's defaults.
+version = 3
+
+[plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runc]
+  runtime_type = 'io.containerd.runc.v2'
+
+[plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runc.options]
+  # Match the kubelet: two managers of one cgroup tree end up disagreeing.
+  SystemdCgroup = true

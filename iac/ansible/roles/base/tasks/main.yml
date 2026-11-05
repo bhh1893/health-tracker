@@ -1,0 +1,6 @@
+# SSH first: closing password login is the most urgent change on a LAN node.
+- name: SSH
+  ansible.builtin.import_tasks: ssh.yml
+
+- name: Kubernetes prerequisites
+  ansible.builtin.import_tasks: kernel.yml

@@ -1,0 +1,33 @@
+- name: Install what the repo task needs
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - python3-debian  # needed by deb822_repository below
+    state: present
+    lock_timeout: 300
+
+- name: Add the Kubernetes apt repo
+  ansible.builtin.deb822_repository:
+    name: kubernetes
+    types: deb
+    uris: "{{ kube_packages_repo }}"
+    suites: /  # a flat repo: no suite name, and so no components
+    signed_by: "{{ kube_packages_repo }}Release.key"
+  notify: Refresh apt cache
+
+# Run the refresh now: the next task needs the new repo's package lists.
+- name: Apply pending apt cache refresh
+  ansible.builtin.meta: flush_handlers
+
+- name: Install the pinned Kubernetes packages
+  ansible.builtin.apt:
+    name: "{{ kube_packages_names | map('regex_replace', '$', '=' ~ kube_packages_version) | list }}"
+    state: present
+    lock_timeout: 300
+
+# v1 changes Kubernetes by rebuilding, never by upgrading in place (ADR 0004).
+- name: Hold the Kubernetes packages at the pinned version
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: "{{ kube_packages_names }}"
