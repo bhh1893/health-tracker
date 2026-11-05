@@ -1,6 +1,6 @@
-# Prepare the cluster nodes
+# Build the cluster
 
-Takes the three nodes from freshly created to "OS ready for kubeadm" (ADR 0004). Step 1 runs on Windows, the rest on the dev VM.
+Takes the three nodes from freshly created to "all Ready with Cilium healthy" (ADR 0004). Step 1 runs on Windows, the rest on the dev VM. The dev VM needs the `cilium` CLI: if it is missing, re-run `dev.yml` first (see `dev-vm.md`).
 
 ## 1. Create the VMs (Windows)
 
@@ -47,10 +47,29 @@ Each worker must have one default route per IP version, both on `enp0s3`:
 ssh -i ~/.ssh/health-tracker-ops vagrant@192.168.56.11 'ip route show default; ip -6 route show default'
 ```
 
-kubeadm's own checks must pass:
-
-```
-ssh -i ~/.ssh/health-tracker-ops vagrant@192.168.56.10 sudo kubeadm init phase preflight --dry-run
-```
-
 Workers' LAN addresses come from the router and can change on reboot. Nothing depends on them.
+
+All nodes must be `Ready`, on `192.168.56.x` addresses, and Cilium must report `OK`:
+
+```
+kubectl get nodes -o wide
+cilium status
+```
+
+WireGuard must cover all nodes:
+
+```
+cilium encryption status
+```
+
+This must print `Encryption: Wireguard (3/3 nodes)`.
+
+## What to expect when a worker dies
+
+Measured on 2026-11-05 by powering off the worker announcing `192.168.0.250`, once each way, with a backend pod on each worker. Windows probed every second; the phone recovered by itself in roughly the same 20s:
+
+- About 20s: the IP moves to the other worker (the 15s lease expires, then a new election).
+- Until about 50s: some requests still fail, which fits the dead pod staying a backend until the node goes `NotReady`.
+- After that: all requests succeed.
+
+A worker that comes back rejoins by itself, and Cilium reports `OK` within a few minutes. Its `cilium status` shows errors until then.

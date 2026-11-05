@@ -1,0 +1,39 @@
+# Without this the kubelet picks the NAT NIC's 10.0.2.15, which every node shares.
+# Set here, not in a kubeadm JoinConfiguration: `kubeadm join --config` needs the
+# token in that file, and the token must never touch the disk (ADR 0004).
+- name: Pin the kubelet to the node IP
+  ansible.builtin.copy:
+    content: "KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}\n"
+    dest: /etc/default/kubelet
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Check whether this node has joined
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: worker_kubelet_conf
+
+# Guarded so a re-run mints no tokens. It lives only in this run's memory.
+- name: Join the cluster
+  when: not worker_kubelet_conf.stat.exists
+  block:
+    - name: Create a short-lived join command
+      ansible.builtin.command:
+        argv:
+          - kubeadm
+          - token
+          - create
+          - --ttl
+          - 15m
+          - --print-join-command
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      changed_when: true
+      register: worker_join_command
+      no_log: true
+
+    - name: Run the join command
+      ansible.builtin.command:
+        cmd: "{{ worker_join_command.stdout }}"
+        creates: /etc/kubernetes/kubelet.conf
+      no_log: true

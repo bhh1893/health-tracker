@@ -288,6 +288,17 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Vitest / React Testing Library**: Vite's test runner, and helpers that find elements the way a user does (by role and name), not by internals.
 - **`DataView`**: reads and writes numbers at byte offsets in a buffer, big-endian by default; used to lay out the UUIDv7 bytes.
 - **`npm audit`**: checks installed packages against known advisories; `--omit=dev` limits it to what ships to users.
+- **`kubeadm init` / `join`**: `init` creates the control plane (certificates, API server, etcd) on one node; `join` connects another node's kubelet to it.
+- **kubeconfig**: a file holding a cluster's address and a credential; `kubectl` and Helm read `~/.kube/config`. The admin one is full control of the cluster.
+- **CNI (Container Network Interface)**: the plugin standard that gives pods their IPs and connectivity; nodes stay NotReady until one is installed. Cilium is ours.
+- **kube-proxy**: the default per-node program that implements Services, usually with iptables rules.
+- **eBPF**: small verified programs loaded into the running Linux kernel, here to route and load-balance packets without a userspace hop.
+- **kube-proxy replacement**: Cilium implementing Services in eBPF, so kube-proxy is not installed.
+- **IPAM (IP Address Management)**: how pods get IPs. `ipam.mode: kubernetes` uses the per-node `podCIDR` slices cut from kubeadm's `podSubnet`.
+- **ARP**: how a device on a LAN asks "who has this IP?" and learns the MAC address to send to.
+- **Gratuitous ARP**: an unprompted ARP announcement that tells neighbours an IP has moved to a new MAC.
+- **Lease (Kubernetes)**: a small API object used for leader election; the node holding a Service's lease answers ARP for its IP.
+- **Server-side apply**: `kubectl apply --server-side`: the API server merges the change and tracks field ownership, with no size-limited annotation on the object.
 - **Expression index**: an index on a computed value such as `lower(name)`; a query uses it only when it repeats the same expression.
 - **Covering index**: an index that also stores extra columns (`INCLUDE (meal_id)`), so a query can be answered without visiting the table.
 - **Trusted extension**: a Postgres extension that a non-superuser with `CREATE` on the database may install; `pg_trgm` is one.
