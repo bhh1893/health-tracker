@@ -9,7 +9,7 @@ Postgres runs inside the Kubernetes cluster, managed by the CloudNativePG (CNPG)
 ## Shape
 
 - **Operator:** CNPG installed with Helm from `k8s/platform/cnpg/` into namespace `cnpg-system`, by CD (ADR 0004: Ansible stops at Cilium).
-- **Cluster:** `Cluster` named `pg` in the app namespace, next to `api`, because a pod can only read Secrets from its own namespace. `bootstrap.initdb` creates database `health` owned by role `app`. A second role, `api_rw`, and both passwords are managed as in ADR 0015.
+- **Cluster:** `Cluster` named `pg` in the app namespace (`health-tracker`), next to `api`, because a pod can only read Secrets from its own namespace. `bootstrap.initdb` creates database `health` owned by role `app`. A second role, `api_rw`, and both passwords are managed as in ADR 0015.
 - **Version:** Postgres major 18 pinned (ADR 0002 needs native `uuidv7()`). Minor updates by image tag bump; CNPG rolls the replica, then switches over the primary. A major upgrade is a planned event, method chosen when it happens.
 - **Instances:** 2, a primary and a streaming replica, with required pod anti-affinity so they sit on different workers. CNPG fails over automatically. The replica is for availability (drain a worker without downtime), not durability: it copies mistakes instantly.
 - **Storage:** `local-path` StorageClass, one 5 Gi volume per instance holding data and WAL together. A separate WAL volume would sit on the same virtual disk and gain nothing. local-path cannot expand volumes, so resizing means a restore.

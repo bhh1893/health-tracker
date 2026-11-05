@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Draws the API token as a QR code to scan with the phone, then paste into the
+# SPA's "enter secret" screen. The one script allowed to print a secret (ADR 0015).
+set -euo pipefail
+
+token_file="$HOME/.config/health-tracker/api-token"
+
+# Run by hand only. Output captured by a pipe or by Claude is not a terminal.
+if [[ ! -t 1 ]]; then
+  echo "show-token: refusing to print the token anywhere but a terminal" >&2
+  exit 1
+fi
+
+qrencode -t ANSIUTF8 <"$token_file"

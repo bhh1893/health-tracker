@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(~/.config/health-tracker/**)",
+      "Bash(*.config/health-tracker*)",
+      "Bash(kubectl *get*secret*)"
+    ]
+  }
+}
