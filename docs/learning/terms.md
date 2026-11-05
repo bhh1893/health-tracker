@@ -58,7 +58,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **cloud-init**: the standard first-boot hook on cloud VMs that injects SSH keys and runs a short bootstrap script.
 - **kubeadm join token**: a short-lived bearer token a new node presents to the control plane to join the cluster.
 - **`StrictHostKeyChecking=accept-new`**: SSH trusts a host's key the first time it is seen and refuses if that key later changes.
-- **`apt-mark hold`**: pins an installed Debian/Ubuntu package so automatic or manual upgrades skip it.
+- **`apt-mark hold`**: pins an installed Debian/Ubuntu package so automatic or manual upgrades skip it; `dpkg_selections` is the Ansible way to set it.
 - **Kubespray**: the Kubernetes SIGs Ansible project that installs production kubeadm clusters; highly configurable.
 - **Molecule**: a framework for testing Ansible roles in throwaway containers or VMs.
 - **StatefulSet**: a Kubernetes workload whose pods keep a stable name and their own volume across restarts.
@@ -239,7 +239,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`private_network` / `public_network`**: Vagrant's names for a VirtualBox host-only NIC and a bridged NIC.
 - **Default route**: where a machine sends traffic for any address it has no more specific route to; normally there should be exactly one.
 - **Route metric**: the priority of a route, lower wins; two default routes with equal metrics leave the choice to the order they were added.
-- **Ansible inventory**: the file listing hosts, their groups and how to reach them; a play's `hosts:` names a group from it.
 - **`ansible.cfg`**: Ansible's settings file, read from the directory you run in; here it names the inventory and SSH options.
 - **Ansible collection**: a versioned package of modules from Ansible Galaxy, pinned in `requirements.yml`; `community.general.modprobe` comes from one.
 - **`reset_connection`**: closes Ansible's open SSH connection to a host, so the next task connects fresh.
@@ -255,7 +254,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **containerd**: the daemon that pulls images and runs containers; Docker is built on it, but Kubernetes talks to it directly and needs nothing from Docker.
 - **CRI (Container Runtime Interface)**: the API the kubelet uses to talk to a runtime such as containerd.
 - **runc**: the small program containerd calls to actually start a container process.
-- **`apt-mark hold`**: stops apt, including unattended upgrades, changing a package; `dpkg_selections` is the Ansible way to set it.
 - **Netplan**: Ubuntu's network config layer; YAML in `/etc/netplan/`, merged in name order, rendered for systemd-networkd.
 - **Router advertisement (RA)**: how an IPv6 router announces itself; hosts that accept it gain an address and a default route, with no DHCP involved.
 - **SSH drop-in**: a file in `/etc/ssh/sshd_config.d/`; for most settings sshd keeps the first value it reads, so name order decides who wins.
