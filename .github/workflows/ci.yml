@@ -80,8 +80,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: pipx install ansible-lint==26.10.1
-      - run: pipx inject --include-apps ansible-lint ansible-core==2.20.1
-      - run: ansible-galaxy collection install -r iac/ansible/requirements.yml
+      # --force: ansible-lint already pulled in an ansible-core, and without it
+      # pipx keeps that one and ignores this pin.
+      - run: pipx inject --force --include-apps ansible-lint ansible-core==2.20.1
+      # --force: the runner has its own Ansible, and a collection found there
+      # would be skipped, yet ansible-lint's environment cannot see it.
+      - run: ansible-galaxy collection install --force -r iac/ansible/requirements.yml
       - run: ansible-lint iac/ansible
 
   # The only required check. Always runs; passes when every job it waits on
