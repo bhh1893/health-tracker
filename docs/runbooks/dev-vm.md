@@ -6,7 +6,7 @@ Destroys the dev VM and recreates it from git (ADR 0009). Steps 1 and 2 run on W
 
 > **Warning: `vagrant destroy` permanently deletes data that exists nowhere else.**
 >
-> - **MinIO database backups** run on this VM, so the bucket is lost (ADR 0011). Step 6 takes a new base backup.
+> - **Database backups** live in Garage on this VM, so the bucket is lost (ADR 0011). Step 6 takes a new base backup.
 > - **Generated secrets** in `~/.config/health-tracker/` are lost and replaced by new values (ADR 0015).
 > - **Unpushed commits** are lost. On the VM, run `git status` and `git log --branches --not --remotes` in every checkout, and push anything you need.
 
@@ -120,8 +120,9 @@ Skip this step if the cluster does not exist yet.
 cd ~/health-tracker
 ansible-playbook iac/ansible/dev.yml -e dotfiles_repo=git@github.com:bhh1893/dotfiles.git
 docker run --rm hello-world
+sudo garage status
 gh auth status
 git config user.email
 ```
 
-The playbook recap must show `changed=0`, Docker must print its hello message without `sudo`, `gh` must show you logged in, and git must print your email.
+The playbook recap must show `changed=0`, Docker must print its hello message without `sudo`, Garage must list one healthy node, `gh` must show you logged in, and git must print your email.

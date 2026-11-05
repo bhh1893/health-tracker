@@ -1,0 +1,20 @@
+# Managed by Ansible (iac/ansible/roles/garage). Holds no secrets.
+metadata_dir = "{{ garage_data_dir }}/meta"
+data_dir = "{{ garage_data_dir }}/data"
+
+# One node, so there is no second copy to repair from after a power cut. These
+# trade write speed, which backups do not need, for surviving an unclean stop.
+db_engine = "sqlite"
+metadata_fsync = true
+data_fsync = true
+metadata_auto_snapshot_interval = "6h"
+
+replication_factor = 1
+
+rpc_bind_addr = "127.0.0.1:{{ garage_rpc_port }}"
+rpc_public_addr = "127.0.0.1:{{ garage_rpc_port }}"
+rpc_secret_file = "{{ garage_rpc_secret_file }}"
+
+[s3_api]
+s3_region = "{{ garage_s3_region }}"
+api_bind_addr = "{{ garage_s3_host }}:{{ garage_s3_port }}"

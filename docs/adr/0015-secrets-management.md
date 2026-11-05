@@ -22,7 +22,7 @@ Every secret value is generated once on the dev VM into files outside the repo, 
   | `api-token` | Bearer token, at least 32 random bytes | nginx sidecar, as a mounted file (ADR 0010) |
   | `db-owner` | Role `app`: `username`, `password`, `DATABASE_URL` | Migration Job |
   | `db-api` | Role `api_rw`: `username`, `password`, `DATABASE_URL` | `api` |
-  | backup key | MinIO access key (ADR 0011) | CNPG Barman Cloud plugin |
+  | backup key | Garage access key (ADR 0011) | CNPG Barman Cloud plugin |
 
   The GitHub key and ops SSH key are unchanged (ADR 0009, ADR 0004); they never enter the cluster.
 - **`apply-secrets` (bash, `iac/scripts/`, run on the dev VM):** creates the namespace if needed and applies every Secret. Safe to re-run. Values go through stdin, never command-line arguments, which `ps` can read. It is the first step of `restore-data`, so `rebuild-cluster.ps1` gets it too and no path can forget it. If `api` starts first it waits in `CreateContainerConfigError` and recovers by itself.

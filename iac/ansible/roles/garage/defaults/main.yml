@@ -1,0 +1,23 @@
+# S3-compatible backup target on the dev VM (ADR 0011).
+# Garage publishes no checksum file, so this sha256 is one we computed: it proves
+# the binary has not changed since review, not that the publisher built it.
+garage_version: "2.5.0"
+garage_sha256: 2ff667286217cd73ebcb1c03af993822365000441dfe31a80cb64c5189a9dea8
+garage_release: "https://garagehq.deuxfleurs.fr/_releases/v{{ garage_version }}/x86_64-unknown-linux-musl/garage"
+
+garage_data_dir: /var/lib/garage
+garage_rpc_secret_file: "{{ garage_data_dir }}/rpc_secret"
+
+# Host-only network: nodes can reach this address, Wi-Fi clients cannot.
+garage_s3_host: 192.168.56.20
+garage_s3_port: 3900
+garage_s3_region: garage
+garage_rpc_port: 3901  # the CLI talks to the daemon here; loopback only
+
+# Layout capacity is a share of the node, not a quota. The disk is the real limit.
+garage_capacity: 15G
+garage_zone: dev
+
+garage_bucket: backups
+garage_key_name: cnpg-backup
+garage_env_dir: "{{ ansible_facts['user_dir'] }}/.config/health-tracker"

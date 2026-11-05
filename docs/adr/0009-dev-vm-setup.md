@@ -10,7 +10,7 @@ The Ubuntu dev VM (ADR 0004) is the daily workstation. Claude Code, the repo che
 
 - **Machine:** `iac/vagrant/dev/`, Ubuntu 26.04, host-only `192.168.56.20`, **4 vCPU, 4 GB** (raise to 6 GB only if builds hit swap). Synced folders off.
 - **Vagrant bootstrap** (the cloud-init equivalent, amends ADR 0004): install `ansible-core`, place the ops private key, and generate a per-machine GitHub ed25519 key if none exists. Nothing else.
-- **Playbook:** `iac/ansible/dev.yml`, one role `dev_workstation`, `connection: local` (Ansible runs the tasks on the machine it is invoked on, no SSH). Same `ansible-lint` / `yamllint` CI and the same `changed=0` contract as the cluster roles.
+- **Playbook:** `iac/ansible/dev.yml`, one role `dev_workstation`, `connection: local` (Ansible runs the tasks on the machine it is invoked on, no SSH). ADR 0011 adds a second role, `garage`. Same `ansible-lint` / `yamllint` CI and the same `changed=0` contract as the cluster roles.
 - **Toolchain (project tools only), every version pinned:**
   - Python via `uv`, version from a committed `.python-version`; lint CLIs (`ansible-lint`, `yamllint`) via `uv tool install`. No system pip.
   - Node LTS from the NodeSource apt repo, one pinned major matching `engines` in `services/web/package.json`.
@@ -24,7 +24,7 @@ The Ubuntu dev VM (ADR 0004) is the daily workstation. Claude Code, the repo che
   - needs Node (`npx`) for skill restore, so `dev.yml` runs it after installing Node.
 - **GitHub access:** the per-machine key from the bootstrap, registered from Windows with `gh ssh-key add` (titled "health-tracker dev VM") so it can be revoked alone; `gh auth login` by hand.
 - **`ssh dev` alias on Windows:** `HostName 192.168.56.20`, user `vagrant`, the Vagrant-generated key under `iac/vagrant/dev/.vagrant/`, `StrictHostKeyChecking accept-new`. Dev servers bind `0.0.0.0` and are browsed at `http://192.168.56.20:<port>`; no port forwarding.
-- **Almost no unique state:** destroying the dev VM loses unpushed commits **and the database backups**, because MinIO runs here (amended by ADR 0011; the runbook warns before `vagrant destroy`). It also loses the generated secrets in `~/.config/health-tracker/`, which are replaced by new values (ADR 0015). Everything else is rebuildable. Project knowledge lives in the repo (CLAUDE.md, ADRs, terms), not Claude's per-machine memory; the ops key's source of truth is Windows (`~/.ssh/health-tracker-ops`); the kubeconfig comes from Ansible.
+- **Almost no unique state:** destroying the dev VM loses unpushed commits **and the database backups**, because Garage runs here (amended by ADR 0011; the runbook warns before `vagrant destroy`). It also loses the generated secrets in `~/.config/health-tracker/`, which are replaced by new values (ADR 0015). Everything else is rebuildable. Project knowledge lives in the repo (CLAUDE.md, ADRs, terms), not Claude's per-machine memory; the ops key's source of truth is Windows (`~/.ssh/health-tracker-ops`); the kubeconfig comes from Ansible.
 - **Rebuild:** a runbook, `docs/runbooks/dev-vm.md`, no script:
   1. `ssh-keygen -R 192.168.56.20`, then `vagrant destroy -f && vagrant up` in `iac/vagrant/dev/`.
   2. On Windows: `ssh dev cat ~/.ssh/id_ed25519.pub | gh ssh-key add - --title "health-tracker dev VM"` (delete the old VM's key on GitHub).
