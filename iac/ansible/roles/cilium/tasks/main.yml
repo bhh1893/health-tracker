@@ -1,0 +1,76 @@
+- name: Load the pinned versions
+  ansible.builtin.include_vars:
+    file: "{{ cilium_platform_dir }}/versions.yml"
+
+- name: Read the installed Gateway API version
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - get
+      - crd
+      - gateways.gateway.networking.k8s.io
+      - --ignore-not-found
+      - --output=jsonpath={.metadata.annotations.gateway\.networking\.k8s\.io/bundle-version}
+  changed_when: false
+  register: cilium_gateway_api_installed
+
+# Before Cilium: the operator checks for these CRDs when it starts, and leaves the
+# Gateway controller off if they are missing. --server-side because they are too
+# big for the annotation a plain apply writes. It also always reports a change,
+# hence comparing versions first.
+- name: Install the Gateway API CRDs
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - apply
+      - --server-side
+      - --filename
+      - "{{ cilium_gateway_api_release }}/{{ cilium_gateway_api_version }}/standard-install.yaml"
+  changed_when: true
+  when: cilium_gateway_api_installed.stdout != cilium_gateway_api_version
+
+- name: Install Cilium
+  kubernetes.core.helm:
+    name: cilium
+    chart_ref: cilium
+    chart_repo_url: "{{ cilium_chart_repo }}"
+    chart_version: "{{ cilium_chart_version }}"
+    release_namespace: kube-system
+    values_files:
+      - "{{ cilium_platform_dir }}/values.yaml"
+    wait: true
+    timeout: 10m0s
+
+# Retried because the operator registers these CRDs shortly after it starts.
+- name: Apply the LoadBalancer pool and L2 announcement policy
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - apply
+      - --filename
+      - "{{ cilium_platform_dir }}/l2-announcement.yaml"
+  register: cilium_l2_apply
+  changed_when: cilium_l2_apply.stdout_lines | reject('search', ' unchanged$') | list | length > 0
+  retries: 12
+  delay: 5
+  until: cilium_l2_apply.rc == 0
+
+- name: Wait for all nodes to be Ready
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - wait
+      - --for=condition=Ready
+      - nodes
+      - --all
+      - --timeout=5m
+  changed_when: false
+
+- name: Wait for Cilium to be healthy
+  ansible.builtin.command:
+    argv:
+      - cilium
+      - status
+      - --wait
+      - --wait-duration=5m
+  changed_when: false

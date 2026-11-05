@@ -5,6 +5,9 @@
 - name: Python toolchain
   ansible.builtin.import_tasks: python.yml
 
+- name: Cilium CLI
+  ansible.builtin.import_tasks: cilium.yml
+
 - name: Claude Code
   ansible.builtin.import_tasks: claude.yml
 

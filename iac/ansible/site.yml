@@ -1,4 +1,4 @@
-# Takes the nodes to "OS ready for kubeadm" (ADR 0004). Run from iac/ansible:
+# Takes the nodes to "all Ready with Cilium healthy" (ADR 0004). Run from iac/ansible:
 #   ansible-playbook site.yml
 # base goes first: it closes password SSH, and workers are on the LAN.
 - name: Secure and prepare the OS
@@ -21,3 +21,23 @@
   roles:
     - role: containerd
     - role: kube_packages
+
+- name: Start the control plane
+  hosts: control_plane
+  become: true
+  roles:
+    - role: control_plane
+
+- name: Join the workers
+  hosts: workers
+  become: true
+  roles:
+    - role: worker
+
+# Runs on the dev VM itself: helm, kubectl and this repo are all here.
+- name: Install Cilium
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: cilium

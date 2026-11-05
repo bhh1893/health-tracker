@@ -1,0 +1,10 @@
+galaxy_info:
+  author: bhh1893
+  description: Cilium and the Gateway API CRDs, installed from the dev VM (ADR 0004, ADR 0010)
+  license: MIT
+  min_ansible_version: "2.20"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - resolute
+dependencies: []

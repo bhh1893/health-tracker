@@ -16,6 +16,7 @@ The Ubuntu dev VM (ADR 0004) is the daily workstation. Claude Code, the repo che
   - Node LTS from the NodeSource apt repo, one pinned major matching `engines` in `services/web/package.json`.
   - Docker Engine + buildx from Docker's apt repo; the user joins the `docker` group.
   - kubectl 1.36 from `pkgs.k8s.io` (same pin as the nodes), `helm`, `gh`, `git`.
+  - Cilium CLI from its GitHub release, checksum pinned like `uv`.
   - Claude Code from Anthropic's native installer, auto-updating, not pinned: a workstation tool, never in images or CI, and independent of the project's Node version.
   - Argo CD CLI and Terraform are added when their tickets decide them.
 - **Personal setup stays out of this repo.** `dev.yml` takes an optional `dotfiles_repo` variable; when set it clones that repo and runs its `install.sh`, which owns shell, editor, prompt, Claude global config and agent skills. The `install.sh` contract `dev.yml` relies on:

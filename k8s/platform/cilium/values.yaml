@@ -1,0 +1,30 @@
+# Only what differs from the chart defaults (ADR 0004, ADR 0010).
+
+# kubeadm skipped kube-proxy, so Cilium handles Services itself, in eBPF.
+kubeProxyReplacement: true
+
+# Nothing can route to the Service IP of the API server until Cilium is running,
+# so Cilium needs the real address. `auto` reads it from kubeadm's cluster-info
+# ConfigMap, which saves a third copy of the control plane IP.
+k8sServiceHost: auto
+
+# Hand out pod IPs from each node's slice of kubeadm's podSubnet. The default mode
+# ignores kubeadm and uses 10.0.0.0/8, which overlaps the NAT NIC's 10.0.2.0/24.
+ipam:
+  mode: kubernetes
+
+# Detection picks only the NICs holding the default route or the node IP, which
+# misses eth2, and L2 announcements work only on devices listed here. `eth+` is a
+# wildcard because the control plane has no eth2.
+devices: enp0s3,eth+
+
+l2announcements:
+  enabled: true
+
+gatewayAPI:
+  enabled: true
+
+# Encrypts pod traffic between nodes. Same-node traffic never leaves the machine.
+encryption:
+  enabled: true
+  type: wireguard

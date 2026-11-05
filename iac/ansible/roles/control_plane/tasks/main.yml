@@ -1,0 +1,42 @@
+- name: Write the kubeadm config
+  ansible.builtin.template:
+    src: kubeadm-config.yaml.j2
+    dest: "{{ control_plane_kubeadm_config }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Initialize the control plane
+  ansible.builtin.command:
+    argv:
+      - kubeadm
+      - init
+      - --config
+      - "{{ control_plane_kubeadm_config }}"
+    creates: /etc/kubernetes/admin.conf
+
+# Copied here, not at the very end, because the cilium role runs Helm from the
+# dev VM and needs it. slurp and copy rather than fetch: fetch cannot set a mode,
+# and this file is full cluster admin.
+- name: Read the admin kubeconfig
+  ansible.builtin.slurp:
+    src: /etc/kubernetes/admin.conf
+  register: control_plane_admin_conf
+  no_log: true
+
+- name: Create the kubeconfig directory on the dev VM
+  ansible.builtin.file:
+    path: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+
+- name: Copy the admin kubeconfig to the dev VM
+  ansible.builtin.copy:
+    content: "{{ control_plane_admin_conf.content | b64decode }}"
+    dest: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube/config"
+    mode: "0600"
+  delegate_to: localhost
+  become: false
+  no_log: true

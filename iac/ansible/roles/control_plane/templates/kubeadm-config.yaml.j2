@@ -1,0 +1,20 @@
+# Managed by Ansible. Read once, by `kubeadm init`: editing this on a running
+# cluster changes nothing, so a change here means a rebuild (ADR 0004).
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: {{ node_ip }}
+nodeRegistration:
+  kubeletExtraArgs:
+    - name: node-ip
+      value: {{ node_ip }}
+# Cilium replaces kube-proxy.
+skipPhases:
+  - addon/kube-proxy
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+kubernetesVersion: {{ control_plane_kubernetes_version }}
+networking:
+  podSubnet: {{ control_plane_pod_subnet }}
+  serviceSubnet: {{ control_plane_service_subnet }}

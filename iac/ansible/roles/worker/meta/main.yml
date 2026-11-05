@@ -1,0 +1,10 @@
+galaxy_info:
+  author: bhh1893
+  description: Joins the node to the cluster; the join command stays in memory (ADR 0004)
+  license: MIT
+  min_ansible_version: "2.20"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - resolute
+dependencies: []

@@ -1,0 +1,4 @@
+# Loaded by the Ansible cilium role. Read the upgrade guide before bumping either.
+cilium_chart_repo: https://helm.cilium.io
+cilium_chart_version: 1.20.4  # at or above the CVE floor in ADR 0010, tested on Kubernetes 1.36
+cilium_gateway_api_version: v1.6.3  # the version Cilium 1.20.4 builds against

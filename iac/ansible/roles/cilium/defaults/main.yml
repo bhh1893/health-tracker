@@ -1,0 +1,3 @@
+# Relative to iac/ansible, so it resolves in whichever checkout runs the playbook.
+cilium_platform_dir: "{{ playbook_dir }}/../../k8s/platform/cilium"
+cilium_gateway_api_release: https://github.com/kubernetes-sigs/gateway-api/releases/download
