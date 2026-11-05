@@ -278,3 +278,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Router advertisement (RA)**: how an IPv6 router announces itself; hosts that accept it gain an address and a default route, with no DHCP involved.
 - **SSH drop-in**: a file in `/etc/ssh/sshd_config.d/`; for most settings sshd keeps the first value it reads, so name order decides who wins.
 - **kubeadm preflight**: kubeadm's own checks that a machine is ready to join a cluster; `kubeadm init phase preflight --dry-run` runs them alone.
+- **Expression index**: an index on a computed value such as `lower(name)`; a query uses it only when it repeats the same expression.
+- **Covering index**: an index that also stores extra columns (`INCLUDE (meal_id)`), so a query can be answered without visiting the table.
+- **Trusted extension**: a Postgres extension that a non-superuser with `CREATE` on the database may install; `pg_trgm` is one.
+- **SQLSTATE**: the five-character code Postgres returns with every error; stable, so code branches on it rather than on message text (`23505` unique, `23514` check, `23503` foreign key, `23001` `ON DELETE RESTRICT`).
