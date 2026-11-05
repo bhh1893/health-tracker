@@ -38,7 +38,7 @@ The Ubuntu dev VM (ADR 0004) is the daily workstation. Claude Code, the repo che
 - **Claude Code on Windows driving the VM over `ssh dev '...'`.** Rejected: every command crosses SSH, and file tools need an SSHFS mount with its latency and file-watching quirks; the agent would work on Windows while the code runs on Linux.
 - **A bash script instead of Ansible.** Rejected: not idempotent without hand-written guards, and a second tool next to the one already being learned.
 - **Copying the Windows `id_github` key, or SSH agent forwarding.** Rejected: a copied key cannot be revoked per machine; a forwarded agent disappears when the SSH session ends, breaking long tmux and Claude sessions.
-- **Cloning over HTTPS with a token.** Rejected: the repo is private, so this only moves the bootstrap secret; a per-machine key is revocable and needs no stored token.
+- **Cloning over HTTPS with a token.** Rejected: the VM must push, so this only moves the bootstrap secret; a per-machine key is revocable and needs no stored token. (Amended by ADR 0017: the repo is now public, so cloning needs no credential, but pushing still does.)
 - **Claude Code from npm.** Rejected: couples the agent to the project's Node version.
 - **A `rebuild-dev.ps1` script.** Deferred: the dev VM is rebuilt rarely and two steps are interactive logins; script it if two rebuilds prove the runbook tedious.
 - **Dotfiles installed by `dev.yml` itself.** Rejected: puts personal preferences in the project; another developer could not use the playbook as-is.

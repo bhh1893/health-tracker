@@ -181,9 +181,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`managed.roles` (CNPG)**: Postgres roles declared on the `Cluster` itself, which the operator creates and regularly compares with the database.
 - **`DatabaseRole` (CNPG)**: a separate resource for one role, applied only when it or its Secret changes.
 - **`cnpg.io/reload` label**: marks a Secret so CNPG applies changes to it immediately rather than at a later reconciliation.
-- **gitleaks**: a scanner that searches commits for strings that look like credentials.
 - **Guardrail vs boundary**: a guardrail stops accidents but can be stepped around; a boundary is enforced, such as by a separate user account.
-- **GitOps**: the cluster's desired state lives in git, and an in-cluster agent continuously makes the cluster match it.
 - **Push vs pull deploy**: push means an outside system runs `kubectl apply` against the cluster; pull means an agent inside the cluster fetches changes, so no outside system needs cluster credentials.
 - **Argo CD**: the GitOps agent that watches a git path and applies it to the cluster.
 - **Argo CD `Application`**: one Argo resource saying "keep this git path synced to this namespace".
@@ -216,7 +214,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`fetch-depth: 0` / `--log-opts`**: `fetch-depth: 0` makes the checkout download all history and branches; `--log-opts` tells gitleaks which commit range (a `git log` argument) to scan, so a PR is judged only on its own commits.
 - **Vagrant**: a CLI that creates and destroys VMs from a committed text file, so a machine can be rebuilt instead of hand-maintained.
 - **Vagrantfile**: the Ruby file describing one or more VMs (image, CPU, RAM, network); Vagrant commands act on the one in the current folder.
-- **Vagrant box**: the prebuilt VM image a machine starts from; pinning `box_version` means every rebuild starts from the same bytes.
+- **Vagrant box**: the prebuilt VM image a machine starts from; pinning `box_version` keeps rebuilds on one published release, though only a checksum would prove the bytes match.
 - **Vagrant provisioner**: a step Vagrant runs inside the VM after boot (upload a file, run a script); by default only on the first `vagrant up`.
 - **Synced folder**: a host folder mounted inside the VM; turned off here so the VM depends on nothing from the host.
 - **`.vagrant/`**: Vagrant's per-folder state, linking the folder to its VM and holding that VM's generated SSH private key; never committed.
