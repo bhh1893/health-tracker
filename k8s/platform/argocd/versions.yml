@@ -1,0 +1,3 @@
+# Loaded by the Ansible platform role. Chart 10.14.0 ships Argo CD v3.6.1.
+argocd_chart_repo: https://argoproj.github.io/argo-helm
+argocd_chart_version: 10.14.0
