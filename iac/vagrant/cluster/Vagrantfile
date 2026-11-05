@@ -1,0 +1,58 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# The three Kubernetes nodes. Separate from iac/vagrant/dev so that destroying
+# the cluster can never destroy the workstation (ADR 0004).
+#
+# Vagrant only creates the machines, the job Terraform plus cloud-init will do in
+# a cloud. Everything from the OS up belongs to Ansible, run from the dev VM.
+
+# VirtualBox's name for the host's Wi-Fi adapter (`VBoxManage list bridgedifs`).
+# Without an exact match, `vagrant up` stops to ask, which breaks unattended rebuilds.
+BRIDGE_ADAPTER = "Intel(R) Wi-Fi 6E AX211 160MHz"
+
+OPS_PUBLIC_KEY = File.read(File.expand_path("~/.ssh/health-tracker-ops.pub")).strip
+
+# These IPs are duplicated in the Ansible inventory on purpose (ADR 0004). Change
+# one, change the other: iac/ansible/inventories/vagrant/hosts.yml.
+NODES = [
+  { name: "k8s-cp-1",     ip: "192.168.56.10", memory: 3072, bridged: false },
+  { name: "k8s-worker-1", ip: "192.168.56.11", memory: 4096, bridged: true },
+  { name: "k8s-worker-2", ip: "192.168.56.12", memory: 4096, bridged: true },
+].freeze
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-26.04"
+  config.vm.box_version = "202606.01.0"
+
+  # Off on purpose: nodes depend on nothing from the host.
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # The only provisioner on these nodes, the equivalent of cloud-init's
+  # ssh_authorized_keys. Do not add to it: node setup belongs to Ansible.
+  # Appends rather than replaces, because Vagrant logs in with its own key.
+  config.vm.provision "shell", name: "ops-key", privileged: false, args: [OPS_PUBLIC_KEY], inline: <<~'SHELL'
+    grep -qxF "$1" ~/.ssh/authorized_keys || echo "$1" >> ~/.ssh/authorized_keys
+  SHELL
+
+  NODES.each do |node|
+    config.vm.define node[:name] do |machine|
+      machine.vm.hostname = node[:name]
+
+      # Host-only: all cluster and Ansible traffic. The kubelet pins to this IP.
+      machine.vm.network "private_network", ip: node[:ip]
+
+      # Bridged: puts workers on the home LAN so the phone can reach them. The
+      # address comes from the router's DHCP. Cilium announces the LoadBalancer
+      # pool (192.168.0.250-251) on this NIC itself, so Vagrant must not assign it.
+      machine.vm.network "public_network", bridge: BRIDGE_ADAPTER if node[:bridged]
+
+      machine.vm.provider "virtualbox" do |vb|
+        # Prefixed because VirtualBox names are global to the host.
+        vb.name = "health-tracker-#{node[:name]}"
+        vb.cpus = 2
+        vb.memory = node[:memory]
+      end
+    end
+  end
+end

@@ -10,7 +10,7 @@ Vagrant does only what Terraform plus cloud-init will do in a cloud: create the 
 
 - **Base OS:** Ubuntu 26.04 LTS (`bento/ubuntu-26.04`, box version pinned) on all VMs. containerd 2.x comes from Ubuntu's own archive; kubeadm, kubelet, kubectl come from `pkgs.k8s.io`, pinned to 1.36.
 - **Two Vagrantfiles:** `iac/vagrant/cluster/` (3 nodes) and `iac/vagrant/dev/` (dev VM), so destroying the cluster can never destroy the workstation. Synced folders off. Amends ADR 0003.
-- **No Vagrant provisioners on cluster nodes.** The dev VM gets one exception, a short shell bootstrap (the cloud-init equivalent): install `ansible-core` and place the ops private key. The rest of the dev VM belongs to Dev VM setup.
+- **One Vagrant provisioner on cluster nodes, and it only injects the key:** an inline shell step appends the ops public key, the equivalent of cloud-init's `ssh_authorized_keys`. Vagrant cannot add a key without a provisioner. The dev VM also gets a short shell bootstrap (the cloud-init equivalent): install `ansible-core` and place the ops private key. The rest of the dev VM belongs to Dev VM setup.
 - **SSH:** one ed25519 **ops key** generated once on the Windows host (`~/.ssh/health-tracker-ops`, outside the repo). Vagrant injects the public half on every node; only the dev VM holds the private half. Ansible's first role disables password SSH (bridged workers are visible on the LAN). `StrictHostKeyChecking=accept-new`; the rebuild script clears old host keys with `ssh-keygen -R` before recreating nodes.
 - **Inventory:** static, committed, one per environment: `iac/ansible/inventories/vagrant/hosts.yml`, groups `control_plane`, `workers`, `k8s_cluster`. The 3 node IPs are duplicated between the Vagrantfile and the inventory, on purpose.
 - **Roles (our own):** `base` (swap, kernel modules, sysctl, SSH hardening), `containerd`, `kube_packages`, `control_plane`, `worker`, `cilium`, composed by `site.yml`. Collection versions pinned in `requirements.yml`.
@@ -24,6 +24,7 @@ Vagrant does only what Terraform plus cloud-init will do in a cloud: create the 
 ## Considered Options
 
 - **Vagrant runs `ansible_local` and inline shell (the prior art).** Rejected: `vagrant up` becomes the only way to configure a node, node setup is duplicated across shell and Ansible, the join token lands in the host-shared `/vagrant` folder, and none of it carries to a cloud.
+- **Vagrant's `cloud_init` option for the key injection.** Rejected: the closest match to the cloud path, but it sits behind an experimental flag, and a one-line provisioner does the same job.
 - **Ubuntu 24.04 with containerd 2.x from Docker's apt repo or GitHub binaries.** Rejected: a third-party source to trust, pin and upgrade when 26.04 ships 2.x in its own archive.
 - **Kubespray.** Rejected for v1: production-grade, but thousands of variables hide init, join and CNI, which this project exists to teach.
 - **Vagrantfile parses the Ansible inventory for IPs.** Rejected: couples Vagrant to Ansible's file format to save three lines.

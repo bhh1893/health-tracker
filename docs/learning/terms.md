@@ -234,3 +234,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **apt version pin (`pkg=version`)**: installs that exact package version, so a rebuild does not silently pick up a newer one.
 - **`docker` group**: members can use the Docker socket without sudo, which is effectively root on the machine; group changes apply at the next login.
 - **Checksum pin**: a committed sha256 of a download, so a changed or tampered file fails the install.
+- **Terraform**: a tool that creates cloud resources (VMs, networks) from committed text files; it replaces Vagrant here when the project moves to a cloud.
+- **Multi-machine Vagrantfile**: one file defining several VMs with `config.vm.define`; settings outside the `define` block apply to all of them.
+- **`private_network` / `public_network`**: Vagrant's names for a VirtualBox host-only NIC and a bridged NIC.
+- **Default route**: where a machine sends traffic for any address it has no more specific route to; normally there should be exactly one.
+- **Route metric**: the priority of a route, lower wins; two default routes with equal metrics leave the choice to the order they were added.
