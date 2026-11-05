@@ -1,0 +1,31 @@
+# The kubelet refuses to start with swap on by default: memory limits and
+# eviction assume memory is real RAM.
+- name: Turn swap off
+  ansible.builtin.command: swapoff --all
+  changed_when: true
+  when: ansible_facts['swaptotal_mb'] > 0
+
+- name: Keep swap off after a reboot
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^\S+\s+\S+\s+swap\s'
+    state: absent
+
+- name: Load kernel modules now and at boot
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+    persistent: present
+  loop: "{{ base_kernel_modules }}"
+
+# After the modules: the net.bridge keys exist only once br_netfilter is loaded.
+- name: Set kernel parameters
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: "{{ base_sysctl_file }}"
+    state: present
+    sysctl_set: true
+  loop: "{{ base_sysctl_settings | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"

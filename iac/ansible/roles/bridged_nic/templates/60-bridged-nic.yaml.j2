@@ -1,0 +1,12 @@
+# Managed by Ansible. Netplan merges files in name order, so this adds to the
+# NIC that Vagrant defined in 50-vagrant.yaml. The NAT NIC keeps the only default
+# route; the LAN stays reachable through this NIC's own subnet route.
+network:
+  version: 2
+  ethernets:
+    {{ bridged_nic_interface }}:
+      dhcp4-overrides:
+        use-routes: false
+      # The IPv6 equivalent: router advertisements would add a second default
+      # route and a globally routable address that nothing here needs.
+      accept-ra: false

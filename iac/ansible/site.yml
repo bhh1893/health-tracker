@@ -1,0 +1,23 @@
+# Takes the nodes to "OS ready for kubeadm" (ADR 0004). Run from iac/ansible:
+#   ansible-playbook site.yml
+# base goes first: it closes password SSH, and workers are on the LAN.
+- name: Secure and prepare the OS
+  hosts: k8s_cluster
+  become: true
+  roles:
+    - role: base
+
+# The `bridged` group exists only in the Vagrant inventory, so in a cloud this
+# play matches no hosts and does nothing.
+- name: Stop the bridged NIC adding routes
+  hosts: bridged
+  become: true
+  roles:
+    - role: bridged_nic
+
+- name: Install the container runtime and Kubernetes packages
+  hosts: k8s_cluster
+  become: true
+  roles:
+    - role: containerd
+    - role: kube_packages

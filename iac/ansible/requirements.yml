@@ -1,0 +1,6 @@
+# Install with: ansible-galaxy collection install -r requirements.yml
+collections:
+  - name: ansible.posix  # sysctl
+    version: 2.2.2
+  - name: community.general  # modprobe
+    version: 14.0.0

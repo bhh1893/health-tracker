@@ -12,8 +12,10 @@ Vagrant does only what Terraform plus cloud-init will do in a cloud: create the 
 - **Two Vagrantfiles:** `iac/vagrant/cluster/` (3 nodes) and `iac/vagrant/dev/` (dev VM), so destroying the cluster can never destroy the workstation. Synced folders off. Amends ADR 0003.
 - **One Vagrant provisioner on cluster nodes, and it only injects the key:** an inline shell step appends the ops public key, the equivalent of cloud-init's `ssh_authorized_keys`. Vagrant cannot add a key without a provisioner. The dev VM also gets a short shell bootstrap (the cloud-init equivalent): install `ansible-core` and place the ops private key. The rest of the dev VM belongs to Dev VM setup.
 - **SSH:** one ed25519 **ops key** generated once on the Windows host (`~/.ssh/health-tracker-ops`, outside the repo). Vagrant injects the public half on every node; only the dev VM holds the private half. Ansible's first role disables password SSH (bridged workers are visible on the LAN). `StrictHostKeyChecking=accept-new`; the rebuild script clears old host keys with `ssh-keygen -R` before recreating nodes.
-- **Inventory:** static, committed, one per environment: `iac/ansible/inventories/vagrant/hosts.yml`, groups `control_plane`, `workers`, `k8s_cluster`. The 3 node IPs are duplicated between the Vagrantfile and the inventory, on purpose.
-- **Roles (our own):** `base` (swap, kernel modules, sysctl, SSH hardening), `containerd`, `kube_packages`, `control_plane`, `worker`, `cilium`, composed by `site.yml`. Collection versions pinned in `requirements.yml`.
+- **Inventory:** static, committed, one per environment: `iac/ansible/inventories/vagrant/hosts.yml`, groups `control_plane`, `workers`, `k8s_cluster`, plus `bridged` in the Vagrant inventory only. The 3 node IPs are duplicated between the Vagrantfile and the inventory, on purpose.
+- **Roles (our own):** `base` (swap, kernel modules, sysctl, SSH hardening, host keys), `bridged_nic`, `containerd`, `kube_packages`, `control_plane`, `worker`, `cilium`, composed by `site.yml`. Collection versions pinned in `requirements.yml`.
+- **Environment-specific fixes:** `bridged_nic` stops the workers' bridged NIC adding default routes (IPv4 and IPv6), leaving the NAT NIC as the only way out. It targets the `bridged` group, so `site.yml` stays the same in a cloud, where the group is empty.
+- **Host keys:** the Bento box ships one set of SSH host keys, shared by every VM built from it. `base` replaces them once per node, then clears the old entry from the controller's `known_hosts`.
 - **Bootstrap:** `kubeadm init` and `join` read a committed kubeadm config file (pod/service CIDRs, `node-ip` on `192.168.56.x`, kube-proxy phase skipped). The join command is created on the control plane at run time, held in memory as a host fact with `no_log`, and never written to disk. Cilium is installed with Helm from `k8s/platform/cilium/`. The final step copies the admin kubeconfig to the dev VM.
 - **Ansible stops at:** all nodes Ready with Cilium healthy. cert-manager, local-path-provisioner, any GitOps agent and apps belong to CD.
 - **Idempotency:** modules over `shell`; init guarded by `/etc/kubernetes/admin.conf`, join by `/etc/kubernetes/kubelet.conf`. Contract: a second consecutive run reports `changed=0`.
@@ -30,6 +32,7 @@ Vagrant does only what Terraform plus cloud-init will do in a cloud: create the 
 - **Vagrantfile parses the Ansible inventory for IPs.** Rejected: couples Vagrant to Ansible's file format to save three lines.
 - **Ansible also installs every platform component.** Rejected: two tools would own the same resources once a GitOps agent exists.
 - **Disabling SSH host key checking.** Rejected: removes impostor-host protection; explicit cleanup on rebuild is enough.
+- **Fixing the routes with a second Vagrant provisioner, or a conditional in `base`.** Rejected: the first breaks the one-provisioner rule above; the second puts Vagrant knowledge in a role that must carry over unchanged.
 - **Molecule for role tests.** Rejected: kubeadm in containers is unreliable and the rebuild script already tests on real VMs.
 
 ## Consequences

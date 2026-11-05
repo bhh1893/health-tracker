@@ -1,0 +1,8 @@
+- name: Ignore routes offered to the bridged NIC
+  ansible.builtin.template:
+    src: 60-bridged-nic.yaml.j2
+    dest: /etc/netplan/60-bridged-nic.yaml
+    owner: root
+    group: root
+    mode: "0600"  # netplan warns about files other users can read
+  notify: Apply netplan

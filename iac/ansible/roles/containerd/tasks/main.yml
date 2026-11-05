@@ -1,0 +1,36 @@
+- name: Install containerd
+  ansible.builtin.apt:
+    name: "containerd={{ containerd_version }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 300  # first boot: unattended-upgrades may hold the lock
+
+# A hold stops apt, and so unattended upgrades, from moving this package.
+- name: Hold containerd at the pinned version
+  ansible.builtin.dpkg_selections:
+    name: containerd
+    selection: hold
+
+- name: Create the config directory
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure containerd
+  ansible.builtin.copy:
+    src: config.toml
+    dest: /etc/containerd/config.toml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart containerd
+
+- name: Start containerd now and at boot
+  ansible.builtin.systemd_service:
+    name: containerd
+    state: started
+    enabled: true
