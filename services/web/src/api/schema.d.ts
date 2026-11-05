@@ -57,6 +57,7 @@ export interface components {
              * @constant
              */
             status: "ok";
+            drifted?: string;
         };
         /** Problem */
         Problem: {
