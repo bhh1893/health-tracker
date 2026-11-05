@@ -243,7 +243,9 @@ jobs:
       - run: docker run -d --read-only --tmpfs /tmp -p 8080:8080 web
       - name: Check the served page and its headers
         run: |
-          curl -sS --retry 10 --retry-connrefused --retry-delay 1 -o /dev/null http://localhost:8080/
+          # --retry-all-errors, not --retry-connrefused: Docker's port proxy accepts the
+          # connection before nginx is up, then resets it, which is not a refused connection.
+          curl -fsS --retry 10 --retry-all-errors --retry-delay 1 -o /dev/null http://localhost:8080/
           page="$(curl -fsS http://localhost:8080/)"
           grep -q '<div id="root">' <<< "${page}"
           # Deep link: the fallback serves the app, not a 404.
