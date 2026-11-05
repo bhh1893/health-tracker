@@ -1,0 +1,52 @@
+- name: Load the pinned versions
+  ansible.builtin.include_vars:
+    file: "{{ platform_dir }}/{{ item }}/versions.yml"
+  loop:
+    - local-path-provisioner
+    - cnpg
+    - argocd
+
+# The chart has no Helm repo, so fetch the project's own copy at the pinned tag.
+- name: Fetch the local-path-provisioner chart
+  ansible.builtin.git:
+    repo: "{{ local_path_git_repo }}"
+    dest: "{{ platform_local_path_checkout }}"
+    version: "{{ local_path_git_version }}"
+    depth: 1
+
+- name: Install local-path-provisioner
+  kubernetes.core.helm:
+    name: local-path-provisioner
+    chart_ref: "{{ platform_local_path_checkout }}/deploy/chart/local-path-provisioner"
+    release_namespace: local-path-storage
+    create_namespace: true
+    values_files:
+      - "{{ platform_dir }}/local-path-provisioner/values.yaml"
+    wait: true
+    timeout: 5m0s
+
+- name: Install the CNPG operator
+  kubernetes.core.helm:
+    name: cnpg
+    chart_ref: cloudnative-pg
+    chart_repo_url: "{{ cnpg_chart_repo }}"
+    chart_version: "{{ cnpg_chart_version }}"
+    release_namespace: cnpg-system
+    create_namespace: true
+    values_files:
+      - "{{ platform_dir }}/cnpg/values.yaml"
+    wait: true
+    timeout: 5m0s
+
+- name: Install Argo CD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo-cd
+    chart_repo_url: "{{ argocd_chart_repo }}"
+    chart_version: "{{ argocd_chart_version }}"
+    release_namespace: argocd
+    create_namespace: true
+    values_files:
+      - "{{ platform_dir }}/argocd/values.yaml"
+    wait: true
+    timeout: 10m0s

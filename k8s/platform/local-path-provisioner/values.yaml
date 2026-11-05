@@ -1,0 +1,6 @@
+# Only what differs from the chart defaults (ADR 0005).
+
+# The small pod that creates and deletes each volume's directory on the node.
+# The chart defaults to `latest`, which changes under us between rebuilds.
+helperImage:
+  tag: "1.38.0"

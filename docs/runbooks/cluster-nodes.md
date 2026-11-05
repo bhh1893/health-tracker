@@ -1,6 +1,6 @@
 # Build the cluster
 
-Takes the three nodes from freshly created to "all Ready with Cilium healthy" (ADR 0004). Step 1 runs on Windows, the rest on the dev VM. The dev VM needs the `cilium` CLI: if it is missing, re-run `dev.yml` first (see `dev-vm.md`).
+Takes the three nodes from freshly created to "all Ready with Cilium healthy" (ADR 0004). Step 1 runs on Windows, the rest on the dev VM. The dev VM needs the `cilium` CLI: if it is missing, re-run `dev.yml` first (see `dev-vm.md`). The same playbook also installs the platform components: see `platform.md`.
 
 ## 1. Create the VMs (Windows)
 

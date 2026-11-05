@@ -1,4 +1,5 @@
-# Takes the nodes to "all Ready with Cilium healthy" (ADR 0004). Run from iac/ansible:
+# Takes the nodes to "all Ready with Cilium healthy" (ADR 0004), then installs the
+# platform components the app layer needs (ADR 0016). Run from iac/ansible:
 #   ansible-playbook site.yml
 # base goes first: it closes password SSH, and workers are on the LAN.
 - name: Secure and prepare the OS
@@ -41,3 +42,10 @@
   gather_facts: false
   roles:
     - role: cilium
+
+- name: Install the platform components
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - role: platform

@@ -1,0 +1,4 @@
+# Loaded by the Ansible platform role. No official Helm repo exists: the chart ships
+# inside the project's git repo, so the pin is a git tag, not a chart repo version.
+local_path_git_repo: https://github.com/rancher/local-path-provisioner.git
+local_path_git_version: v0.0.37
