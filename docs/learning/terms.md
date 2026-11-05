@@ -289,3 +289,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Gratuitous ARP**: an unprompted ARP announcement that tells neighbours an IP has moved to a new MAC.
 - **Lease (Kubernetes)**: a small API object used for leader election; the node holding a Service's lease answers ARP for its IP.
 - **Server-side apply**: `kubectl apply --server-side`: the API server merges the change and tracks field ownership, with no size-limited annotation on the object.
+- **Expression index**: an index on a computed value such as `lower(name)`; a query uses it only when it repeats the same expression.
+- **Covering index**: an index that also stores extra columns (`INCLUDE (meal_id)`), so a query can be answered without visiting the table.
+- **Trusted extension**: a Postgres extension that a non-superuser with `CREATE` on the database may install; `pg_trgm` is one.
+- **SQLSTATE**: the five-character code Postgres returns with every error; stable, so code branches on it rather than on message text (`23505` unique, `23514` check, `23503` foreign key, `23001` `ON DELETE RESTRICT`).
