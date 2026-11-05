@@ -1,0 +1,54 @@
+- name: Install base packages
+  become: true
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - git
+      - python3-debian  # needed by deb822_repository below
+      - tmux
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 300  # first boot: unattended-upgrades may hold the lock
+
+- name: Add third-party apt repos
+  become: true
+  ansible.builtin.deb822_repository:
+    name: "{{ item.name }}"
+    types: deb
+    uris: "{{ item.uris }}"
+    suites: "{{ item.suites }}"
+    components: "{{ item.components | default(omit) }}"
+    signed_by: "{{ item.key }}"
+  loop: "{{ dev_workstation_apt_repos }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Refresh apt cache
+
+# Run the refresh now: the next task needs the new repos' package lists.
+- name: Apply pending apt cache refresh
+  ansible.builtin.meta: flush_handlers
+
+- name: Install pinned toolchain packages
+  become: true
+  ansible.builtin.apt:
+    name:
+      - "containerd.io={{ dev_workstation_containerd_version }}"
+      - "docker-buildx-plugin={{ dev_workstation_buildx_version }}"
+      - "docker-ce-cli={{ dev_workstation_docker_version }}"
+      - "docker-ce={{ dev_workstation_docker_version }}"
+      - "gh={{ dev_workstation_gh_version }}"
+      - "helm={{ dev_workstation_helm_version }}"
+      - "kubectl={{ dev_workstation_kubectl_version }}"
+      - "nodejs={{ dev_workstation_node_version }}"
+    state: present
+    lock_timeout: 300
+
+# Takes effect at the next login, so the runbook has you reconnect.
+- name: Let the user run docker without sudo
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_facts['user_id'] }}"
+    groups: docker
+    append: true

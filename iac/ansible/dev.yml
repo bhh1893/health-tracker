@@ -1,0 +1,9 @@
+# Configures the dev VM from inside itself (ADR 0009). Run from the repo root:
+#   ansible-playbook iac/ansible/dev.yml -e dotfiles_repo=<url>
+- name: Configure the dev workstation
+  hosts: localhost
+  connection: local  # run tasks on this machine directly, no SSH
+  roles:
+    - role: dev_workstation
+      vars:
+        dev_workstation_dotfiles_repo: "{{ dotfiles_repo | default('') }}"

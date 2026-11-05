@@ -1,0 +1,53 @@
+# Every version is pinned so two rebuilds produce the same machine (ADR 0009).
+# Bumping a tool is a one-line change here, reviewed in a PR.
+dev_workstation_docker_version: "5:29.9.3-1~ubuntu.26.04~resolute"
+dev_workstation_containerd_version: "2.4.2-3~ubuntu.26.04~resolute"
+dev_workstation_buildx_version: "0.38.1-1~ubuntu.26.04~resolute"
+dev_workstation_node_major: 26  # must match `engines` in services/web/package.json
+dev_workstation_node_version: "26.13.0-1nodesource1"
+dev_workstation_kubectl_minor: "1.36"  # same pin as the nodes (ADR 0004)
+dev_workstation_kubectl_version: "1.36.6-1.1"
+dev_workstation_helm_version: "4.3.0-1"
+dev_workstation_gh_version: "2.103.3"
+
+dev_workstation_uv_version: "0.13.7"
+dev_workstation_uv_sha256: c5221ff41b7892bfc223543883600125f6a47fe845093e0f5bdff4f359196d83
+dev_workstation_uv_release: "https://github.com/astral-sh/uv/releases/download/{{ dev_workstation_uv_version }}"
+
+# Same pins as .github/workflows/ci.yml, so a local lint matches CI.
+dev_workstation_ansible_lint_version: "26.10.1"
+dev_workstation_ansible_core_version: "2.20.1"
+dev_workstation_yamllint_version: "1.38.0"
+
+# Third-party apt repos. `key` is the publisher's signing key: apt refuses
+# packages from a repo unless they are signed by the key tied to it.
+dev_workstation_apt_repos:
+  - name: docker
+    uris: https://download.docker.com/linux/ubuntu
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: stable
+    key: https://download.docker.com/linux/ubuntu/gpg
+  - name: nodesource
+    uris: "https://deb.nodesource.com/node_{{ dev_workstation_node_major }}.x"
+    suites: nodistro
+    components: main
+    key: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
+  - name: kubernetes
+    uris: "https://pkgs.k8s.io/core:/stable:/v{{ dev_workstation_kubectl_minor }}/deb/"
+    suites: /  # a flat repo: no suite name, and so no components
+    key: "https://pkgs.k8s.io/core:/stable:/v{{ dev_workstation_kubectl_minor }}/deb/Release.key"
+  - name: helm
+    uris: https://packages.buildkite.com/helm-linux/helm-debian/any/
+    suites: any
+    components: main
+    key: https://packages.buildkite.com/helm-linux/helm-debian/gpgkey
+  - name: github-cli
+    uris: https://cli.github.com/packages
+    suites: stable
+    components: main
+    key: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+
+# Set by dev.yml from `-e dotfiles_repo=<url>`. Empty skips dotfiles entirely.
+dev_workstation_dotfiles_repo: ""
+dev_workstation_dotfiles_version: main
+dev_workstation_dotfiles_dest: "{{ ansible_facts['user_dir'] }}/dotfiles"

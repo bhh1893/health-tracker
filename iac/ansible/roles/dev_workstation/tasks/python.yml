@@ -1,0 +1,60 @@
+- name: Create the uv version directory
+  become: true
+  ansible.builtin.file:
+    path: "/opt/uv/{{ dev_workstation_uv_version }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# The sha256 is pinned here, not fetched, so a tampered release fails the run.
+- name: Download uv
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ dev_workstation_uv_release }}/uv-x86_64-unknown-linux-gnu.tar.gz"
+    dest: "/opt/uv/{{ dev_workstation_uv_version }}/uv.tar.gz"
+    checksum: "sha256:{{ dev_workstation_uv_sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Unpack uv
+  become: true
+  ansible.builtin.unarchive:
+    src: "/opt/uv/{{ dev_workstation_uv_version }}/uv.tar.gz"
+    dest: "/opt/uv/{{ dev_workstation_uv_version }}"
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+    creates: "/opt/uv/{{ dev_workstation_uv_version }}/uv"
+
+# One directory per version: bumping the pin repoints these links.
+- name: Link uv binaries onto the PATH
+  become: true
+  ansible.builtin.file:
+    src: "/opt/uv/{{ dev_workstation_uv_version }}/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    state: link
+  loop:
+    - uv
+    - uvx
+
+- name: Install the Python from .python-version
+  ansible.builtin.command:
+    cmd: "uv python install {{ lookup('ansible.builtin.file', playbook_dir ~ '/../../.python-version') }}"
+  register: dev_workstation_python_install
+  changed_when: "'Installed' in dev_workstation_python_install.stderr"
+
+- name: Install ansible-lint
+  ansible.builtin.command:
+    cmd: >-
+      uv tool install ansible-lint=={{ dev_workstation_ansible_lint_version }}
+      --with ansible-core=={{ dev_workstation_ansible_core_version }}
+  register: dev_workstation_ansible_lint_install
+  changed_when: "'already installed' not in dev_workstation_ansible_lint_install.stderr"
+
+- name: Install yamllint
+  ansible.builtin.command:
+    cmd: "uv tool install yamllint=={{ dev_workstation_yamllint_version }}"
+  register: dev_workstation_yamllint_install
+  changed_when: "'already installed' not in dev_workstation_yamllint_install.stderr"

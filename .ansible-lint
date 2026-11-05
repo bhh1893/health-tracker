@@ -1,0 +1,2 @@
+# The strictest ansible-lint profile; every role in this repo must pass it.
+profile: production

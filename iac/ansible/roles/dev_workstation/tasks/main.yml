@@ -1,0 +1,13 @@
+# Order matters: dotfiles need Node (npx), and uv tools need uv.
+- name: System packages
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Python toolchain
+  ansible.builtin.import_tasks: python.yml
+
+- name: Claude Code
+  ansible.builtin.import_tasks: claude.yml
+
+- name: Dotfiles
+  ansible.builtin.import_tasks: dotfiles.yml
+  when: dev_workstation_dotfiles_repo | length > 0
