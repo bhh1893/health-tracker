@@ -1,0 +1,4 @@
+# Relative to iac/ansible, so it resolves in whichever checkout runs the playbook.
+platform_dir: "{{ playbook_dir }}/../../k8s/platform"
+# Outside the repo: a downloaded copy of someone else's chart, not our source.
+platform_local_path_checkout: "{{ lookup('env', 'HOME') }}/.cache/health-tracker/local-path-provisioner"

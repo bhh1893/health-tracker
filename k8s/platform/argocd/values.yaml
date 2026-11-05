@@ -1,0 +1,20 @@
+# Only what differs from the chart defaults (ADR 0016).
+
+# Dex is single sign-on; the one user logs in as admin.
+dex:
+  enabled: false
+
+# Sends Slack or email messages about syncs; nothing here listens.
+notifications:
+  enabled: false
+
+# Generates many Applications from a template; there is one Application. The chart has
+# no off switch for this controller, so zero replicas is how it is disabled.
+applicationSet:
+  replicas: 0
+
+configs:
+  params:
+    # Serve plain HTTP. The UI is reached only by port-forward on the host-only
+    # network, and with TLS on, the browser would warn about a self-signed certificate.
+    server.insecure: true

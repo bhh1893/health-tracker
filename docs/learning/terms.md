@@ -306,3 +306,12 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Covering index**: an index that also stores extra columns (`INCLUDE (meal_id)`), so a query can be answered without visiting the table.
 - **Trusted extension**: a Postgres extension that a non-superuser with `CREATE` on the database may install; `pg_trgm` is one.
 - **SQLSTATE**: the five-character code Postgres returns with every error; stable, so code branches on it rather than on message text (`23505` unique, `23514` check, `23503` foreign key, `23001` `ON DELETE RESTRICT`).
+- **Helm release**: one installed instance of a chart in a namespace, with a revision number that goes up on each upgrade; `helm list -A` shows them.
+- **Helm values**: the settings a chart's templates read; a `values.yaml` overrides the chart's defaults, so ours lists only the differences.
+- **PersistentVolumeClaim (PVC)**: a pod's request for storage ("64 Mi, one writer"), which stays valid when the pod is replaced.
+- **PersistentVolume (PV)**: the actual piece of storage that satisfies a PVC.
+- **StorageClass**: names a way of creating PVs on demand; a PVC picks one by name, so its manifest does not depend on the storage behind it.
+- **local-path-provisioner**: creates each PV as a directory on one node's disk; fast and simple, but the data is tied to that node.
+- **`WaitForFirstConsumer`**: a StorageClass setting that leaves a PVC `Pending` until a pod uses it, so the volume lands on the node the pod was scheduled to.
+- **Reclaim policy**: what happens to a PV when its PVC is deleted; `Delete` removes the data, `Retain` keeps it.
+- **`kubectl port-forward`**: tunnels a local port to a Service or pod through the API server, for as long as the command runs.
