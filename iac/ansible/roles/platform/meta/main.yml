@@ -1,0 +1,10 @@
+galaxy_info:
+  author: bhh1893
+  description: local-path-provisioner, the CNPG operator and Argo CD, installed from the dev VM (ADR 0005, ADR 0016)
+  license: MIT
+  min_ansible_version: "2.20"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - resolute
+dependencies: []

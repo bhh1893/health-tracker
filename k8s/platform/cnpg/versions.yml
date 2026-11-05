@@ -1,0 +1,4 @@
+# Loaded by the Ansible platform role. Chart 0.29.x ships CNPG 1.30, the first line
+# that supports Kubernetes 1.36. Read the release notes before bumping.
+cnpg_chart_repo: https://cloudnative-pg.github.io/charts
+cnpg_chart_version: 0.29.1

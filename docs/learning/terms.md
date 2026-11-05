@@ -314,3 +314,12 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Dynamic scope**: PowerShell finds a variable by walking up the call stack, so a called function's variable can hide the caller's variable of the same name.
 - **Detached HEAD**: git checked out at a specific commit rather than on a branch, which suits a checkout nobody commits to.
 - **SSH `BatchMode`**: makes `ssh` fail instead of asking for a password, so an unattended script cannot hang on a prompt.
+- **Helm release**: one installed instance of a chart in a namespace, with a revision number that goes up on each upgrade; `helm list -A` shows them.
+- **Helm values**: the settings a chart's templates read; a `values.yaml` overrides the chart's defaults, so ours lists only the differences.
+- **PersistentVolumeClaim (PVC)**: a pod's request for storage ("64 Mi, one writer"), which stays valid when the pod is replaced.
+- **PersistentVolume (PV)**: the actual piece of storage that satisfies a PVC.
+- **StorageClass**: names a way of creating PVs on demand; a PVC picks one by name, so its manifest does not depend on the storage behind it.
+- **local-path-provisioner**: creates each PV as a directory on one node's disk; fast and simple, but the data is tied to that node.
+- **`WaitForFirstConsumer`**: a StorageClass setting that leaves a PVC `Pending` until a pod uses it, so the volume lands on the node the pod was scheduled to.
+- **Reclaim policy**: what happens to a PV when its PVC is deleted; `Delete` removes the data, `Retain` keeps it.
+- **`kubectl port-forward`**: tunnels a local port to a Service or pod through the API server, for as long as the command runs.
