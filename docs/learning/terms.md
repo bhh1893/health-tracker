@@ -288,3 +288,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Vitest / React Testing Library**: Vite's test runner, and helpers that find elements the way a user does (by role and name), not by internals.
 - **`DataView`**: reads and writes numbers at byte offsets in a buffer, big-endian by default; used to lay out the UUIDv7 bytes.
 - **`npm audit`**: checks installed packages against known advisories; `--omit=dev` limits it to what ships to users.
+- **Expression index**: an index on a computed value such as `lower(name)`; a query uses it only when it repeats the same expression.
+- **Covering index**: an index that also stores extra columns (`INCLUDE (meal_id)`), so a query can be answered without visiting the table.
+- **Trusted extension**: a Postgres extension that a non-superuser with `CREATE` on the database may install; `pg_trgm` is one.
+- **SQLSTATE**: the five-character code Postgres returns with every error; stable, so code branches on it rather than on message text (`23505` unique, `23514` check, `23503` foreign key, `23001` `ON DELETE RESTRICT`).
