@@ -1,0 +1,14 @@
+- name: Restart sshd
+  ansible.builtin.systemd_service:
+    name: ssh
+    state: restarted
+
+# Handlers run in the order written here, so sshd restarts first.
+# throttle: all nodes edit this one file on the controller, so go one at a time.
+- name: Forget the old host key on the controller
+  become: false
+  delegate_to: localhost
+  throttle: 1
+  ansible.builtin.known_hosts:
+    name: "{{ ansible_host }}"
+    state: absent

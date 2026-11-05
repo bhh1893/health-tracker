@@ -1,0 +1,2 @@
+# NIC order follows the Vagrantfile: NAT, host-only, bridged.
+bridged_nic_interface: eth2

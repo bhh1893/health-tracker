@@ -1,0 +1,31 @@
+- name: Disable password and root SSH login
+  ansible.builtin.copy:
+    src: 00-hardening.conf
+    dest: /etc/ssh/sshd_config.d/00-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/sshd -t -f %s  # a broken config would lock us out
+  notify: Restart sshd
+
+# The Bento box ships one set of host keys, so every VM built from it shares a
+# private key that anyone can download. Each node needs its own.
+- name: Replace the host keys that came with the image
+  ansible.builtin.shell:
+    cmd: >-
+      rm -f /etc/ssh/ssh_host_*_key /etc/ssh/ssh_host_*_key.pub
+      && ssh-keygen -A
+      && touch {{ base_host_keys_marker }}
+    creates: "{{ base_host_keys_marker }}"
+  notify:
+    - Restart sshd
+    - Forget the old host key on the controller
+
+# Apply now, not at the end of the play: both changes above matter straight away.
+- name: Apply pending SSH handlers
+  ansible.builtin.meta: flush_handlers
+
+# Drops the open SSH connection, so the next task meets the new key and
+# accept-new records it.
+- name: Reconnect to pick up the new host key
+  ansible.builtin.meta: reset_connection

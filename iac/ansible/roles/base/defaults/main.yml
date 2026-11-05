@@ -1,0 +1,15 @@
+# overlay: the filesystem containerd builds image layers with.
+# br_netfilter: lets iptables see traffic crossing a Linux bridge.
+base_kernel_modules:
+  - overlay
+  - br_netfilter
+
+# Written to base_sysctl_file so they survive a reboot.
+base_sysctl_file: /etc/sysctl.d/99-kubernetes.conf
+base_sysctl_settings:
+  net.ipv4.ip_forward: "1"  # a node routes packets to and from its pods
+  net.bridge.bridge-nf-call-iptables: "1"
+  net.bridge.bridge-nf-call-ip6tables: "1"
+
+# Exists once this role has replaced the host keys that shipped in the image.
+base_host_keys_marker: /etc/ssh/.host-keys-regenerated

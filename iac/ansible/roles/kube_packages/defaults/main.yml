@@ -1,0 +1,7 @@
+kube_packages_minor: "1.36"  # same pin as dev_workstation_kubectl_minor
+kube_packages_version: "1.36.6-1.1"
+kube_packages_names:
+  - kubeadm
+  - kubectl
+  - kubelet
+kube_packages_repo: "https://pkgs.k8s.io/core:/stable:/v{{ kube_packages_minor }}/deb/"

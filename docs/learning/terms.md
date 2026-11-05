@@ -58,7 +58,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **cloud-init**: the standard first-boot hook on cloud VMs that injects SSH keys and runs a short bootstrap script.
 - **kubeadm join token**: a short-lived bearer token a new node presents to the control plane to join the cluster.
 - **`StrictHostKeyChecking=accept-new`**: SSH trusts a host's key the first time it is seen and refuses if that key later changes.
-- **`apt-mark hold`**: pins an installed Debian/Ubuntu package so automatic or manual upgrades skip it.
+- **`apt-mark hold`**: pins an installed Debian/Ubuntu package so automatic or manual upgrades skip it; `dpkg_selections` is the Ansible way to set it.
 - **Kubespray**: the Kubernetes SIGs Ansible project that installs production kubeadm clusters; highly configurable.
 - **Molecule**: a framework for testing Ansible roles in throwaway containers or VMs.
 - **StatefulSet**: a Kubernetes workload whose pods keep a stable name and their own volume across restarts.
@@ -136,8 +136,15 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Base backup**: a full copy of the database files at one moment; restorable only together with the WAL written after it.
 - **PITR (point-in-time recovery)**: restoring a base backup and replaying WAL up to a chosen timestamp, e.g. just before a mistake.
 - **WAL archiving**: continuously copying finished WAL segments to backup storage (roughly every minute under light load).
-- **MinIO**: software that serves an S3-compatible object storage API from a plain disk; here the backup target on the dev VM.
-- **S3-compatible**: speaks Amazon S3's HTTP API, so tools written for S3 work against MinIO, B2, R2 or AWS by changing endpoint and credentials.
+- **Object storage**: stores whole files ("objects") under a key in a flat bucket, read and written over HTTP; no directories, no editing in place.
+- **Bucket**: a named container of objects; access keys are granted per bucket.
+- **Garage**: software that serves an S3-compatible object storage API from a plain disk; here the backup target on the dev VM.
+- **MinIO**: the object store first chosen here; its open-source edition was archived, so Garage replaced it (ADR 0011).
+- **Garage layout**: the record of which nodes store data and their share of it; nothing works until one is applied.
+- **systemd unit**: a small file telling Linux's service manager how to run a program, restart it and start it at boot.
+- **fsync**: forces written data from memory onto the disk, so a power cut cannot lose it; slower, but safe.
+- **`no_log`**: tells Ansible not to print a task's values, so secrets stay out of its output.
+- **S3-compatible**: speaks Amazon S3's HTTP API, so tools written for S3 work against Garage, B2, R2 or AWS by changing endpoint and credentials.
 - **Barman Cloud plugin**: CNPG's plugin that sends base backups and WAL to S3-compatible storage and restores from it.
 - **`serverName` (CNPG)**: the folder name a cluster uses in the backup bucket; a recovered cluster needs a new one, since two histories cannot share a folder.
 - **Recovery bootstrap (CNPG)**: creating a new `Cluster` from a backup instead of an empty database; only possible at creation, never in place.
@@ -252,3 +259,22 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Uvicorn**: the ASGI server that listens on the port and hands each request to FastAPI.
 - **Lifespan**: FastAPI's startup and shutdown hook, used here to create and close the connection pool.
 - **TCP keepalive / `tcp_user_timeout`**: keepalives probe an idle connection; `tcp_user_timeout` caps how long sent data may go unacknowledged; both detect a peer that vanished without closing.
+- **`ansible.cfg`**: Ansible's settings file, read from the directory you run in; here it names the inventory and SSH options.
+- **Ansible collection**: a versioned package of modules from Ansible Galaxy, pinned in `requirements.yml`; `community.general.modprobe` comes from one.
+- **`reset_connection`**: closes Ansible's open SSH connection to a host, so the next task connects fresh.
+- **`throttle`**: limits how many hosts run a task at once; 1 protects a shared file from parallel writes.
+- **Swap**: disk used as overflow RAM; off on nodes by default, because the kubelet's memory accounting assumes memory is real RAM.
+- **Kernel module**: code loaded into the running Linux kernel on demand; `modules-load.d` loads it again at boot.
+- **sysctl**: a kernel setting changed at run time; files in `/etc/sysctl.d/` reapply it at boot.
+- **`overlay`**: the filesystem that stacks image layers into one view, which is how containers share read-only layers.
+- **`br_netfilter`**: kernel module that sends traffic crossing a Linux bridge through iptables, so Kubernetes network rules see it.
+- **IP forwarding**: lets a machine pass packets between interfaces like a router; off by default, required so pod traffic can cross a node.
+- **cgroup**: a kernel feature that limits and measures a group of processes' CPU and memory; v2 is the single unified tree.
+- **cgroup driver**: what manages cgroups for containers; containerd and the kubelet must both use `systemd`, the manager that already owns the tree.
+- **containerd**: the daemon that pulls images and runs containers; Docker is built on it, but Kubernetes talks to it directly and needs nothing from Docker.
+- **CRI (Container Runtime Interface)**: the API the kubelet uses to talk to a runtime such as containerd.
+- **runc**: the small program containerd calls to actually start a container process.
+- **Netplan**: Ubuntu's network config layer; YAML in `/etc/netplan/`, merged in name order, rendered for systemd-networkd.
+- **Router advertisement (RA)**: how an IPv6 router announces itself; hosts that accept it gain an address and a default route, with no DHCP involved.
+- **SSH drop-in**: a file in `/etc/ssh/sshd_config.d/`; for most settings sshd keeps the first value it reads, so name order decides who wins.
+- **kubeadm preflight**: kubeadm's own checks that a machine is ready to join a cluster; `kubeadm init phase preflight --dry-run` runs them alone.

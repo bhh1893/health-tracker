@@ -1,0 +1,25 @@
+# Managed by Ansible (iac/ansible/roles/garage).
+[Unit]
+Description=Garage S3-compatible object store (ADR 0011)
+Documentation=https://garagehq.deuxfleurs.fr/documentation/
+# The S3 port binds the host-only address, which must exist first.
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=garage
+Group=garage
+ExecStart=/usr/local/bin/garage server
+Environment=RUST_LOG=garage=info
+Restart=on-failure
+RestartSec=5
+
+# Sandbox: the daemon can write its data directory and nothing else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths={{ garage_data_dir }}
+
+[Install]
+WantedBy=multi-user.target
