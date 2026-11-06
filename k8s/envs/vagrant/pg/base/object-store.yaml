@@ -1,0 +1,23 @@
+# Where backups go: Garage on the dev VM (ADR 0011). The credentials are the
+# backup-key Secret, created by apply-secrets from backup.env.
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: garage
+spec:
+  retentionPolicy: 7d
+  configuration:
+    destinationPath: s3://backups/
+    endpointURL: http://192.168.56.20:3900
+    s3Credentials:
+      accessKeyId:
+        name: backup-key
+        key: AWS_ACCESS_KEY_ID
+      secretAccessKey:
+        name: backup-key
+        key: AWS_SECRET_ACCESS_KEY
+      region:
+        name: backup-key
+        key: AWS_DEFAULT_REGION
+    wal:
+      compression: gzip

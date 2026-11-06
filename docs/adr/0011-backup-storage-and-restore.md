@@ -29,6 +29,15 @@ Checked at build, 2026-11-04 ([#49](https://github.com/bhh1893/health-tracker/is
 - **Rejected: AIStor Free.** A different product under a free license, where this ADR assumed open source.
 - **Weaker pin:** Garage publishes no checksum file we could find, so the committed sha256 is one we computed. It detects a changed download, not a binary that was bad from the start.
 
+## Amendment: settings confirmed at build
+
+Checked at build, 2026-11-06 ([#51](https://github.com/bhh1893/health-tracker/issues/51)).
+
+- **Data-loss window:** CNPG defaults `archive_timeout` to 5 minutes, and at this write volume the timeout, not the 16 MB segment size, decides when WAL ships. `pg` sets it to `1min`, so "about a minute" above holds. A forced switch only happens after writes, so an idle database ships nothing extra.
+- **cert-manager:** the Barman Cloud plugin needs it for the mTLS certificates between the operator and the plugin. Ansible installs both from `k8s/platform/`, as ADR 0016 does for other platform charts. Rejected: creating those certificates by hand, which leaves their renewal to us.
+- **Schedule clock:** the operator runs in UTC, so 21:00 means 21:00 UTC.
+- **Locale:** `initdb` uses `C.UTF-8`. CNPG's default `C` splits `jalapeño` at the `ñ` in `pg_trgm` (tested), which hurts typeahead. Rejected: `en_US.UTF-8`, which matches the test image but whose sort order can shift with glibc, and a physical restore carries indexes across images.
+
 ## Considered Options
 
 - **A cloud bucket (Backblaze B2, R2, S3) from the start.** Better durability (survives losing the PC) and no WAL-pileup risk, but an account and a credential to manage in v1. Deferred to v2, where it is a swap of endpoint and credentials, since the S3 API is the same.

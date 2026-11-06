@@ -1,24 +1,25 @@
 # Platform components
 
-`site.yml` installs local-path-provisioner, the CNPG operator and Argo CD with Helm, after Cilium (ADR 0005, ADR 0016). Everything here runs on the dev VM. To install or upgrade, run the playbook as in `cluster-nodes.md`: twice, the second must show `changed=0`.
+`site.yml` installs local-path-provisioner, the CNPG operator, cert-manager, the Barman Cloud plugin and Argo CD with Helm, after Cilium (ADR 0005, ADR 0011, ADR 0016). Everything here runs on the dev VM. To install or upgrade, run the playbook as in `cluster-nodes.md`: twice, the second must show `changed=0`.
 
 To bump a version, edit that component's `k8s/platform/<component>/versions.yml`, after reading its release notes. Check the chart still supports the cluster's Kubernetes version.
 
 ## Check it worked
 
-All three releases must be `deployed`, and every pod `Running`:
+All five releases must be `deployed`, and every pod `Running`:
 
 ```
 helm list -A
 kubectl get pods -n local-path-storage
 kubectl get pods -n cnpg-system
+kubectl get pods -n cert-manager
 kubectl get pods -n argocd
 ```
 
-The CNPG CRDs must exist:
+The CNPG and plugin CRDs must exist:
 
 ```
-kubectl get crd clusters.postgresql.cnpg.io
+kubectl get crd clusters.postgresql.cnpg.io objectstores.barmancloud.cnpg.io
 ```
 
 A PVC on `local-path` shows `Pending` until a pod uses it. That is `WaitForFirstConsumer` working, not a fault: the volume is a directory on one node, so the scheduler has to pick the node first.
