@@ -1,0 +1,16 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pg
+spec:
+  bootstrap:
+    initdb:
+      database: health
+      owner: app
+      secret:
+        name: db-owner
+      # Fixed at creation. Plain C would treat non-ASCII letters as non-letters in
+      # pg_trgm; C.UTF-8 does not, and its sort order cannot shift with a glibc update.
+      encoding: UTF8
+      localeCollate: C.UTF-8
+      localeCType: C.UTF-8

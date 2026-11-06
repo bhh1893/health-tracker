@@ -1,0 +1,14 @@
+# Daily base backup (ADR 0011). Six fields: CNPG's cron starts with seconds. The
+# operator runs in UTC. A run missed because the machines were off is skipped.
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: pg-daily
+spec:
+  schedule: "0 0 21 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: pg
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

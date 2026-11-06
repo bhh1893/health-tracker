@@ -1,0 +1,9 @@
+# Shared by the fresh and restore overlays. Not part of Argo's k8s/envs/vagrant
+# application: scripts own the pg Cluster (ADR 0016).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: health-tracker
+resources:
+  - cluster.yaml
+  - object-store.yaml
+  - scheduled-backup.yaml

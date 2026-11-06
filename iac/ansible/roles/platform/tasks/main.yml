@@ -4,6 +4,8 @@
   loop:
     - local-path-provisioner
     - cnpg
+    - cert-manager
+    - barman-cloud
     - argocd
 
 # The chart has no Helm repo, so fetch the project's own copy at the pinned tag.
@@ -35,6 +37,33 @@
     create_namespace: true
     values_files:
       - "{{ platform_dir }}/cnpg/values.yaml"
+    wait: true
+    timeout: 5m0s
+
+# Before the plugin: the plugin's chart creates cert-manager Certificates.
+- name: Install cert-manager
+  kubernetes.core.helm:
+    name: cert-manager
+    chart_ref: cert-manager
+    chart_repo_url: "{{ cert_manager_chart_repo }}"
+    chart_version: "{{ cert_manager_chart_version }}"
+    release_namespace: cert-manager
+    create_namespace: true
+    values_files:
+      - "{{ platform_dir }}/cert-manager/values.yaml"
+    wait: true
+    timeout: 5m0s
+
+# Must share the operator's namespace, which is how CNPG discovers it.
+- name: Install the Barman Cloud plugin
+  kubernetes.core.helm:
+    name: plugin-barman-cloud
+    chart_ref: plugin-barman-cloud
+    chart_repo_url: "{{ barman_cloud_chart_repo }}"
+    chart_version: "{{ barman_cloud_chart_version }}"
+    release_namespace: cnpg-system
+    values_files:
+      - "{{ platform_dir }}/barman-cloud/values.yaml"
     wait: true
     timeout: 5m0s
 

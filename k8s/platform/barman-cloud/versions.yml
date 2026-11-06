@@ -1,0 +1,4 @@
+# Loaded by the Ansible platform role. Chart 0.8.x ships plugin v0.15, which needs
+# CNPG 1.26 or newer. Read the release notes before bumping.
+barman_cloud_chart_repo: https://cloudnative-pg.github.io/charts
+barman_cloud_chart_version: 0.8.1

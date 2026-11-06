@@ -326,3 +326,10 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`WaitForFirstConsumer`**: a StorageClass setting that leaves a PVC `Pending` until a pod uses it, so the volume lands on the node the pod was scheduled to.
 - **Reclaim policy**: what happens to a PV when its PVC is deleted; `Delete` removes the data, `Retain` keeps it.
 - **`kubectl port-forward`**: tunnels a local port to a Service or pod through the API server, for as long as the command runs.
+- **cert-manager**: a Kubernetes controller that creates and renews TLS certificates declared as `Certificate` resources.
+- **`ObjectStore` (Barman Cloud plugin)**: a resource naming a bucket, its endpoint and credentials, which a `Cluster` points at for backups.
+- **`ScheduledBackup` (CNPG)**: a resource that takes a base backup on a cron schedule; its cron has a leading seconds field.
+- **`archive_timeout`**: forces Postgres to finish the current WAL file after this long if anything was written, capping how old unshipped changes can get.
+- **Timeline**: a Postgres history branch; a promotion starts a new one, which is the leading number in a WAL file's name, and a `.history` file records the fork.
+- **Locale (Postgres)**: decides sort order and what counts as a letter; fixed when the database is created.
+- **Trigram**: a run of three characters; `pg_trgm` compares strings by the trigrams they share, which is how it tolerates typos.

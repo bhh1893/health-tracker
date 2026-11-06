@@ -1,0 +1,15 @@
+# Empty database. Destructive when pg already exists, so create it with the
+# command in docs/runbooks/postgres.md, which also fills in serverName.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../base
+patches:
+  - path: bootstrap.yaml
+  - target:
+      kind: Cluster
+      name: pg
+    patch: |-
+      - op: add
+        path: /spec/plugins/0/parameters/serverName
+        value: pg-GENERATION

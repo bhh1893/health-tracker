@@ -1,0 +1,4 @@
+# Only what differs from the chart defaults. The chart skips its CRDs by default,
+# and nothing works without them.
+crds:
+  enabled: true

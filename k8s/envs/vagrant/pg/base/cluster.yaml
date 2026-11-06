@@ -1,0 +1,48 @@
+# The Postgres cluster (ADR 0005). Bootstrap and serverName come from an overlay.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pg
+spec:
+  instances: 2
+  # `standard`, not `minimal`: from Postgres 18 only standard ships contrib, and
+  # the schema needs pg_trgm (ADR 0012). `system` is deprecated.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-standard-trixie
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: required
+    topologyKey: kubernetes.io/hostname
+  storage:
+    storageClass: local-path
+    size: 5Gi
+  # Request = limit on memory; no CPU limit, so an idle node's CPU is usable.
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+  postgresql:
+    parameters:
+      shared_buffers: 128MB
+      # At this write volume the timeout, not the 16 MB segment size, decides when
+      # WAL ships, so this is the data-loss window. CNPG's default is 5min.
+      archive_timeout: 1min
+  # Inline, not DatabaseRole resources (ADR 0015). The Secrets come from apply-secrets.
+  managed:
+    roles:
+      - name: app
+        ensure: present
+        login: true
+        passwordSecret:
+          name: db-owner
+      - name: api_rw
+        ensure: present
+        login: true
+        passwordSecret:
+          name: db-api
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: garage
