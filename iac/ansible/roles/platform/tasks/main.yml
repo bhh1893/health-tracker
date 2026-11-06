@@ -79,3 +79,14 @@
       - "{{ platform_dir }}/argocd/values.yaml"
     wait: true
     timeout: 10m0s
+
+# The Gateway is platform, not app, so Argo CD does not own it (ADR 0016).
+- name: Apply the edge Gateway
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - apply
+      - --kustomize
+      - "{{ platform_dir }}/edge"
+  register: platform_edge_apply
+  changed_when: platform_edge_apply.stdout_lines | reject('search', ' unchanged$') | list | length > 0

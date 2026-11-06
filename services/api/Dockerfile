@@ -30,4 +30,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 USER 10001
 EXPOSE 8000
 # The migration Job reuses this image with the command `alembic upgrade head` (ADR 0016).
-CMD ["uvicorn", "--factory", "health_api.main:create_app", "--host", "0.0.0.0", "--port", "8000"]
+# 127.0.0.1: only the auth sidecar in the same pod can reach this port (ADR 0010).
+CMD ["uvicorn", "--factory", "health_api.main:create_app", "--host", "127.0.0.1", "--port", "8000"]

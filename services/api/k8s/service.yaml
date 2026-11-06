@@ -1,0 +1,15 @@
+# Only the sidecar's token-checked port. The health port is left out on purpose, so
+# nothing can route to it, and `api`'s own port is not reachable from outside the pod.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  labels:
+    app.kubernetes.io/name: api
+spec:
+  selector:
+    app.kubernetes.io/name: api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

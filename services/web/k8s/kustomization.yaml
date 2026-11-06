@@ -1,0 +1,7 @@
+# The web base. Namespace and image tag come from the overlay in k8s/envs/<env>/.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml

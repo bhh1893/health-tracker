@@ -333,3 +333,13 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Timeline**: a Postgres history branch; a promotion starts a new one, which is the leading number in a WAL file's name, and a `.history` file records the fork.
 - **Locale (Postgres)**: decides sort order and what counts as a letter; fixed when the database is created.
 - **Trigram**: a run of three characters; `pg_trgm` compares strings by the trigrams they share, which is how it tolerates typos.
+- **Deployment**: a Kubernetes resource that keeps N identical pods running and replaces them gradually when the pod template changes.
+- **Service (Kubernetes)**: a stable name and virtual IP in front of whichever pods match its selector, so callers never track pod IPs.
+- **`HTTPRoute`**: Gateway API resource that sends matching paths to a Service; it attaches to a `Gateway` through `parentRefs`, and the longest matching prefix wins.
+- **Kustomize base and overlay**: a base is plain YAML true in every environment; an overlay points at bases and changes only what differs, such as namespace and image tag.
+- **`configMapGenerator`**: Kustomize feature that builds a ConfigMap from files and puts a content hash in its name, so a changed file rolls the pods using it.
+- **Native sidecar**: an init container with `restartPolicy: Always`; it keeps running, starts before the app containers and stops after them.
+- **Startup probe**: a check that holds off liveness until it first passes, so a slow boot is not mistaken for a hang.
+- **Argo CD hook**: an annotated resource Argo CD runs at a fixed point in a sync, such as `PreSync`, instead of treating it as ordinary desired state.
+- **`kubeconform`**: checks rendered manifests against the Kubernetes API schemas without needing a cluster.
+- **`readOnlyRootFilesystem`**: a container security setting that makes the image's files unwritable, so anything written at runtime needs a mounted volume.

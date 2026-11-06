@@ -6,6 +6,8 @@ import sys
 from datetime import UTC, datetime
 from typing import override
 
+PROBE_PATHS = frozenset({"/healthz", "/readyz"})
+
 
 class JsonFormatter(logging.Formatter):
     @override
@@ -21,6 +23,16 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(entry)
 
 
+def keep_access_record(record: logging.LogRecord) -> bool:
+    """Drop passing probes, which would bury real traffic. A failing probe stays visible."""
+    # uvicorn.access logs with args (client, method, path, http_version, status).
+    match record.args:
+        case (_, _, str(path), _, int(status)):
+            return not (path in PROBE_PATHS and status < 400)
+        case _:
+            return True
+
+
 def configure_logging() -> None:
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter())
@@ -30,3 +42,4 @@ def configure_logging() -> None:
         logger = logging.getLogger(name)
         logger.handlers.clear()
         logger.propagate = True
+    logging.getLogger("uvicorn.access").addFilter(keep_access_record)
