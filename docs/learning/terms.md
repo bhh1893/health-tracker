@@ -365,3 +365,4 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **NodePort**: a Service port opened on every node, in the range 30000-32767, so traffic to any node reaches the Service.
 - **conntrack**: the kernel's table of tracked connections, which lets a firewall accept replies with `ct state established`.
 - **Defense in depth**: layering independent controls, so one gap or bug does not expose everything behind it.
+- **Prune (Argo CD)**: during a sync, delete tracked resources that no longer exist in git; without it they stay in the cluster and the app shows `OutOfSync`.

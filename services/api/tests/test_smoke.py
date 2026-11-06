@@ -19,6 +19,7 @@ class Stub:
     items: dict[str, str] = field(default_factory=dict[str, str])
     deletes: int = 0
     enforce_token: bool = True
+    accept_any_token: bool = False
     corrupt_reads: bool = False
 
 
@@ -38,7 +39,10 @@ class Handler(BaseHTTPRequestHandler):
     def authorized(self) -> bool:
         if not self.stub.enforce_token:
             return True
-        if self.headers.get("Authorization") == f"Bearer {TOKEN}":
+        authorization = self.headers.get("Authorization")
+        if authorization == f"Bearer {TOKEN}":
+            return True
+        if self.stub.accept_any_token and authorization is not None:
             return True
         self.answer(401)
         return False
@@ -96,6 +100,12 @@ def test_never_prints_the_token(stub: Stub, capsys: pytest.CaptureFixture[str]) 
 def test_fails_when_the_token_check_is_off(stub: Stub) -> None:
     stub.enforce_token = False
     with pytest.raises(SmokeFailure, match="no token is refused"):
+        run(stub.url, TOKEN)
+
+
+def test_fails_when_any_token_is_accepted(stub: Stub) -> None:
+    stub.accept_any_token = True
+    with pytest.raises(SmokeFailure, match="wrong token is refused"):
         run(stub.url, TOKEN)
 
 

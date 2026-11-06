@@ -50,6 +50,9 @@ def run(base_url: str, token: str) -> None:
     status, _ = call(base_url, "GET", "/api/v1/foods")
     expect("no token is refused", status, 401)
 
+    status, _ = call(base_url, "GET", "/api/v1/foods", "not-the-token")
+    expect("wrong token is refused", status, 401)
+
     status, _ = call(base_url, "GET", "/api/v1/foods", token)
     expect("token is accepted", status, 200)
 
