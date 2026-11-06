@@ -2,6 +2,24 @@
 
 Takes the three nodes from freshly created to "all Ready with Cilium healthy" (ADR 0004). Step 1 runs on Windows, the rest on the dev VM. The dev VM needs the `cilium` CLI: if it is missing, re-run `dev.yml` first (see `dev-vm.md`). The same playbook also installs the platform components: see `platform.md`.
 
+## Rebuild in one command (Windows)
+
+> **Warning:** this destroys all three nodes and everything on them. Check that no other session is using the cluster.
+
+From the repo root:
+
+```
+.\iac\rebuild-cluster.ps1
+```
+
+This runs steps 1 to 3 below, then waits for all nodes `Ready` and Cilium healthy. It took about 13 minutes on 2026-11-05, before `site.yml` installed the platform components, so expect longer now. Exit code 0 means all of that passed, and the last line reads `REBUILD OK`. Anything else means do not trust the cluster.
+
+- Ansible runs from `~/rebuild-checkout` on the dev VM, set to `origin/main`, so unpushed work is not tested. To test a branch, push it and pass `-Ref origin/<branch>`.
+- The Vagrantfile comes from your Windows checkout.
+- Do not edit `~/rebuild-checkout`: each run discards changes there.
+
+The rest of this runbook is the same work by hand, for when you need to see or repeat one step.
+
 ## 1. Create the VMs (Windows)
 
 From the repo root:
