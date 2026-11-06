@@ -1,0 +1,56 @@
+# Runs the smoke test after each sync (ADR 0016). A failure shows the app as Degraded;
+# nothing rolls back by itself, rollback is `git revert`. BeforeHookCreation keeps the
+# last run, so a failed Job's logs stay readable until the next sync.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: api-smoke
+  labels:
+    app.kubernetes.io/name: api-smoke
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 1
+  # Each request times out by itself; this bounds the whole run, retry included.
+  activeDeadlineSeconds: 120
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api-smoke
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: smoke
+          image: ghcr.io/bhh1893/health-tracker-api
+          command: ["python", "-m", "health_api.smoke"]
+          env:
+            # The Service, so the run crosses the sidecar's token check as real traffic does.
+            - name: SMOKE_BASE_URL
+              value: http://api
+            - name: SMOKE_TOKEN_FILE
+              value: /run/secrets/api-token/token
+          volumeMounts:
+            - name: api-token
+              mountPath: /run/secrets/api-token
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: api-token
+          secret:
+            secretName: api-token

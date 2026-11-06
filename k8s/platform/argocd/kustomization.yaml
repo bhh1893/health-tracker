@@ -1,0 +1,6 @@
+# Applied by the Ansible platform role. values.yaml and versions.yml beside this file
+# belong to the Helm install, not to this list.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - application.yaml
