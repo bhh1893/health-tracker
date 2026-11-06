@@ -350,3 +350,11 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`readOnlyRootFilesystem`**: a container security setting that makes the image's files unwritable, so anything written at runtime needs a mounted volume.
 - **Smoke test**: a short check against the real deployed system that its main path works at all, run right after a deploy.
 - **Resource finalizer (Argo CD)**: a marker on an `Application` that makes deleting it also delete everything it deployed; left off here so the app survives.
+- **Router factory**: a function that builds a FastAPI `APIRouter` from parameters, so several resources with the same rules share one implementation.
+- **`LEFT JOIN LATERAL`**: a join whose subquery can read the current outer row, so it runs once per row; `LEFT` keeps rows where it finds nothing.
+- **Upsert (`ON CONFLICT`)**: one `INSERT` that updates the existing row on a key clash, so two racing creates cannot both fail or both insert.
+- **`RETURNING old`**: Postgres 18 syntax exposing a row as it was before the write; `old.id IS NULL` means the statement inserted.
+- **`SELECT ... FOR UPDATE`**: reads a row and locks it until the transaction ends, so concurrent writers of that row wait their turn.
+- **Check-then-act race**: two requests both pass a check before either writes, which is why a unique index, not the check, has the final say.
+- **URN**: a URI that names something without being fetchable, such as `urn:health-tracker:problem:near-duplicate`.
+- **Mutation check**: breaking a line on purpose to confirm a test fails; a test that stays green was not protecting that line.

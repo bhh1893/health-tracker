@@ -2,8 +2,9 @@
 
 import os
 from collections.abc import Iterator
+from typing import Annotated
 
-from fastapi import Request
+from fastapi import Depends, Request
 from sqlalchemy import URL, Engine, create_engine, make_url
 from sqlalchemy.orm import Session
 
@@ -40,3 +41,6 @@ def get_session(request: Request) -> Iterator[Session]:
     engine: Engine = request.app.state.engine
     with Session(engine) as session:
         yield session
+
+
+DbSession = Annotated[Session, Depends(get_session)]

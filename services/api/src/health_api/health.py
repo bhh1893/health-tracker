@@ -1,14 +1,13 @@
 """Probes for Kubernetes, outside /api/v1 and not routed by the edge (ADR 0006)."""
 
 import logging
-from typing import Annotated, Literal
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
-from sqlalchemy.orm import Session
 
-from health_api.db import get_session
+from health_api.db import DbSession
 from health_api.migrations import schema_is_ready
 from health_api.problems import Problem
 
@@ -23,7 +22,7 @@ class HealthStatus(BaseModel):
 
 # async so it runs on the event loop: liveness must not wait behind a full thread pool,
 # and it deliberately touches no database, or a Postgres outage would restart every pod.
-@router.get("/healthz", operation_id="get_healthz", summary="Liveness: the process is up.")
+@router.get("/healthz", operation_id="get_healthz", description="Liveness: the process is up.")
 async def healthz() -> HealthStatus:
     return HealthStatus()
 
@@ -31,10 +30,10 @@ async def healthz() -> HealthStatus:
 @router.get(
     "/readyz",
     operation_id="get_readyz",
-    summary="Readiness: the database is reachable and migrated.",
+    description="Readiness: the database is reachable and migrated.",
     responses={503: {"model": Problem, "description": "Not ready to serve traffic."}},
 )
-def readyz(session: Annotated[Session, Depends(get_session)]) -> HealthStatus:
+def readyz(session: DbSession) -> HealthStatus:
     try:
         ready = schema_is_ready(session.connection())
     except OperationalError:

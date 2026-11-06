@@ -118,3 +118,18 @@ def client(session: Session, database_url: str) -> Iterator[TestClient]:
     app.dependency_overrides[get_session] = lambda: session
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def committing_client(database_url: str, api_rw_engine: Engine) -> Iterator[TestClient]:
+    """The real get_session, so each request has its own session, as in production.
+
+    `client` shares one session between requests, so a later request can read work that was
+    never committed. A write route's test needs this fixture to prove that its work survives.
+    These rows are real commits, and tests that expect empty Catalogs share this database.
+    """
+    with TestClient(create_app()) as test_client:
+        yield test_client
+    with api_rw_engine.begin() as connection:
+        for table in ("foods", "exercises", "restaurants"):
+            connection.execute(text(f"DELETE FROM {table}"))
