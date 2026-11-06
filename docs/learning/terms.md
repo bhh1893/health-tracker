@@ -306,6 +306,17 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Covering index**: an index that also stores extra columns (`INCLUDE (meal_id)`), so a query can be answered without visiting the table.
 - **Trusted extension**: a Postgres extension that a non-superuser with `CREATE` on the database may install; `pg_trgm` is one.
 - **SQLSTATE**: the five-character code Postgres returns with every error; stable, so code branches on it rather than on message text (`23505` unique, `23514` check, `23503` foreign key, `23001` `ON DELETE RESTRICT`).
+- **Disaster recovery (DR) test**: rebuilding a system from its backups and code on purpose, so you learn what is missing before a real failure does.
+- **Recovery time**: how long a rebuild takes from start to working; the target for it is called RTO (Recovery Time Objective).
+- **Preflight check**: a cheap check run before a destructive step, so a problem stops the work while nothing has been lost.
+- **Exit code**: the number a program returns when it ends; 0 means success and anything else means failure, which is how scripts and CI read the result.
+- **`$LASTEXITCODE`**: PowerShell's variable holding the exit code of the last native program, such as `ssh` or `vagrant`.
+- **`$ErrorActionPreference`**: PowerShell's setting for what happens on an error; `Stop` halts on PowerShell errors but ignores native programs' exit codes.
+- **Native command**: in PowerShell, an external program (`ssh.exe`) as opposed to a built-in cmdlet (`Get-ChildItem`).
+- **Scriptblock**: PowerShell code in `{ }` held as a value, so a function can receive it and run it later with `&`.
+- **Dynamic scope**: PowerShell finds a variable by walking up the call stack, so a called function's variable can hide the caller's variable of the same name.
+- **Detached HEAD**: git checked out at a specific commit rather than on a branch, which suits a checkout nobody commits to.
+- **SSH `BatchMode`**: makes `ssh` fail instead of asking for a password, so an unattended script cannot hang on a prompt.
 - **Helm release**: one installed instance of a chart in a namespace, with a revision number that goes up on each upgrade; `helm list -A` shows them.
 - **Helm values**: the settings a chart's templates read; a `values.yaml` overrides the chart's defaults, so ours lists only the differences.
 - **PersistentVolumeClaim (PVC)**: a pod's request for storage ("64 Mi, one writer"), which stays valid when the pod is replaced.
