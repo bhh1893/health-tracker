@@ -90,3 +90,15 @@
       - "{{ platform_dir }}/edge"
   register: platform_edge_apply
   changed_when: platform_edge_apply.stdout_lines | reject('search', ' unchanged$') | list | length > 0
+
+# Until apply-secrets runs, Argo CD cannot read the repo and shows a comparison error.
+# That is harmless: auto-sync is off, so it tries to change nothing.
+- name: Apply the Argo CD Application
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - apply
+      - --kustomize
+      - "{{ platform_dir }}/argocd"
+  register: platform_argocd_apply
+  changed_when: platform_argocd_apply.stdout_lines | reject('search', ' unchanged$') | list | length > 0

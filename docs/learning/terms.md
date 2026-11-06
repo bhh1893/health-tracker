@@ -348,3 +348,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Argo CD hook**: an annotated resource Argo CD runs at a fixed point in a sync, such as `PreSync`, instead of treating it as ordinary desired state.
 - **`kubeconform`**: checks rendered manifests against the Kubernetes API schemas without needing a cluster.
 - **`readOnlyRootFilesystem`**: a container security setting that makes the image's files unwritable, so anything written at runtime needs a mounted volume.
+- **Smoke test**: a short check against the real deployed system that its main path works at all, run right after a deploy.
+- **Resource finalizer (Argo CD)**: a marker on an `Application` that makes deleting it also delete everything it deployed; left off here so the app survives.

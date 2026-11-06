@@ -1,0 +1,23 @@
+# The one Application (ADR 0016): keep the cluster matching k8s/envs/vagrant on main.
+#
+# No syncPolicy, so auto-sync starts off and rebuild-cluster can load secrets and data
+# first. It is switched on with `kubectl patch`, not here: a field that was never in this
+# file is left alone by `kubectl apply`, so re-running Ansible cannot switch it back off.
+#
+# No resources-finalizer either: deleting this Application must not delete the running app.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: health-tracker
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # SSH, to match the deploy key Secret that apply-secrets creates for this URL.
+    repoURL: git@github.com:bhh1893/health-tracker.git
+    targetRevision: main
+    path: k8s/envs/vagrant
+  destination:
+    # The cluster Argo CD itself runs in.
+    server: https://kubernetes.default.svc
+    namespace: health-tracker
