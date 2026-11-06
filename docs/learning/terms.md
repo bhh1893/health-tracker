@@ -358,3 +358,10 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Check-then-act race**: two requests both pass a check before either writes, which is why a unique index, not the check, has the final say.
 - **URN**: a URI that names something without being fetchable, such as `urn:health-tracker:problem:near-duplicate`.
 - **Mutation check**: breaking a line on purpose to confirm a test fails; a test that stays green was not protecting that line.
+- **Netfilter**: the Linux kernel's packet-filtering framework, a set of hooks such as `input` and `forward` that rules attach to.
+- **nftables**: the current rule language for netfilter, with tables, chains and rules managed by the `nft` command; it replaces iptables syntax.
+- **tc ingress**: the kernel's traffic-control hook for arriving packets; it runs before netfilter, so an eBPF program there can forward a packet netfilter never sees.
+- **TPROXY**: a netfilter target that hands a packet to a local proxy without rewriting its destination, which is how Gateway traffic reaches Envoy.
+- **NodePort**: a Service port opened on every node, in the range 30000-32767, so traffic to any node reaches the Service.
+- **conntrack**: the kernel's table of tracked connections, which lets a firewall accept replies with `ct state established`.
+- **Defense in depth**: layering independent controls, so one gap or bug does not expose everything behind it.
