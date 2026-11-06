@@ -10,5 +10,8 @@ export default defineConfig({
     // Tests must not depend on what an earlier test left mocked.
     restoreMocks: true,
     unstubGlobals: true,
+    // Far from UTC, which is what CI runs in: a date bug that only shows away from
+    // UTC would otherwise pass there.
+    env: { TZ: "Pacific/Auckland" },
   },
 });

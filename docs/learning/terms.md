@@ -367,3 +367,11 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Defense in depth**: layering independent controls, so one gap or bug does not expose everything behind it.
 - **Prune (Argo CD)**: during a sync, delete tracked resources that no longer exist in git; without it they stay in the cluster and the app shows `OutOfSync`.
 - **Sync retry (Argo CD)**: an automated sync that fails runs again, 5 times by default, before it ends as `Failed`; each attempt re-creates the hook Jobs.
+- **Client-side routing**: the page's JavaScript maps the URL to a screen without asking the server for a new page; nginx only has to serve `index.html` for any path.
+- **Bearer token**: a secret sent in the `Authorization` header; whoever holds it is let in, so anyone who reads it can act as you.
+- **`localStorage`**: per-origin browser storage that survives restarts; any script running on the page can read it, which is why it is a poor home for a secret on a page with untrusted scripts.
+- **XSS (cross-site scripting)**: an attacker's script running inside your page, with the same access to `localStorage` and the API as your own code.
+- **Middleware (`openapi-fetch`)**: a function every request and response passes through, so a concern like auth lives in one place instead of in every call.
+- **`useSyncExternalStore`**: the React hook that re-renders a component when state held outside React changes.
+- **Query cache (TanStack Query)**: API responses kept in memory under a key, so screens share one result instead of each fetching it.
+- **`staleTime`**: how long a cached response counts as fresh; within it a remounted screen uses the cache without refetching.

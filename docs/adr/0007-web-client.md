@@ -8,7 +8,7 @@ status: accepted
 
 ## Shape
 
-- **Stack:** TypeScript (strict), React, Vite, React Router (history URLs: `/log`, `/day/{day}`, `/exercises/{id}`), TanStack Query for every API call; plain React state only for the form being edited (the client holds the whole Meal, ADR 0006). ESLint + Prettier run in CI. TypeScript stays on 5.x until `openapi-typescript` and `typescript-eslint` accept a newer major. npm, with `package-lock.json`, because it ships with Node.
+- **Stack:** TypeScript (strict), React, Vite, React Router (history URLs: `/exercise`, `/meals`, `/search`, with the viewed Day in `?day=`, ADR 0013), TanStack Query for every API call; plain React state only for the form being edited (the client holds the whole Meal, ADR 0006). ESLint + Prettier run in CI. TypeScript stays on 5.x until `openapi-typescript` and `typescript-eslint` accept a newer major. npm, with `package-lock.json`, because it ships with Node.
 - **Contract:** `services/web/src/api/schema.d.ts` is generated from `../api/openapi.json` by a script and committed. CI regenerates it and fails on drift, triggered by changes under `services/web/**` **or** to `services/api/openapi.json`. A contract change lands in one PR as three visible diffs: Pydantic models, `openapi.json`, `schema.d.ts`.
 - **Calls:** relative `/api/v1/...` only. One origin (ADR 0001) means no API URL, no CORS, and no per-environment config: one image runs on Vagrant and in any cloud. If runtime config is ever needed, the container serves a `config.json`; nothing is baked in at build time.
 - **Image:** stage 1 (Node) runs `vite build`; stage 2 copies `dist/` into `nginxinc/nginx-unprivileged` (non-root, port 8080). Node never ships.
