@@ -1,11 +1,9 @@
-"""RFC 9457 Problem Details: every error leaves the API in this one shape (ADR 0006).
-
-This is the skeleton's stub. Later tickets add typed problems and the 409 extensions.
-"""
+"""RFC 9457 Problem Details: every error leaves the API in this one shape (ADR 0006)."""
 
 from collections.abc import Callable
 from http import HTTPStatus
 from typing import Any, cast
+from uuid import UUID
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -16,10 +14,24 @@ from starlette.exceptions import HTTPException
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 NO_BODY_STATUSES = frozenset({204, 304})
 
+# `type` is how a client tells one 409 from another without parsing `detail`. These are names,
+# not links: RFC 9457 allows a URI nobody can fetch, and a URN cannot look like a broken URL.
+EXACT_DUPLICATE = "urn:health-tracker:problem:exact-duplicate"
+NEAR_DUPLICATE = "urn:health-tracker:problem:near-duplicate"
+ITEM_IN_USE = "urn:health-tracker:problem:item-in-use"
+
 
 class FieldError(BaseModel):
     field: str
     message: str
+
+
+class CatalogRef(BaseModel):
+    """How any response points at a Catalog item (ADR 0006)."""
+
+    id: UUID
+    name: str
+    archived: bool
 
 
 class Problem(BaseModel):
@@ -28,6 +40,28 @@ class Problem(BaseModel):
     status: int
     detail: str | None = None
     errors: list[FieldError] | None = None
+    existing: CatalogRef | None = None
+    similar: list[CatalogRef] | None = None
+
+
+class ProblemError(Exception):
+    """Raise for an error that carries more than text, which HTTPException cannot deliver."""
+
+    def __init__(
+        self,
+        status: int,
+        *,
+        type: str,
+        detail: str,
+        existing: CatalogRef | None = None,
+        similar: list[CatalogRef] | None = None,
+    ) -> None:
+        super().__init__(detail)
+        self.status = status
+        self.type = type
+        self.detail = detail
+        self.existing = existing
+        self.similar = similar
 
 
 def problem_response(
@@ -35,10 +69,22 @@ def problem_response(
     detail: str | None = None,
     errors: list[FieldError] | None = None,
     headers: dict[str, str] | None = None,
+    type: str = "about:blank",
+    existing: CatalogRef | None = None,
+    similar: list[CatalogRef] | None = None,
 ) -> JSONResponse:
-    problem = Problem(title=HTTPStatus(status).phrase, status=status, detail=detail, errors=errors)
+    problem = Problem(
+        type=type,
+        title=HTTPStatus(status).phrase,
+        status=status,
+        detail=detail,
+        errors=errors,
+        existing=existing,
+        similar=similar,
+    )
     return JSONResponse(
-        problem.model_dump(exclude_none=True),
+        # mode="json" turns UUIDs into text. Without it JSONResponse raises, and the 409 is a 500.
+        problem.model_dump(mode="json", exclude_none=True),
         status_code=status,
         media_type=PROBLEM_MEDIA_TYPE,
         headers=headers,
@@ -55,6 +101,13 @@ def _http_exception(_: Request, exc: Exception) -> Response:
     detail = cast("object", exc.detail)
     return problem_response(
         exc.status_code, detail=detail if isinstance(detail, str) else None, headers=headers
+    )
+
+
+def _problem_error(_: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, ProblemError)
+    return problem_response(
+        exc.status, detail=exc.detail, type=exc.type, existing=exc.existing, similar=exc.similar
     )
 
 
@@ -75,6 +128,7 @@ def _unhandled_exception(_: Request, __: Exception) -> JSONResponse:
 
 def register_problem_handlers(app: FastAPI) -> None:
     app.add_exception_handler(HTTPException, _http_exception)
+    app.add_exception_handler(ProblemError, _problem_error)
     app.add_exception_handler(RequestValidationError, _validation_error)
     app.add_exception_handler(Exception, _unhandled_exception)
 
