@@ -126,10 +126,11 @@ def committing_client(database_url: str, api_rw_engine: Engine) -> Iterator[Test
 
     `client` shares one session between requests, so a later request can read work that was
     never committed. A write route's test needs this fixture to prove that its work survives.
-    These rows are real commits, and tests that expect empty Catalogs share this database.
+    These rows are real commits, and tests that expect empty tables share this database.
     """
     with TestClient(create_app()) as test_client:
         yield test_client
     with api_rw_engine.begin() as connection:
-        for table in ("foods", "exercises", "restaurants"):
+        # Meals first: their foreign keys restrict deleting a Catalog item in use.
+        for table in ("meals", "foods", "exercises", "restaurants"):
             connection.execute(text(f"DELETE FROM {table}"))

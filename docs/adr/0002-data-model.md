@@ -15,7 +15,7 @@ Postgres holds one row per fact, owned by a user, with the database (not only th
 - Day: `occurred_at timestamptz` + `occurred_tz` (IANA name) + `day date`, the last computed by the API on every write. Not a generated column: timezone conversion is not immutable in Postgres. A Day never moves when the user later travels.
 - Deletes: Meals and Entries are hard-deleted (Meal cascades to Food Entries). Catalog items are archived (`archived_at`); FKs from Entries are `ON DELETE RESTRICT`, so only never-used items can be hard-deleted.
 - Catalog names: unique per user on `lower(name)`, including archived items; the API trims and collapses whitespace and offers to unarchive instead of duplicating.
-- Edits: current state only, with `logged_at` (immutable) and `updated_at`; no history tables.
+- Edits: current state only, with `logged_at` (immutable) and `updated_at`; no history tables. A Food Entry has no identity outside its Meal: `PUT` replaces the rows (ADR 0006), so their `id` and `logged_at` change on every replace, and the Meal's `logged_at` is the one that lasts.
 
 ## Considered Options
 

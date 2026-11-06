@@ -19,6 +19,8 @@ NO_BODY_STATUSES = frozenset({204, 304})
 EXACT_DUPLICATE = "urn:health-tracker:problem:exact-duplicate"
 NEAR_DUPLICATE = "urn:health-tracker:problem:near-duplicate"
 ITEM_IN_USE = "urn:health-tracker:problem:item-in-use"
+LAST_FOOD_ENTRY = "urn:health-tracker:problem:last-food-entry"
+KIND_IMMUTABLE = "urn:health-tracker:problem:kind-immutable"
 
 
 class FieldError(BaseModel):

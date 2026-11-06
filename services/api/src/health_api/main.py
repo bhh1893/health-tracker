@@ -7,6 +7,7 @@ from health_api import health
 from health_api.catalogs import CATALOGS, catalog_router
 from health_api.db import create_db_engine
 from health_api.logs import configure_logging
+from health_api.meals import meals_router
 from health_api.migrations import image_revisions
 from health_api.problems import document_problem_media_type, register_problem_handlers
 
@@ -29,5 +30,6 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     for catalog in CATALOGS:
         app.include_router(catalog_router(catalog))
+    app.include_router(meals_router())
     document_problem_media_type(app)
     return app
