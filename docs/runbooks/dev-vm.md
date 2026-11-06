@@ -109,10 +109,11 @@ git config --global user.email "<email>"
 
 Skip this step if the cluster does not exist yet.
 
-1. Run `apply-secrets` (ADR 0015).
-2. Restart the pods.
-3. Re-paste the token on the phone.
-4. Take a base backup straight away, because the bucket is now empty.
+1. Register the new deploy key and delete the old one (`docs/runbooks/secrets.md`).
+2. Run `iac/scripts/apply-secrets` (ADR 0015).
+3. Restart the pods.
+4. Re-paste the token on the phone.
+5. Take a base backup straight away, because the bucket is now empty.
 
 ## Check it worked
 

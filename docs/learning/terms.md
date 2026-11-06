@@ -175,6 +175,9 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Required status check / `ci-gate`**: branch protection blocks merges until named checks pass; one always-running gate job avoids path-filtered checks hanging as pending.
 - **Flaky test**: a test that sometimes fails with no code change; erodes trust in CI, so it is fixed or removed.
 - **Threat model**: a short list of who or what you defend against and what you deliberately do not; it decides how much security machinery is justified.
+- **`kubectl create --dry-run=client -o yaml | kubectl apply -f -`**: renders an object locally and applies it, turning an imperative `create` into a re-runnable step that reports `unchanged`.
+- **argv**: a process's command-line arguments; any user on the machine can read them with `ps`, so secrets never go there.
+- **`kubernetes.io/basic-auth`**: a Secret type the API server checks for a `username` or `password` key; CNPG requires it for role passwords.
 - **Kubernetes Secret**: a cluster object holding sensitive values for pods to read as env vars or files; base64-encoded, which is an encoding, not encryption.
 - **etcd encryption at rest**: an API server setting that encrypts Secrets inside etcd; off by default, and skipped here because reaching etcd already takes host access.
 - **Least privilege**: give each component only the access it needs, so a bug or breach in it can do limited damage.
