@@ -1,8 +1,17 @@
+from uuid import UUID
+
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from health_api.main import create_app
-from health_api.problems import PROBLEM_MEDIA_TYPE
+from health_api.problems import (
+    NEAR_DUPLICATE,
+    PROBLEM_MEDIA_TYPE,
+    CatalogRef,
+    ProblemError,
+)
+
+OATS = CatalogRef(id=UUID("019a0000-0000-7000-8000-00000000000a"), name="Oats", archived=False)
 
 
 def boom() -> None:
@@ -15,6 +24,10 @@ def takes_a_number(limit: int) -> int:
 
 def conflict() -> None:
     raise HTTPException(409, detail={"similar": ["oats"]})
+
+
+def near_duplicate() -> None:
+    raise ProblemError(409, type=NEAR_DUPLICATE, detail="Similar.", similar=[OATS])
 
 
 def unchanged() -> None:
@@ -64,6 +77,23 @@ def test_non_text_detail_keeps_its_status() -> None:
 
     assert response.status_code == 409
     assert response.headers["content-type"] == PROBLEM_MEDIA_TYPE
+
+
+def test_problem_error_delivers_its_extensions() -> None:
+    app = create_app()
+    app.add_api_route("/near", near_duplicate)
+
+    response = TestClient(app).get("/near")
+
+    assert response.status_code == 409
+    assert response.headers["content-type"] == PROBLEM_MEDIA_TYPE
+    assert response.json() == {
+        "type": NEAR_DUPLICATE,
+        "title": "Conflict",
+        "status": 409,
+        "detail": "Similar.",
+        "similar": [{"id": str(OATS.id), "name": "Oats", "archived": False}],
+    }
 
 
 def test_no_body_status_sends_no_body() -> None:

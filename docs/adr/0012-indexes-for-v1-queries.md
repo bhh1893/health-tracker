@@ -15,9 +15,20 @@ At one user's real volume (about 1,100 Meals and 7,000 Sets a year) Postgres rea
 - **Exercise filter and last-N Sessions:** `exercise_entries (user_id, exercise_id, day, occurred_at, id)`. The filtered range is a contiguous slice; last N Sessions reads it backwards collecting distinct `day` values and stops after N, then fetches those Days' Sets.
 - **Food filter:** `food_entries (user_id, food_id) INCLUDE (meal_id)`, then a primary-key join to `meals` and an in-memory sort by `(day, occurred_at, id)`. No `day`/`occurred_at` copied onto `food_entries`.
 - **Trigrams:** GIN with `gin_trgm_ops` on `lower(name)` for `foods`, `exercises` and `restaurants`. `user_id` and `archived_at IS NULL` are filters applied after the index lookup; no partial index.
-- **Typeahead (non-empty `q`):** `ILIKE 'q%'` OR `word_similarity >= 0.4`; prefix matches first, then score descending, then name. For `q` shorter than 3 characters, prefix only.
-- **Near-duplicate on create:** exact match via the existing unique `(user_id, lower(name))` index; near match is `similarity >= 0.6` on the normalized name. Thresholds are set per query with `SET LOCAL`, never globally. Both numbers are starting values, tuned on a fixture list of name pairs recorded in this ADR at build.
-- **Recently used (empty `q`) and `last_quantity`:** computed at read time, no stored column. Scan recent Entries newest-first in `(day, occurred_at)` order, take distinct items until `limit`, pad with never-used items by name using the unique name index. `last_quantity` is the newest Food Entry per Food via the food-filter index.
+- **Typeahead (non-empty `q`):** prefix `LIKE` on `lower(name)` OR the `<%` operator at `word_similarity >= 0.4`; prefix matches first, then score descending, then name. For `q` shorter than 3 characters, prefix only. The operator matters: only an operator can use the GIN index, a `word_similarity()` call in `WHERE` cannot.
+- **Near-duplicate on create:** exact match via the existing unique `(user_id, lower(name))` index; near match is the `%` operator at `similarity >= 0.5` on the normalized name. Thresholds are set per query with `SET LOCAL`, never globally. Both numbers were tuned at build, see Threshold tuning.
+- **Recently used (empty `q`) and `last_quantity`:** computed at read time, no stored column. One `LEFT JOIN LATERAL` per Catalog row finds its newest Entry in `(day, occurred_at)` order, through the food-filter and Exercise indexes; rows sort by that, and never-used items follow by name. The same subquery supplies `last_unit` and `last_quantity`. This visits every item in the user's Catalog rather than stopping at `limit`, which is simpler than scanning Entries and fine for Catalogs of hundreds of rows. Restaurants have no `(user_id, restaurant_id)` index and scan the user's Meals; the seed-script plans decide whether either needs more.
+
+## Threshold tuning
+
+Measured on Postgres 18 over the pairs in `services/api/tests/name_pairs.py`, which a test keeps true.
+
+**Near-duplicate: changed from 0.6 to 0.5.** At 0.6 it missed real duplicates: `egg`/`eggs` (0.50), `oats`/`oat` (0.50), `pullup`/`pull up` (0.50), `rice`/`rices` (0.57), `kale`/`kales` (0.57). The two errors cost different amounts: a false alarm is one tap on a dialog when creating an item, while a missed duplicate splits one Food's history across two rows for good. So the threshold favours false alarms.
+
+- Accepted false alarms at 0.5: `bench press`/`incline bench press` (0.60), `2% milk`/`1% milk` (0.56), `chicken breast`/`chicken` (0.53), `squat`/`front squat`, `apple`/`apple juice`, `deadlift`/`romanian deadlift` (all 0.50).
+- Accepted miss: `chipotle`/`chipolte` (0.38). A swap of two letters breaks three trigrams; reaching it would also flag `chicken breast`/`chicken thigh` (0.38). Typeahead still shows the existing item while typing.
+
+**Typeahead: 0.4 kept.** Typos score 0.50 to 0.63 (`chiken`, `brest`, `buter`). Noise such as `oat` for `goat cheese` (0.50) gets through, but ranks below every prefix match.
 
 ## Verification
 
