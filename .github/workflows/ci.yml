@@ -4,14 +4,18 @@ on:
   pull_request:
   push:
     branches: [main]
+    # The bot's tag bump must not start a run that would bump again (ADR 0016).
+    paths-ignore:
+      - k8s/envs/vagrant/kustomization.yaml
 
 # Least privilege: jobs can read the repo and nothing else.
 permissions:
   contents: read
 
-# A new push to the same PR cancels the older, now-pointless run.
+# A new push to the same PR cancels the older, now-pointless run. On main each commit
+# gets its own group: a cancelled run there would lose that merge's image for good.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -328,3 +332,73 @@ jobs:
           if echo "${RESULTS}" | grep -Eq '"(failure|cancelled)"'; then
             exit 1
           fi
+
+  # Merge only: builds each changed service and pushes it to GHCR, tagged with the commit
+  # (ADR 0016). !cancelled(): by default a job is skipped when any job upstream of it was,
+  # and path filters skip some of those on nearly every run. ci-gate's result is the test.
+  # Third-party actions here are pinned to a commit, because they run with a write token.
+  publish:
+    needs: [changes, ci-gate]
+    if: >-
+      !cancelled()
+      && github.event_name == 'push'
+      && needs.ci-gate.result == 'success'
+      && (needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550  # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
+      - name: Build and push api
+        if: needs.changes.outputs.api == 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
+        with:
+          context: services/api
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/bhh1893/health-tracker-api:${{ github.sha }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Build and push web
+        if: needs.changes.outputs.web == 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
+        with:
+          context: services/web
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/bhh1893/health-tracker-web:${{ github.sha }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  # Records the new tags in git, which is what Argo CD watches (ADR 0016). A separate job
+  # so the key that can write to main never sits beside a Docker build. It pushes past the
+  # PR requirement with a deploy key, the ruleset's bypass actor (ADR 0018). Unlike a
+  # GITHUB_TOKEN push, that push does fire workflows, so paths-ignore is what stops a loop.
+  bump-tags:
+    needs: [changes, publish]
+    if: ${{ !cancelled() && needs.publish.result == 'success' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # the script compares commits to refuse a rollback
+          ssh-key: ${{ secrets.TAG_BUMP_DEPLOY_KEY }}
+      - name: Commit the new tags to main
+        env:
+          SERVICES: >-
+            ${{ needs.changes.outputs.api == 'true' && 'api' || '' }}
+            ${{ needs.changes.outputs.web == 'true' && 'web' || '' }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          read -ra services <<< "${SERVICES}"
+          .github/scripts/bump-image-tags "${GITHUB_SHA}" "${services[@]}"
