@@ -14,7 +14,7 @@ from name_pairs import (
     TYPEAHEAD_MATCHES,
     TYPEAHEAD_NON_MATCHES,
 )
-from sqlalchemy import text
+from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
 import health_api.catalogs as catalogs
@@ -545,6 +545,69 @@ def test_the_fuzzy_operators_use_the_trigram_index(session: Session) -> None:
         plan = session.execute(text(f"EXPLAIN SELECT id FROM foods WHERE {predicate}")).scalars()
 
         assert "foods_name_trgm" in "\n".join(plan)
+
+
+def committed(engine: Engine, table: str, item: UUID) -> tuple[str, bool] | None:
+    """What a separate connection sees, which is only what was committed."""
+    with engine.connect() as connection:
+        row = connection.execute(
+            text(f"SELECT name, archived_at IS NOT NULL FROM {table} WHERE id = :id"),
+            {"id": item},
+        ).one_or_none()
+    return (row[0], row[1]) if row else None
+
+
+@every_catalog
+def test_put_is_committed(committing_client: TestClient, api_rw_engine: Engine, table: str) -> None:
+    item = create(committing_client, table, "Thing")
+
+    assert committed(api_rw_engine, table, item) == ("Thing", False)
+
+
+@every_catalog
+def test_patch_rename_is_committed(
+    committing_client: TestClient, api_rw_engine: Engine, table: str
+) -> None:
+    item = create(committing_client, table, "Before")
+
+    committing_client.patch(url(table, item), json={"name": "Completely different"})
+
+    assert committed(api_rw_engine, table, item) == ("Completely different", False)
+
+
+@every_catalog
+def test_patch_archive_is_committed(
+    committing_client: TestClient, api_rw_engine: Engine, table: str
+) -> None:
+    item = create(committing_client, table, "Thing")
+
+    committing_client.patch(url(table, item), json={"archived": True})
+
+    assert committed(api_rw_engine, table, item) == ("Thing", True)
+
+
+@every_catalog
+def test_delete_is_committed(
+    committing_client: TestClient, api_rw_engine: Engine, table: str
+) -> None:
+    item = create(committing_client, table, "Thing")
+
+    committing_client.delete(url(table, item))
+
+    assert committed(api_rw_engine, table, item) is None
+
+
+def test_a_refused_patch_changes_nothing(
+    committing_client: TestClient, api_rw_engine: Engine
+) -> None:
+    """The rename is refused, so the archive in the same request must not land either."""
+    create(committing_client, "foods", "Oats")
+    item = create(committing_client, "foods", "Rice")
+
+    response = committing_client.patch(url("foods", item), json={"name": "Oats", "archived": True})
+
+    assert response.status_code == 409
+    assert committed(api_rw_engine, "foods", item) == ("Rice", False)
 
 
 def similarity(session: Session, left: str, right: str) -> float:
