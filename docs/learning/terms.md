@@ -202,7 +202,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **GHCR**: GitHub Container Registry, which stores container images next to the repo.
 - **Image tag vs digest**: a tag is a movable label (`:abc123`); a digest is the immutable content hash.
 - **Immutable SHA tag**: tagging an image with its git commit SHA so a tag always means the same build.
-- **Branch ruleset / bypass actor**: GitHub rules protecting a branch; a bypass actor is allowed past them (here, the Actions bot).
+- **Branch ruleset / bypass actor**: GitHub rules protecting a branch; a bypass actor is allowed past them (here, deploy keys, ADR 0018).
 - **Deploy key**: an SSH key that grants access to a single repo, read-only unless you say otherwise.
 - **Drift (GitOps)**: the cluster no longer matches git.
 - **Rollback by revert**: undoing a deploy by reverting the git commit, so the same pipeline redeploys the old version.
@@ -215,6 +215,11 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`ci-gate`**: our single required check; it always runs and fails only if a job it waits for failed, so skipped jobs never leave the PR stuck "pending".
 - **`needs` / `if: always()`**: `needs` makes a job wait for others; by default it is skipped if one of them failed or was skipped, so `always()` forces the gate to run and judge the results itself.
 - **Concurrency group**: a label so a newer run of the same workflow cancels the older one.
+- **`GITHUB_TOKEN`**: a short-lived credential GitHub creates for each workflow run; its `permissions:` block sets what it can do, and pushes made with it do not start new workflow runs.
+- **`paths-ignore`**: a workflow trigger filter; a push that touches only the listed paths starts no run.
+- **Bot commit**: a commit made by automation rather than a person; here, CI writing image tags to `main` with a deploy key.
+- **GitHub App**: an identity you register with GitHub that gets short-lived tokens from a private key; the usual way to give automation its own login at a company.
+- **Pinning an action to a commit**: `uses: owner/action@<full sha>` instead of a tag, because a tag can be moved to different code and a commit cannot.
 - **Branch ruleset**: GitHub rules on a branch (require a check, block force-push); on free plans they need a public repo.
 - **gitleaks**: a scanner that searches files and git history for strings shaped like secrets (API keys, tokens, private keys).
 - **Redaction (`--redact`)**: hiding the matched secret in scan output so the CI log does not leak it a second time.

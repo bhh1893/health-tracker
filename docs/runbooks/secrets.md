@@ -10,6 +10,8 @@ Every secret value lives in `~/.config/health-tracker/` on the dev VM, and `iac/
 | `backup.env` | `backup-key` | `health-tracker` | CNPG Barman Cloud plugin |
 | `argocd-deploy-key` | `repo-health-tracker` | `argocd` | Argo CD |
 
+`TAG_BUMP_DEPLOY_KEY` is the exception: it lives only in GitHub Actions secrets and has no file here (ADR 0018).
+
 ## First install
 
 1. Generate the values. A file that already exists is left alone.
@@ -19,7 +21,7 @@ Every secret value lives in `~/.config/health-tracker/` on the dev VM, and `iac/
    ansible-playbook iac/ansible/dev.yml -e dotfiles_repo=git@github.com:bhh1893/dotfiles.git
    ```
 
-2. Register the deploy key on GitHub, from a Windows terminal. Read-only is the default; never add `--allow-write`. The key is tied to your `gh` login, so de-authorizing `gh` removes it.
+2. Register the deploy key on GitHub, from a Windows terminal. Read-only is the default; never add `--allow-write` to this key. The key is tied to your `gh` login, so de-authorizing `gh` removes it.
 
    ```
    cd ~
@@ -43,6 +45,17 @@ Every secret value lives in `~/.config/health-tracker/` on the dev VM, and `iac/
    ```
 
    Scan the QR code, copy the text, and paste it into the app's "enter secret" screen.
+
+## CI tag bump key
+
+The one deploy key with write access: CI uses it to commit image tags to `main` past the PR rule (ADR 0018). Run this yourself, not through Claude. The private key goes straight into GitHub and is then deleted, so there is nothing to back up. To rotate, delete the old key on GitHub and repeat these steps.
+
+```
+ssh-keygen -q -t ed25519 -N '' -C 'health-tracker tag bump' -f ~/tag-bump-key
+gh repo deploy-key add ~/tag-bump-key.pub --repo bhh1893/health-tracker --allow-write --title "health-tracker tag bump"
+gh secret set TAG_BUMP_DEPLOY_KEY --repo bhh1893/health-tracker < ~/tag-bump-key
+rm ~/tag-bump-key ~/tag-bump-key.pub
+```
 
 ## Rotate a secret
 

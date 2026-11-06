@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Writes one commit's SHA into the overlay's images: block and pushes it to main (ADR 0016).
+# Usage: bump-image-tags <sha> <service>...
+set -euo pipefail
+
+sha="$1"
+shift
+file=k8s/envs/vagrant/kustomization.yaml
+registry=ghcr.io/bhh1893/health-tracker
+
+# Prints the tag the overlay holds for a service. Empty means the file changed shape.
+current_tag() {
+  sed -n "\|name: ${registry}-$1\$|{n;s/^ *newTag: \"\(.*\)\"\$/\1/p}" "${file}"
+}
+
+# Each attempt starts from the newest main and redoes the edit, because another merge's
+# bump may have landed first. Redoing it avoids a rebase conflict on these same lines.
+for attempt in 1 2 3 4 5; do
+  git fetch --quiet origin main
+  git reset --quiet --hard origin/main
+
+  bumped=()
+  for svc in "$@"; do
+    tag="$(current_tag "${svc}")"
+    if [[ -z "${tag}" ]]; then
+      echo "no newTag found for ${svc} in ${file}" >&2
+      exit 1
+    fi
+    # A slow run, or a re-run of an old one, must not roll a service back. The all-zero
+    # placeholder is not a commit, so this check is false for it and the bump goes ahead.
+    if git merge-base --is-ancestor "${sha}" "${tag}" 2>/dev/null; then
+      echo "${svc} is already at ${tag}, which includes ${sha}"
+      continue
+    fi
+    sed -i "\|name: ${registry}-${svc}\$|{n;s/newTag: .*/newTag: \"${sha}\"/}" "${file}"
+    bumped+=("${svc}")
+  done
+
+  if [[ ${#bumped[@]} -eq 0 ]]; then
+    exit 0
+  fi
+
+  git add "${file}"
+  git commit --quiet -m "deploy ${bumped[*]} at ${sha:0:7}"
+  if git push --quiet origin HEAD:main; then
+    exit 0
+  fi
+  echo "push attempt ${attempt} lost a race with another commit, retrying" >&2
+  sleep $((attempt * 5))
+done
+
+echo "could not push the tag bump after 5 attempts" >&2
+exit 1
