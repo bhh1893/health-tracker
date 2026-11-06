@@ -1,0 +1,5 @@
+# NIC order follows the Vagrantfile: NAT, host-only, bridged.
+node_firewall_interface: eth2
+# The Gateway's listener (ADR 0010).
+node_firewall_allowed_tcp_ports:
+  - 80

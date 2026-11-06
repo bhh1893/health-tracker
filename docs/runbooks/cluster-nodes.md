@@ -82,6 +82,16 @@ cilium encryption status
 
 This must print `Encryption: Wireguard (3/3 nodes)`.
 
+## Check the node firewall
+
+Run this from a device on the home LAN, not the dev VM, which reaches the workers over the host-only network. Use the workers' `eth2` addresses from `ip -br addr show eth2`, and any NodePort from `kubectl get svc -A`.
+
+Only the Gateway may answer. Port 22, 10250 and every NodePort must time out on each worker's LAN address, and `http://192.168.0.250/` must load.
+
+The workers' own LAN addresses show nothing open, even port 80: the Gateway listens only on `192.168.0.250`.
+
+Never run `systemctl start nftables` on a node. It flushes the whole ruleset, including Cilium's rules, and the Gateway stops working (ADR 0019).
+
 ## What to expect when a worker dies
 
 Measured on 2026-11-05 by powering off the worker announcing `192.168.0.250`, once each way, with a backend pod on each worker. Windows probed every second; the phone recovered by itself in roughly the same 20s:

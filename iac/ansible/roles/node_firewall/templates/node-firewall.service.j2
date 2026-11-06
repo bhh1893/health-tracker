@@ -1,0 +1,18 @@
+# Managed by Ansible (ADR 0019). Used instead of the stock nftables.service, whose
+# stop action runs `nft flush ruleset` and would remove Cilium's rules.
+[Unit]
+Description=Node firewall on the bridged NIC
+Wants=network-pre.target
+Before=network-pre.target shutdown.target
+Conflicts=shutdown.target
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft --file /etc/node-firewall.nft
+ExecReload=/usr/sbin/nft --file /etc/node-firewall.nft
+ExecStop=/usr/sbin/nft delete table inet node_firewall
+
+[Install]
+WantedBy=sysinit.target

@@ -1,0 +1,10 @@
+galaxy_info:
+  author: bhh1893
+  description: Admits only the Gateway on a bridged NIC, Vagrant only (ADR 0019)
+  license: MIT
+  min_ansible_version: "2.20"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - resolute
+dependencies: []

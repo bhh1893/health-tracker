@@ -33,7 +33,7 @@ The phone reaches one Cilium Gateway (Gateway API, ADR 0001) on a LoadBalancer I
 
 ## Consequences
 
-- **v1 security posture:** the bearer token crosses the home Wi-Fi in cleartext, so anyone who can listen on that network can read or write the app's data through the API. Accepted for one user and low-sensitivity data. The workers sit on the home LAN through their bridged NIC, so the node firewall (ansible role) should admit only port 80 on that NIC.
+- **v1 security posture:** the bearer token crosses the home Wi-Fi in cleartext, so anyone who can listen on that network can read or write the app's data through the API. Accepted for one user and low-sensitivity data. The workers sit on the home LAN through their bridged NIC, so the node firewall (ansible role) should admit only port 80 on that NIC. Amended by ADR 0019: a role alone cannot see NodePorts, so `nodePort.addresses` closes those.
 - **Amends** ADR 0001 ("one TLS cert" is a v2 property) and ADR 0006 (`401` now comes from the sidecar, not the Gateway). The v1 `api` Deployment has two containers.
 - **v2: swap the auth.** Replace the nginx sidecar with oauth2-proxy or an OIDC-aware proxy. `api` and the Gateway config do not change; this was the reason for choosing a sidecar.
 

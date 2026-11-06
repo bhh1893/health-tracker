@@ -1,0 +1,34 @@
+#!/usr/sbin/nft -f
+# Managed by Ansible (ADR 0019). Filters only what arrives on the bridged NIC.
+#
+# Never add `flush ruleset` here: Cilium's iptables rules live in the same
+# ruleset, and flushing them breaks the Gateway. This file replaces only its own
+# table, in one transaction, so a reload leaves no gap.
+#
+# This cannot cover plain NodePorts: Cilium handles them in eBPF before netfilter
+# sees the packet. nodePort.addresses in the Cilium values closes those.
+table inet node_firewall {}
+destroy table inet node_firewall
+
+table inet node_firewall {
+  chain input {
+    type filter hook input priority filter; policy accept;
+
+    # Every other NIC carries Ansible, cluster or NAT traffic.
+    iifname != "{{ node_firewall_interface }}" accept
+
+    # Replies to the node's own traffic: DNS can leave through this NIC.
+    ct state established,related accept
+
+    # DHCP renewal replies. The first lease at boot never reaches this rule: the
+    # client reads it from a raw socket, before netfilter.
+    udp sport 67 udp dport 68 counter accept
+
+    # Gateway traffic reaches Envoy through TPROXY, keeping its original port.
+    # Cilium skips conntrack for it, so every packet lands here, not on the
+    # established rule above.
+    tcp dport { {{ node_firewall_allowed_tcp_ports | join(', ') }} } accept
+
+    counter drop
+  }
+}

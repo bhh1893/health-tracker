@@ -18,6 +18,13 @@ ipam:
 # wildcard because the control plane has no eth2.
 devices: enp0s3,eth+
 
+# Serve NodePorts on the host-only network only. Listing eth2 above would otherwise
+# expose them to the LAN, and they are handled in eBPF, before the node firewall
+# can see them (ADR 0019). LoadBalancer IPs such as the Gateway's are not affected.
+nodePort:
+  addresses:
+    - 192.168.56.0/24
+
 l2announcements:
   enabled: true
 

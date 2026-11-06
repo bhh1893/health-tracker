@@ -16,6 +16,13 @@
   roles:
     - role: bridged_nic
 
+# Before anything listens on the LAN. Same Vagrant-only group as above.
+- name: Firewall the bridged NIC
+  hosts: bridged
+  become: true
+  roles:
+    - role: node_firewall
+
 - name: Install the container runtime and Kubernetes packages
   hosts: k8s_cluster
   become: true
