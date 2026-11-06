@@ -1,0 +1,28 @@
+# The one way in from the home LAN (ADR 0010). Cilium sees this and creates a
+# LoadBalancer Service, which takes its IP from the pool in cilium/l2-announcement.yaml.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: edge
+  namespace: edge
+spec:
+  gatewayClassName: cilium
+  addresses:
+    - type: IPAddress
+      value: 192.168.0.250
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      # Routes live with their services. Only the app namespace may attach one.
+      allowedRoutes:
+        kinds:
+          # The API server fills in `group` if left out, and then every apply sees a
+          # difference and reports `configured`, which breaks Ansible's changed=0.
+          - group: gateway.networking.k8s.io
+            kind: HTTPRoute
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              kubernetes.io/metadata.name: health-tracker

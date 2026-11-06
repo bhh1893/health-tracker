@@ -1,0 +1,14 @@
+# What Argo CD deploys: the app layer only (ADR 0016). The pg Cluster under pg/ and the
+# Gateway under k8s/platform/edge/ are owned by scripts and Ansible.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: health-tracker
+resources:
+  - ../../../services/api/k8s
+  - ../../../services/web/k8s
+# CI rewrites newTag on each merge (ADR 0016). All zeros until the first image is pushed.
+images:
+  - name: ghcr.io/bhh1893/health-tracker-api
+    newTag: "0000000000000000000000000000000000000000"
+  - name: ghcr.io/bhh1893/health-tracker-web
+    newTag: "0000000000000000000000000000000000000000"

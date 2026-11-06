@@ -1,0 +1,19 @@
+# /healthz and /readyz stay unrouted (ADR 0006): this matches /api and below only.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: api
+  labels:
+    app.kubernetes.io/name: api
+spec:
+  parentRefs:
+    - name: edge
+      namespace: edge
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api
+      backendRefs:
+        - name: api
+          port: 80

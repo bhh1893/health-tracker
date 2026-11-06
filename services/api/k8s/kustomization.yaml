@@ -1,0 +1,16 @@
+# The api base: what is true in every environment. Namespace and image tag come from
+# the overlay in k8s/envs/<env>/.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml
+  - migrate-job.yaml
+# The generated name carries a hash of the content, so editing either file changes the
+# Deployment and rolls the pods. A plain ConfigMap would change with nothing restarting.
+configMapGenerator:
+  - name: api-sidecar
+    files:
+      - sidecar/nginx.conf
+      - sidecar/start.sh
