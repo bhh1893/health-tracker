@@ -37,3 +37,22 @@ The user is `admin`. Read the password yourself in a terminal, never through Cla
 ```
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
 ```
+
+## Argo CD auto-sync
+
+`k8s/platform/argocd/application.yaml` has no `syncPolicy`, so a new cluster starts with auto-sync off. The setting lives only in the cluster, and re-running Ansible leaves it alone. To turn it on:
+
+```
+kubectl -n argocd patch application health-tracker --type merge -p '{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
+```
+
+- `selfHeal` reverts manual changes to anything Argo CD owns, so `kubectl scale deploy/api` does not stick.
+- `prune` deletes what was removed from git, such as an old `api-sidecar-<hash>` ConfigMap. It only touches resources Argo CD tracks, so `pg` and the Secrets are safe.
+
+To check it, and to see why a deploy failed:
+
+```
+kubectl -n argocd get application health-tracker
+kubectl -n health-tracker logs job/api-migrate
+kubectl -n health-tracker logs job/api-smoke
+```
