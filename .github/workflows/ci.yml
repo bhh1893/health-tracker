@@ -123,6 +123,9 @@ jobs:
           sha256sum --ignore-missing -c CHECKSUMS
           tar -xzf kubeconform-linux-amd64.tar.gz kubeconform
       - name: Validate every Kustomize directory
+        # Stated, not left as the default: only an explicit `bash` gets -o pipefail. Without
+        # it a failed render reaches kubeconform as empty input and the step still passes.
+        shell: bash
         env:
           # Schemas for custom resources (Gateway, CNPG). Pinned to a commit, because
           # the catalog's main branch can change under us.
