@@ -366,3 +366,4 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **conntrack**: the kernel's table of tracked connections, which lets a firewall accept replies with `ct state established`.
 - **Defense in depth**: layering independent controls, so one gap or bug does not expose everything behind it.
 - **Prune (Argo CD)**: during a sync, delete tracked resources that no longer exist in git; without it they stay in the cluster and the app shows `OutOfSync`.
+- **Sync retry (Argo CD)**: an automated sync that fails runs again, 5 times by default, before it ends as `Failed`; each attempt re-creates the hook Jobs.
