@@ -1,27 +1,14 @@
-import { useState } from "react";
-import { Button } from "react-aria-components";
-import { Link, Route, Routes } from "react-router";
+import { useSyncExternalStore } from "react";
+import { Link, Navigate, Route, Routes } from "react-router";
 
-import { uuidv7 } from "./lib/uuidv7";
-
-function Hello() {
-  const [id, setId] = useState<string | null>(null);
-
-  return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
-      <h1 className="text-2xl font-semibold">Health Tracker</h1>
-      <Button
-        className="rounded-xl bg-teal-700 px-4 py-3 text-base text-white data-[pressed]:bg-teal-900"
-        onPress={() => {
-          setId(uuidv7());
-        }}
-      >
-        Generate ID
-      </Button>
-      {id && <code className="text-sm break-all">{id}</code>}
-    </main>
-  );
-}
+import { getAuthState, subscribe } from "./auth/token";
+import { EnterSecret } from "./screens/EnterSecret";
+import {
+  ExerciseWindow,
+  MealsWindow,
+  SearchScreen,
+} from "./screens/placeholders";
+import { WindowLayout } from "./screens/WindowLayout";
 
 function NotFound() {
   return (
@@ -35,9 +22,22 @@ function NotFound() {
 }
 
 export function App() {
+  const { token, rejected } = useSyncExternalStore(subscribe, getAuthState);
+
+  // Replaces the routes rather than redirecting, so the URL survives: a deep link
+  // opened without a secret lands on the same Day once one is entered.
+  if (token === null) {
+    return <EnterSecret rejected={rejected} />;
+  }
+
   return (
     <Routes>
-      <Route path="/" element={<Hello />} />
+      <Route path="/" element={<Navigate to="/exercise" replace />} />
+      <Route element={<WindowLayout />}>
+        <Route path="/exercise" element={<ExerciseWindow />} />
+        <Route path="/meals" element={<MealsWindow />} />
+      </Route>
+      <Route path="/search" element={<SearchScreen />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
