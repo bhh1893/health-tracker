@@ -28,6 +28,12 @@ spec:
       # At this write volume the timeout, not the 16 MB segment size, decides when
       # WAL ships, so this is the data-loss window. CNPG's default is 5min.
       archive_timeout: 1min
+    # A commit waits for the replica while it is healthy, so a failover keeps it. `preferred`
+    # drops the wait once the replica is down, so writes stall only briefly (ADR 0005).
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
   # Inline, not DatabaseRole resources (ADR 0015). The Secrets come from apply-secrets.
   managed:
     roles:
