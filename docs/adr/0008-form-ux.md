@@ -20,7 +20,7 @@ status: accepted
 - **Time:** a time-only input; the date is the Day being viewed. Occurred At defaults to now.
 - **Catalog search:** React Aria `ComboBox`, suggestions from `GET /{kind}s?q=` (ADR 0006) with a ~150 ms debounce. A trailing `+ Create "<text>"` row creates the item first, so the near-duplicate `409` can open a "Did you mean?" dialog (use existing, unarchive, or create anyway) before the Entry is saved.
 - **Partial failure:** a sheet that sends several requests (Edit Session, Delete Exercise) stays open on any failure and keeps the unsent rows; retrying is safe because every `PUT` and `DELETE` is idempotent.
-- **Styling:** Tailwind CSS v4 utility classes in the markup; React Aria's `data-*` state attributes (`data-focused`, `data-selected`) drive state styles. Inputs use at least 16 px text so iOS Safari does not zoom on focus.
+- **Styling:** Tailwind CSS v4 utility classes in the markup; React Aria's `data-*` state attributes (`data-focused`, `data-selected`) drive state styles. Inputs use at least 16 px text so iOS Safari does not zoom on focus. `touch-action: pan-x pan-y` on the root turns off pinch and double-tap zoom, so the home-screen app feels native and quick repeat taps stay taps. The cost is an accessibility one (WCAG 1.4.4, resize text), accepted because v1 has one user; remove the rule if that changes or pinch is missed.
 
 ## Additive change to ADR 0006: recently-used suggestions
 
