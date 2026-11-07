@@ -20,7 +20,9 @@ from health_api.catalogs import problems
 from health_api.db import DbSession, violated_constraint
 from health_api.entries import (
     DEFAULT_PAGE_SIZE,
+    MAX_AMOUNT,
     MAX_PAGE_SIZE,
+    Day,
     Occurrence,
     PutOccurrence,
     encode_cursor,
@@ -42,9 +44,12 @@ EXERCISE_CONSTRAINT = "exercise_entries_exercise_id_user_id_fkey"
 
 class PutExerciseEntry(PutOccurrence):
     exercise_id: UUID
-    reps: int = Field(gt=0, le=MAX_REPS)
+    # strict: the contract says integer and number, so "5" is refused, not quietly converted.
+    reps: int = Field(gt=0, le=MAX_REPS, strict=True)
     # Leaving it out means bodyweight: a PUT replaces the whole Entry.
-    weight_lb: float | None = Field(default=None, gt=0, allow_inf_nan=False)
+    weight_lb: float | None = Field(
+        default=None, gt=0, le=MAX_AMOUNT, allow_inf_nan=False, strict=True
+    )
 
 
 class ExerciseEntry(Occurrence):
@@ -175,8 +180,8 @@ def exercise_entries_router() -> APIRouter:
     def list_exercise_entries(
         user: CurrentUser,
         session: DbSession,
-        from_day: Annotated[date | None, Query(alias="from")] = None,
-        to_day: Annotated[date | None, Query(alias="to")] = None,
+        from_day: Annotated[Day | None, Query(alias="from")] = None,
+        to_day: Annotated[Day | None, Query(alias="to")] = None,
         exercise_id: UUID | None = None,
         cursor: str | None = None,
         limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,

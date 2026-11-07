@@ -13,10 +13,12 @@ from pydantic import BaseModel
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.exc import TimeoutError as PoolTimeoutError
 from starlette.exceptions import HTTPException
+from starlette.routing import compile_path
 
 logger = logging.getLogger(__name__)
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
+PROBLEM_CONTENT = {"schema": {"$ref": "#/components/schemas/Problem"}}
 NO_BODY_STATUSES = frozenset({204, 304})
 
 # `type` is how a client tells one 409 from another without parsing `detail`. These are names,
@@ -104,9 +106,21 @@ def problem_response(
     )
 
 
-def _http_exception(_: Request, exc: Exception) -> Response:
+def _documented_methods(request: Request) -> str | None:
+    # Each method on a path is its own route here, and Starlette's Allow names only the first
+    # one it tried. RFC 9110 needs them all, and the contract already lists them.
+    paths: dict[str, dict[str, Any]] = request.app.openapi()["paths"]
+    for template, operations in paths.items():
+        if compile_path(template)[0].match(request.url.path):
+            return ", ".join(sorted(method.upper() for method in operations))
+    return None
+
+
+def _http_exception(request: Request, exc: Exception) -> Response:
     assert isinstance(exc, HTTPException)
     headers = dict(exc.headers) if exc.headers else None
+    if exc.status_code == 405 and (methods := _documented_methods(request)):
+        headers = {**(headers or {}), "Allow": methods}
     if exc.status_code in NO_BODY_STATUSES:
         return Response(status_code=exc.status_code, headers=headers)
     # FastAPI allows any detail, but Problem.detail is text. A handler that raises turns the
@@ -160,7 +174,8 @@ def document_problem_media_type(app: FastAPI) -> None:
     """Make the schema tell the truth about errors, which are all Problems here.
 
     FastAPI labels every declared body application/json, and adds its own 422 shape to any
-    route with inputs. Both the media type and the 422 schema have to be replaced.
+    route with inputs. Both the media type and the 422 schema have to be replaced. FastAPI
+    also answers 400 itself to a body that is not valid UTF-8, without declaring it.
     """
     generate: Callable[[], dict[str, Any]] = app.openapi
 
@@ -172,9 +187,12 @@ def document_problem_media_type(app: FastAPI) -> None:
                     content = response.get("content", {})
                     if not status.startswith("2") and "application/json" in content:
                         del content["application/json"]
-                        content[PROBLEM_MEDIA_TYPE] = {
-                            "schema": {"$ref": "#/components/schemas/Problem"}
-                        }
+                        content[PROBLEM_MEDIA_TYPE] = PROBLEM_CONTENT
+                if "requestBody" in operation:
+                    operation["responses"]["400"] = {
+                        "description": "The body could not be read as JSON text.",
+                        "content": {PROBLEM_MEDIA_TYPE: PROBLEM_CONTENT},
+                    }
         for unused in ("HTTPValidationError", "ValidationError"):
             schema["components"]["schemas"].pop(unused, None)
         return schema

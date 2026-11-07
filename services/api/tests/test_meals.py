@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
+from health_api.entries import MAX_AMOUNT
 from health_api.problems import KIND_IMMUTABLE, LAST_FOOD_ENTRY, PROBLEM_MEDIA_TYPE
 
 
@@ -556,3 +557,29 @@ def test_concurrent_replaces_do_not_mix_their_food_entries(
 
 def test_day_query_params_are_dates(client: TestClient) -> None:
     assert client.get("/api/v1/meals", params={"from": "not-a-day"}).status_code == 422
+
+
+@pytest.mark.parametrize("day", ["0", "1700000000", "2026-1-1", "2026-11-03T00:00:00"])
+def test_range_days_must_be_iso_dates(client: TestClient, day: str) -> None:
+    response = client.get("/api/v1/meals", params={"to": day})
+
+    assert error_fields(response) == ["query.to"]
+
+
+@pytest.mark.parametrize("quantity", ["1.5", MAX_AMOUNT + 1, 1.7976931348623157e308])
+def test_quantity_must_be_a_number_in_range(
+    client: TestClient, food: UUID, quantity: float | str
+) -> None:
+    entry = {"food_id": str(food), "quantity": quantity, "unit": "g"}
+
+    response = client.put(meal_url(uuid7()), json=foods_body(food, food_entries=[entry]))
+
+    assert response.status_code == 422, response.text
+
+
+def test_the_largest_quantity_reads_back_unchanged(client: TestClient, food: UUID) -> None:
+    entry = {"food_id": str(food), "quantity": MAX_AMOUNT, "unit": "g"}
+
+    meal = put(client, foods_body(food, food_entries=[entry]))
+
+    assert meal["food_entries"][0]["quantity"] == MAX_AMOUNT

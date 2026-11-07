@@ -18,6 +18,7 @@ dev = [
     "pyright>=1.1.414",
     "pytest>=9.2.0",
     "ruff>=0.17.3",
+    "schemathesis>=4.33.1",
     "testcontainers>=4.15.0",
 ]
 
@@ -30,9 +31,12 @@ script_location = "%(here)s/migrations"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# A later -m wins, so `pytest -m index_plans` still selects them.
-addopts = "--strict-markers --strict-config -m 'not index_plans'"
-markers = ["index_plans: needs the full seed; runs weekly, not on PRs (ADR 0014)"]
+# Each runs on its own (ADR 0014). A later -m wins, so `pytest -m fuzz` still selects them.
+addopts = "--strict-markers --strict-config -m 'not fuzz and not index_plans'"
+markers = [
+    "fuzz: Schemathesis against the real API and Postgres",
+    "index_plans: needs the full seed; runs weekly, not on PRs (ADR 0014)",
+]
 
 [tool.ruff]
 line-length = 100

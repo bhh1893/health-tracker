@@ -640,3 +640,13 @@ def test_pairs_matched_while_typing(session: Session, typed: str, name: str) -> 
 @pytest.mark.parametrize(("typed", "name"), TYPEAHEAD_NON_MATCHES)
 def test_pairs_not_matched_while_typing(session: Session, typed: str, name: str) -> None:
     assert word_similarity(session, typed, name) < WORD_SIMILARITY_THRESHOLD
+
+
+@pytest.mark.parametrize("value", [0, 1, "true"])
+def test_flags_must_be_real_booleans(client: TestClient, value: Any) -> None:
+    item = create(client, "foods", "Oats")
+
+    put = client.put(url("foods", uuid7()), json={"name": "Rice", "allow_similar": value})
+    patch = client.patch(url("foods", item), json={"archived": value})
+
+    assert (put.status_code, patch.status_code) == (422, 422)

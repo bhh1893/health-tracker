@@ -5,7 +5,6 @@ replaces the whole Meal in one transaction, which is what lets the API keep the 
 database cannot: a Foods Meal has at least one Food Entry.
 """
 
-from datetime import date
 from typing import Annotated, Any, Literal
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -20,7 +19,9 @@ from health_api.catalogs import CatalogName, problems
 from health_api.db import DbSession, violated_constraint
 from health_api.entries import (
     DEFAULT_PAGE_SIZE,
+    MAX_AMOUNT,
     MAX_PAGE_SIZE,
+    Day,
     Occurrence,
     PutOccurrence,
     encode_cursor,
@@ -52,7 +53,8 @@ class PutFoodEntry(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     food_id: UUID
-    quantity: float = Field(gt=0, allow_inf_nan=False)
+    # strict: the contract says number, so "1.5" is refused and not quietly converted.
+    quantity: float = Field(gt=0, le=MAX_AMOUNT, allow_inf_nan=False, strict=True)
     unit: Unit
 
 
@@ -293,8 +295,8 @@ def meals_router() -> APIRouter:
     def list_meals(
         user: CurrentUser,
         session: DbSession,
-        from_day: Annotated[date | None, Query(alias="from")] = None,
-        to_day: Annotated[date | None, Query(alias="to")] = None,
+        from_day: Annotated[Day | None, Query(alias="from")] = None,
+        to_day: Annotated[Day | None, Query(alias="to")] = None,
         food_id: UUID | None = None,
         cursor: str | None = None,
         limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,

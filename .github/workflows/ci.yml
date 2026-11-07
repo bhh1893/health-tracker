@@ -187,6 +187,24 @@ jobs:
       - run: uv sync --locked
       - run: uv run pytest
 
+  # Generated requests against the real API and Postgres: no 5xx, every response matches
+  # openapi.json (ADR 0014). Hypothesis sees CI and fixes its seed, so a run only changes when
+  # the code or the contract does: this gate cannot fail a PR at random.
+  api-fuzz:
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: 0.13.7
+      - run: uv sync --locked
+      - run: uv run pytest -m fuzz
+
   # Regenerates the contract; a diff means a model changed without openapi.json (ADR 0003).
   api-openapi-drift:
     needs: changes
@@ -316,6 +334,7 @@ jobs:
       - kubeconform
       - api-lint
       - api-test
+      - api-fuzz
       - api-openapi-drift
       - api-image
       - web-lint

@@ -25,3 +25,4 @@ __pycache__/
 .ansible/
 .pytest_cache/
 .ruff_cache/
+.hypothesis/
