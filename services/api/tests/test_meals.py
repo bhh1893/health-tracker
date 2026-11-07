@@ -162,6 +162,15 @@ def test_replace_swaps_the_whole_meal(client: TestClient, session: Session, food
     assert food_entry_count(session, str(meal)) == 2
 
 
+@pytest.mark.parametrize("label", ["", "   ", None])
+def test_a_blank_label_is_no_label(client: TestClient, food: UUID, label: str | None) -> None:
+    assert put(client, foods_body(food, label=label))["label"] is None
+
+
+def test_a_label_is_normalized(client: TestClient, food: UUID) -> None:
+    assert put(client, foods_body(food, label="  Late   lunch "))["label"] == "Late lunch"
+
+
 def test_retried_put_is_harmless(client: TestClient, session: Session, food: UUID) -> None:
     meal, body = uuid7(), foods_body(food)
 
@@ -316,7 +325,6 @@ def test_put_requires_a_uuid7(client: TestClient, food: UUID) -> None:
         ({"occurred_at": "2026-02-30T12:00:00Z"}, "occurred_at"),
         ({"occurred_tz": "Mars/Olympus"}, "occurred_tz"),
         ({"occurred_tz": "../etc/passwd"}, "occurred_tz"),
-        ({"label": "   "}, "label"),
         ({"label": "x" * 201}, "label"),
         ({"label": "a\x00b"}, "label"),
         ({"food_entries": [{"food_id": "x", "quantity": 1, "unit": "g"}]}, "food_id"),

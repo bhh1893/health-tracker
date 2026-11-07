@@ -71,6 +71,11 @@ def known_timezone(value: str) -> str:
     return value
 
 
+def blank_to_none(value: object) -> object:
+    # An empty form field sends "". One stored meaning for "no label": NULL.
+    return None if isinstance(value, str) and not value.strip() else value
+
+
 OccurredAt = Annotated[AwareDatetime, BeforeValidator(rfc_3339), AfterValidator(not_in_the_future)]
 OccurredTz = Annotated[str, AfterValidator(known_timezone)]
 
@@ -87,7 +92,7 @@ class PutMealFields(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     # Same rules as a Catalog name. Leaving it out clears it: a PUT replaces the whole Meal.
-    label: CatalogName | None = None
+    label: Annotated[CatalogName | None, BeforeValidator(blank_to_none)] = None
     occurred_at: OccurredAt
     occurred_tz: OccurredTz
 
