@@ -36,6 +36,8 @@ Measured on Postgres 18 over the pairs in `services/api/tests/name_pairs.py`, wh
 
 Measured 2026-11-07 on Postgres 18.6, warm cache, summed over a request's statements. Timings are a record, not a target. Full plans are in [0012-plans.md](0012-plans.md).
 
+The [first GitHub run of the weekly check](https://github.com/bhh1893/health-tracker/actions/runs/42352109387) passed all 22 cases on 2026-11-07, at commit `8b850dc`. GitHub expires run logs, so `0012-plans.md` is the lasting record.
+
 | Query | Index that serves it | Execution |
 | --- | --- | --- |
 | Meals on a Day | `meals_user_day`, `food_entries_meal` | 0.15 ms |
