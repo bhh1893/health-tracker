@@ -30,7 +30,9 @@ script_location = "%(here)s/migrations"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers --strict-config"
+# A later -m wins, so `pytest -m index_plans` still selects them.
+addopts = "--strict-markers --strict-config -m 'not index_plans'"
+markers = ["index_plans: needs the full seed; runs weekly, not on PRs (ADR 0014)"]
 
 [tool.ruff]
 line-length = 100

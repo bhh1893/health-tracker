@@ -1,0 +1,35 @@
+name: index-plans
+
+# Not on PRs: the seed takes minutes, and only at full scale do plans mean anything (ADR 0014).
+# It can fail with no PR open. That is the point: it catches planner and data-shape drift.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'  # Mondays. Off the hour, when GitHub's scheduler is least busy.
+
+# Least privilege: the job reads the repo and nothing else.
+permissions:
+  contents: read
+
+jobs:
+  index-plans:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: 0.13.7
+      - run: uv sync --locked
+      - run: uv run pytest -m index_plans
+        env:
+          INDEX_PLANS_REPORT: ${{ runner.temp }}/index-plans.md
+      # Also after a failure: the plans are what explain it.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: index-plans
+          path: ${{ runner.temp }}/index-plans.md
