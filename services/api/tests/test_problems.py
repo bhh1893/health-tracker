@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import TimeoutError as PoolTimeoutError
 
 from health_api.main import create_app
 from health_api.problems import (
@@ -32,6 +33,10 @@ def near_duplicate() -> None:
 
 def unchanged() -> None:
     raise HTTPException(304)
+
+
+def pool_exhausted() -> None:
+    raise PoolTimeoutError("QueuePool limit reached")
 
 
 def test_unknown_path_is_a_problem() -> None:
@@ -94,6 +99,16 @@ def test_problem_error_delivers_its_extensions() -> None:
         "detail": "Similar.",
         "similar": [{"id": str(OATS.id), "name": "Oats", "archived": False}],
     }
+
+
+def test_exhausted_pool_is_a_503_problem() -> None:
+    app = create_app()
+    app.add_api_route("/busy", pool_exhausted)
+
+    response = TestClient(app).get("/busy")
+
+    assert response.status_code == 503
+    assert response.headers["content-type"] == PROBLEM_MEDIA_TYPE
 
 
 def test_no_body_status_sends_no_body() -> None:

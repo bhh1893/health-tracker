@@ -9,7 +9,11 @@ from health_api.db import create_db_engine
 from health_api.logs import configure_logging
 from health_api.meals import meals_router
 from health_api.migrations import image_revisions
-from health_api.problems import document_problem_media_type, register_problem_handlers
+from health_api.problems import (
+    DATABASE_UNAVAILABLE,
+    document_problem_media_type,
+    register_problem_handlers,
+)
 
 
 @asynccontextmanager
@@ -29,7 +33,7 @@ def create_app() -> FastAPI:
     register_problem_handlers(app)
     app.include_router(health.router)
     for catalog in CATALOGS:
-        app.include_router(catalog_router(catalog))
-    app.include_router(meals_router())
+        app.include_router(catalog_router(catalog), responses=DATABASE_UNAVAILABLE)
+    app.include_router(meals_router(), responses=DATABASE_UNAVAILABLE)
     document_problem_media_type(app)
     return app

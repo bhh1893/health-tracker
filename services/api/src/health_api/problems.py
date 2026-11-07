@@ -1,5 +1,6 @@
 """RFC 9457 Problem Details: every error leaves the API in this one shape (ADR 0006)."""
 
+import logging
 from collections.abc import Callable
 from http import HTTPStatus
 from typing import Any, cast
@@ -9,7 +10,11 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import TimeoutError as PoolTimeoutError
 from starlette.exceptions import HTTPException
+
+logger = logging.getLogger(__name__)
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 NO_BODY_STATUSES = frozenset({204, 304})
@@ -44,6 +49,12 @@ class Problem(BaseModel):
     errors: list[FieldError] | None = None
     existing: CatalogRef | None = None
     similar: list[CatalogRef] | None = None
+
+
+# Every route that touches the database can answer this, so it is declared once, in main.py.
+DATABASE_UNAVAILABLE: dict[int | str, dict[str, Any]] = {
+    503: {"model": Problem, "description": "The database is unavailable. Safe to retry."}
+}
 
 
 class ProblemError(Exception):
@@ -122,6 +133,12 @@ def _validation_error(_: Request, exc: Exception) -> JSONResponse:
     return problem_response(422, errors=errors)
 
 
+def _database_unavailable(_: Request, exc: Exception) -> JSONResponse:
+    # Unlike a 500, nothing re-raises this one, so the cause is logged here or not at all.
+    logger.warning("database unavailable", exc_info=exc)
+    return problem_response(503, detail="The database is unavailable. Try again shortly.")
+
+
 def _unhandled_exception(_: Request, __: Exception) -> JSONResponse:
     # No exception text in the body: it can hold SQL or values. The server still re-raises
     # after this response, so uvicorn logs the traceback.
@@ -132,6 +149,10 @@ def register_problem_handlers(app: FastAPI) -> None:
     app.add_exception_handler(HTTPException, _http_exception)
     app.add_exception_handler(ProblemError, _problem_error)
     app.add_exception_handler(RequestValidationError, _validation_error)
+    # OperationalError: connecting failed, or the connection died mid-request. PoolTimeoutError:
+    # every pooled connection stayed busy, which is what hung connections look like from here.
+    app.add_exception_handler(OperationalError, _database_unavailable)
+    app.add_exception_handler(PoolTimeoutError, _database_unavailable)
     app.add_exception_handler(Exception, _unhandled_exception)
 
 
