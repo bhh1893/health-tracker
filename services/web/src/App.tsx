@@ -2,12 +2,9 @@ import { useSyncExternalStore } from "react";
 import { Link, Navigate, Route, Routes } from "react-router";
 
 import { getAuthState, subscribe } from "./auth/token";
+import { ExerciseWindow } from "./exercise/ExerciseWindow";
 import { EnterSecret } from "./screens/EnterSecret";
-import {
-  ExerciseWindow,
-  MealsWindow,
-  SearchScreen,
-} from "./screens/placeholders";
+import { MealsWindow, SearchScreen } from "./screens/placeholders";
 import { WindowLayout } from "./screens/WindowLayout";
 
 function NotFound() {

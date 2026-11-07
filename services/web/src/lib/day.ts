@@ -22,6 +22,30 @@ export function isValidDay(value: string) {
   return toDay(date) === value;
 }
 
+function parseDay(day: string) {
+  const [year, month, dayOfMonth] = day.split("-").map(Number);
+  return new Date(Number(year), Number(month) - 1, Number(dayOfMonth));
+}
+
+// Steps the calendar, not the clock: adding 24 hours lands on the wrong Day when
+// a daylight saving change makes a Day 23 or 25 hours long.
+export function addDays(day: string, amount: number) {
+  const date = parseDay(day);
+  date.setDate(date.getDate() + amount);
+  return toDay(date);
+}
+
+const DAY_LABEL = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+});
+
+// "Mon Nov 2", the form ADR 0013 uses on the add button.
+export function formatDay(day: string) {
+  return DAY_LABEL.format(parseDay(day)).replaceAll(",", "");
+}
+
 // Days as YYYY-MM-DD strings sort by date, so a plain comparison finds the future.
 export function resolveViewedDay(param: string | null, today: string) {
   if (param === null || !isValidDay(param) || param > today) {
