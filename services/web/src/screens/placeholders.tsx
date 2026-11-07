@@ -1,17 +1,6 @@
 import { Link } from "react-router";
 
-import { useViewedDay } from "../lib/useViewedDay";
-
-// Empty on purpose: #67 and #68 replace these with the real screens.
-
-export function MealsWindow() {
-  const { day } = useViewedDay();
-  return (
-    <main>
-      <h2 className="text-lg font-semibold">Meals on {day}</h2>
-    </main>
-  );
-}
+// Empty on purpose: #68 replaces this with the real screen.
 
 export function SearchScreen() {
   return (

@@ -15,19 +15,15 @@ import { BottomSheet } from "../components/BottomSheet";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 import { uuidv7 } from "../lib/uuidv7";
-import {
-  useCreateExercise,
-  useExerciseSuggestions,
-  useUnarchiveExercise,
-} from "./queries";
-import type { CatalogRef } from "./sessions";
+import type { Catalog, CatalogItem, CatalogRef } from "./catalogs";
+import { useCreateItem, useSuggestions, useUnarchiveItem } from "./queries";
 
 const DEBOUNCE_MS = 150;
 const CREATE_ROW = "create";
 const EXACT_DUPLICATE = "urn:health-tracker:problem:exact-duplicate";
 const NEAR_DUPLICATE = "urn:health-tracker:problem:near-duplicate";
 
-// What the server said instead of creating the Exercise. `id` is kept so that
+// What the server said instead of creating the item. `id` is kept so that
 // "create anyway" retries the same write.
 interface Conflict {
   id: string;
@@ -36,51 +32,60 @@ interface Conflict {
   canCreateAnyway: boolean;
 }
 
-interface ExerciseComboBoxProps {
-  value: CatalogRef | null;
-  onChange: (exercise: CatalogRef | null) => void;
+interface CatalogComboBoxProps {
+  catalog: Catalog;
+  value: CatalogItem | null;
+  onChange: (item: CatalogItem | null) => void;
+  // Overrides the Catalog's label, e.g. "Add Food" in the Meal sheet.
+  label?: string;
 }
 
 // ADR 0008. React Aria supplies the combobox's roles, keyboard handling and screen
-// reader announcements; this adds the search and the create flow.
-export function ExerciseComboBox({ value, onChange }: ExerciseComboBoxProps) {
+// reader announcements; this adds the search and the create flow. One component for
+// every Catalog, so a fix to the create or "Did you mean?" flow lands everywhere.
+export function CatalogComboBox({
+  catalog,
+  value,
+  onChange,
+  label = catalog.label,
+}: CatalogComboBoxProps) {
   const [text, setText] = useState(value?.name ?? "");
   const [conflict, setConflict] = useState<Conflict | null>(null);
 
   const trimmed = text.trim();
-  // A picked Exercise is not a search: keep showing recents, not its own name.
+  // A picked item is not a search: keep showing recents, not its own name.
   const q = useDebouncedValue(
     trimmed === value?.name ? "" : trimmed,
     DEBOUNCE_MS,
   );
-  const suggestions = useExerciseSuggestions(q);
-  const createExercise = useCreateExercise();
-  const unarchiveExercise = useUnarchiveExercise();
+  const suggestions = useSuggestions(catalog, q);
+  const createItem = useCreateItem(catalog);
+  const unarchiveItem = useUnarchiveItem(catalog);
 
   const found = suggestions.data ?? [];
   // The picked row must stay in the list, or the combobox forgets the selection.
-  const exercises =
+  const items =
     value === null || found.some(({ id }) => id === value.id)
       ? found
       : [value, ...found];
-  const hasExactMatch = exercises.some(
+  const hasExactMatch = items.some(
     ({ name }) => name.toLowerCase() === trimmed.toLowerCase(),
   );
   const rows =
     trimmed === "" || hasExactMatch
-      ? exercises
-      : [...exercises, { id: CREATE_ROW, name: trimmed, archived: false }];
+      ? items
+      : [...items, { id: CREATE_ROW, name: trimmed, archived: false }];
 
-  function pick(exercise: CatalogRef) {
-    setText(exercise.name);
+  function pick(item: CatalogItem) {
+    setText(item.name);
     setConflict(null);
-    createExercise.reset();
-    unarchiveExercise.reset();
-    onChange(exercise);
+    createItem.reset();
+    unarchiveItem.reset();
+    onChange(item);
   }
 
   function create(id: string, name: string, allowSimilar: boolean) {
-    createExercise.mutate(
+    createItem.mutate(
       { id, name, allowSimilar },
       {
         onSuccess: pick,
@@ -115,7 +120,7 @@ export function ExerciseComboBox({ value, onChange }: ExerciseComboBoxProps) {
 
   function chooseMatch(match: CatalogRef) {
     if (match.archived) {
-      unarchiveExercise.mutate(match.id, { onSuccess: pick });
+      unarchiveItem.mutate(match.id, { onSuccess: pick });
     } else {
       pick(match);
     }
@@ -132,7 +137,7 @@ export function ExerciseComboBox({ value, onChange }: ExerciseComboBoxProps) {
     }
   }
 
-  const failure = createExercise.error ?? unarchiveExercise.error;
+  const failure = createItem.error ?? unarchiveItem.error;
   const showFailure =
     failure !== null &&
     !(
@@ -149,12 +154,12 @@ export function ExerciseComboBox({ value, onChange }: ExerciseComboBoxProps) {
         items={rows}
         // The Create row counts as selected while it runs. A combobox closes its menu
         // when the selection changes, and an open menu would cover any error.
-        value={createExercise.isPending ? CREATE_ROW : (value?.id ?? null)}
+        value={createItem.isPending ? CREATE_ROW : (value?.id ?? null)}
         allowsCustomValue
         menuTrigger="focus"
         onInputChange={(next) => {
           setText(next);
-          // Typing over a picked Exercise un-picks it, so a Set can never be saved
+          // Typing over a picked item un-picks it, so an Entry can never be saved
           // under a name other than the one on screen.
           if (value && next !== value.name) {
             onChange(null);
@@ -162,11 +167,11 @@ export function ExerciseComboBox({ value, onChange }: ExerciseComboBoxProps) {
         }}
         onChange={selectRow}
       >
-        <Label className="text-sm font-medium text-gray-600">Exercise</Label>
+        <Label className="text-sm font-medium text-gray-600">{label}</Label>
         <div className="flex rounded-xl border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-teal-600">
           <Input
             className="w-full min-w-0 rounded-xl bg-transparent p-3 text-base outline-none"
-            placeholder="Search Exercises"
+            placeholder={catalog.placeholder}
           />
           <Button aria-label="Show suggestions" className="px-3 text-gray-400">
             ▾
@@ -178,7 +183,7 @@ export function ExerciseComboBox({ value, onChange }: ExerciseComboBoxProps) {
           </p>
         )}
         <Popover className="w-(--trigger-width) overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg">
-          <ListBox<CatalogRef> className="max-h-72 outline-none">
+          <ListBox<CatalogItem> className="max-h-72 outline-none">
             {(row) => (
               <ListBoxItem
                 id={row.id}

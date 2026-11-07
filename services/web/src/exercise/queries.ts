@@ -6,13 +6,13 @@ import {
 } from "@tanstack/react-query";
 
 import { api, unwrap } from "../api/client";
+import { exerciseCatalog } from "../catalog/catalogs";
 import { currentTimeZone, toRfc3339 } from "../lib/occurred";
 import type { CatalogRef, ExerciseEntry, ExerciseEntryPage } from "./sessions";
 
 const MAX_PAGE_SIZE = 200;
-const SUGGESTION_LIMIT = 10;
 
-const EXERCISES_KEY = ["exercises"];
+const EXERCISES_KEY = [exerciseCatalog.key];
 const ENTRY_WRITES_KEY = ["exercise-entry-write"];
 const dayKey = (day: string) => ["exercise-entries", day];
 
@@ -40,20 +40,6 @@ async function fetchDay(day: string) {
 
 export function useDayEntries(day: string) {
   return useQuery({ queryKey: dayKey(day), queryFn: () => fetchDay(day) });
-}
-
-export function useExerciseSuggestions(q: string) {
-  return useQuery({
-    // q in the key means a slow answer for "ben" can never replace the one for
-    // "bench": each lands in its own cache slot (ADR 0008).
-    queryKey: [...EXERCISES_KEY, q],
-    queryFn: () =>
-      unwrap(
-        api.GET("/api/v1/exercises", {
-          params: { query: { q, limit: SUGGESTION_LIMIT } },
-        }),
-      ),
-  });
 }
 
 interface NewEntry {
@@ -193,39 +179,5 @@ export function useDeleteSet() {
     onSettled: (_data, _error, entry) => {
       refreshWhenIdle(queryClient, entry.day);
     },
-  });
-}
-
-interface NewExercise {
-  id: string;
-  name: string;
-  allowSimilar: boolean;
-}
-
-export function useCreateExercise() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, name, allowSimilar }: NewExercise) =>
-      unwrap(
-        api.PUT("/api/v1/exercises/{item_id}", {
-          params: { path: { item_id: id } },
-          body: { name, allow_similar: allowSimilar },
-        }),
-      ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: EXERCISES_KEY }),
-  });
-}
-
-export function useUnarchiveExercise() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) =>
-      unwrap(
-        api.PATCH("/api/v1/exercises/{item_id}", {
-          params: { path: { item_id: id } },
-          body: { archived: false, allow_similar: false },
-        }),
-      ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: EXERCISES_KEY }),
   });
 }

@@ -4,7 +4,8 @@ import { Link, Navigate, Route, Routes } from "react-router";
 import { getAuthState, subscribe } from "./auth/token";
 import { ExerciseWindow } from "./exercise/ExerciseWindow";
 import { EnterSecret } from "./screens/EnterSecret";
-import { MealsWindow, SearchScreen } from "./screens/placeholders";
+import { MealsWindow } from "./meals/MealsWindow";
+import { SearchScreen } from "./screens/placeholders";
 import { WindowLayout } from "./screens/WindowLayout";
 
 function NotFound() {

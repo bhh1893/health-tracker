@@ -7,20 +7,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Problem } from "../api/client";
 import { bench, fakeExerciseApi } from "../test-handlers";
 import { server } from "../test-server";
-import { ExerciseComboBox } from "./ExerciseComboBox";
-import type { CatalogRef } from "./sessions";
+import { CatalogComboBox } from "./CatalogComboBox";
+import { exerciseCatalog, type CatalogItem, type CatalogRef } from "./catalogs";
 import { renderAt } from "../test-render";
 
 const row = { id: "0190a000-0000-7000-8000-000000000002", archived: false };
 const squat: CatalogRef = { ...row, name: "Squat" };
 
-const onChange = vi.fn<(exercise: CatalogRef | null) => void>();
+const onChange = vi.fn<(item: CatalogItem | null) => void>();
 
-function Harness({ initial = null }: { initial?: CatalogRef | null }) {
+function Harness({ initial = null }: { initial?: CatalogItem | null }) {
   const [value, setValue] = useState(initial);
   return (
     <>
-      <ExerciseComboBox
+      <CatalogComboBox
+        catalog={exerciseCatalog}
         value={value}
         onChange={(next) => {
           onChange(next);
@@ -49,7 +50,7 @@ beforeEach(() => {
   server.use(...api.handlers);
 });
 
-describe("ExerciseComboBox", () => {
+describe("CatalogComboBox", () => {
   it("lists recents on focus, from an empty q", async () => {
     renderAt("/", <Harness />);
 

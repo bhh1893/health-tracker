@@ -1,14 +1,15 @@
 import { useState, type SyntheticEvent } from "react";
 import { Button } from "react-aria-components";
 
+import { CatalogComboBox } from "../catalog/CatalogComboBox";
+import { exerciseCatalog, type CatalogItem } from "../catalog/catalogs";
 import { BottomSheet } from "../components/BottomSheet";
+import { fieldClass, labelClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDay } from "../lib/day";
 import { defaultOccurredAt, onDay, timeOfDay } from "../lib/occurred";
 import { uuidv7 } from "../lib/uuidv7";
-import { ExerciseComboBox } from "./ExerciseComboBox";
 import { newEntry, useAddSet } from "./queries";
-import { fieldClass, labelClass } from "./formStyles";
 import { parseSetFields, type ExerciseEntry } from "./sessions";
 
 interface SetSheetProps {
@@ -26,7 +27,9 @@ export function SetSheet({ day, previous, onClose }: SetSheetProps) {
     defaultOccurredAt(day, previous?.occurred_at ?? null),
   );
   const [time, setTime] = useState(timeOfDay(defaultAt));
-  const [picked, setPicked] = useState(previous?.exercise ?? null);
+  const [picked, setPicked] = useState<CatalogItem | null>(
+    previous?.exercise ?? null,
+  );
   const [weight, setWeight] = useState(previous?.weight_lb?.toString() ?? "");
   const [reps, setReps] = useState(previous?.reps.toString() ?? "");
   const addSet = useAddSet();
@@ -68,7 +71,11 @@ export function SetSheet({ day, previous, onClose }: SetSheetProps) {
               }}
             />
           </label>
-          <ExerciseComboBox value={picked} onChange={setPicked} />
+          <CatalogComboBox
+            catalog={exerciseCatalog}
+            value={picked}
+            onChange={setPicked}
+          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <label className={labelClass}>

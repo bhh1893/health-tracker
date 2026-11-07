@@ -418,3 +418,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Partial failure**: some requests of a multi-request save succeed and others fail, leaving the data between the old state and the new one; there is no transaction across requests, so the client must show what is left and allow a retry.
 - **`Intl.DateTimeFormat`**: the browser's built-in date formatter; given a time zone, it can report that zone's UTC offset at a moment, daylight saving included.
 - **`touch-action`**: a CSS property listing which touch gestures the browser may handle itself; `pan-x pan-y` allows scrolling only, so pinch and double-tap zoom do nothing.
+- **Form draft**: the state a form edits, shaped for typing (text fields, local row keys) rather than for the wire; a pure function turns it into the request body only when it is valid.
+- **Strategy object**: a plain object of functions passed to shared code so one component serves several cases (`foodCatalog`, `exerciseCatalog`) without `if kind ===` branches inside it.
+- **Remount by `key`**: changing a component's `key` makes React discard it and mount a fresh one, the simplest way to reset its internal state from outside.
+- **Stretched link**: one real button whose `::after` box is stretched over a whole card, so the card is tappable anywhere while assistive tech still sees one named button.
+- **Fast Refresh**: the dev server's hot reload for React; it only works on files that export components alone, which is why shared helpers live in their own modules.
