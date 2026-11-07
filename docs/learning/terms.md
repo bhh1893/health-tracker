@@ -403,3 +403,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Zipf distribution**: a skew where the item at rank N is used about 1/N as often as the top one; a few Foods dominate, as in real logs.
 - **pytest marker**: a label on tests that lets a run include or exclude them; `index_plans` keeps the full-seed checks out of the PR suite.
 - **Mutation check**: breaking the thing on purpose to prove a test can fail; here, dropping indexes and watching the plan checks go red.
+- **Topology spread constraint**: a scheduling rule that keeps a Deployment's pods balanced across failure domains; `maxSkew: 1` means the fullest and emptiest node may differ by at most one pod.
+- **`pod-template-hash`**: a label Kubernetes adds to a Deployment's pods, with one value per revision of the pod template, so it tells a rollout's new pods from the old ones.
