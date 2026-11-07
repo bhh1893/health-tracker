@@ -16,7 +16,7 @@ The v1 API is a JSON REST API under `/api/v1`, described by the generated OpenAP
 - **New Catalog items** are created in their own request before the Meal or Exercise Entry that uses them, so the near-duplicate dialog can interrupt.
 - **Queries:**
   - `GET /meals?from=&to=&food_id=` and `GET /exercise-entries?from=&to=&exercise_id=`: `from`/`to` are Days, inclusive; one Day is `from = to`.
-  - `GET /exercises/{id}/sessions?limit=N`: last N Sessions, each `{day, sets: [{number, reps, weight_lb}]}`.
+  - `GET /exercises/{id}/sessions?limit=N`: last N Sessions, newest first, each `{day, sets: [{number, reps, weight_lb}]}`. `limit` default 5 (ADR 0013), max 200. `404` for a missing Exercise; an unused one returns an empty list.
   - No `/days/{day}` endpoint; the client makes two calls.
 - **Reads embed** `{id, name, archived}` for every Catalog reference and include derived fields (`day`, Meal `number`, Set `number`). `occurred_at` is returned with the offset of its `occurred_tz`.
 - **Pagination:** cursor (keyset on `day, occurred_at, id`, newest first) on the two range collections: `{items, next_cursor}`, `limit` default 50, max 200. Suggestions and sessions take `limit` only.

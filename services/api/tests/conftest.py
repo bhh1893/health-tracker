@@ -131,6 +131,6 @@ def committing_client(database_url: str, api_rw_engine: Engine) -> Iterator[Test
     with TestClient(create_app()) as test_client:
         yield test_client
     with api_rw_engine.begin() as connection:
-        # Meals first: their foreign keys restrict deleting a Catalog item in use.
-        for table in ("meals", "foods", "exercises", "restaurants"):
+        # Entries first: their foreign keys restrict deleting a Catalog item in use.
+        for table in ("meals", "exercise_entries", "foods", "exercises", "restaurants"):
             connection.execute(text(f"DELETE FROM {table}"))
