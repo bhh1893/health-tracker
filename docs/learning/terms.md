@@ -384,3 +384,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Failure domain**: the set of things that fail together, such as every pod on one worker.
 - **Fate sharing**: placing a component with something it cannot work without, so that it adds no failure of its own; here the operator runs beside the Kubernetes API it depends on.
 - **Retryable status code**: a status that says the same request may work later, such as `503`, unlike a `4xx`, where asking again gets the same answer.
+- **Window function**: SQL that computes a value per row from related rows without collapsing them, as `GROUP BY` would; `row_number() OVER (PARTITION BY day ORDER BY occurred_at, id)` numbers the Sets within each Day.
+- **Tie-break column**: a unique column added last to a sort, so rows with equal sort values still have one fixed order; without it a keyset page can skip or repeat them.
+- **DST (daylight saving time)**: a timezone's offset changing twice a year, so one local hour is repeated in autumn and one skipped in spring; this is why the moment is stored as an instant and not as local clock time.

@@ -14,7 +14,7 @@ from sqlalchemy import Row, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from health_api.db import DbSession
+from health_api.db import DbSession, violated_constraint
 from health_api.identity import CurrentUser
 from health_api.problems import (
     EXACT_DUPLICATE,
@@ -276,8 +276,7 @@ def write_name(
         result = session.execute(text(statement), {"user": user, "id": item_id, "name": name})
     except IntegrityError as error:
         session.rollback()
-        constraint = getattr(getattr(error.orig, "diag", None), "constraint_name", None)
-        if constraint != f"{catalog.table}_user_name_key":
+        if violated_constraint(error) != f"{catalog.table}_user_name_key":
             raise
         raise exact_duplicate(catalog, find_exact(session, catalog, user, item_id, name)) from None
     return result.first()

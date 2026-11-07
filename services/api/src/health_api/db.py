@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 from sqlalchemy import URL, Engine, create_engine, make_url
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 
@@ -44,3 +45,8 @@ def get_session(request: Request) -> Iterator[Session]:
 
 
 DbSession = Annotated[Session, Depends(get_session)]
+
+
+def violated_constraint(error: IntegrityError) -> str:
+    """Which constraint refused a write, as Postgres reports it. Empty if it names none."""
+    return getattr(getattr(error.orig, "diag", None), "constraint_name", None) or ""

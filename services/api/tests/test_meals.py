@@ -429,8 +429,8 @@ def test_list_embeds_both_kinds(client: TestClient, food: UUID, restaurant: UUID
 
 
 def test_cursor_walks_every_meal_once(client: TestClient, food: UUID) -> None:
-    # Two share a moment, so only the id can order them: the keyset's tie-break.
-    moments = ["08:00:00", "12:00:00", "12:00:00", "19:00:00", "21:00:00"]
+    # Two share a moment across the limit=2 page boundary, so only the id can order them.
+    moments = ["08:00:00", "09:00:00", "12:00:00", "12:00:00", "21:00:00"]
     created = [put(client, foods_body(food, at=f"2026-11-03T{at}Z"))["id"] for at in moments]
 
     seen: list[str] = []

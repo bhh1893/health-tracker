@@ -5,42 +5,33 @@ replaces the whole Meal in one transaction, which is what lets the API keep the 
 database cannot: a Foods Meal has at least one Food Entry.
 """
 
-import re
-from base64 import urlsafe_b64decode, urlsafe_b64encode
-from datetime import UTC, date, datetime, timedelta
-from typing import Annotated, Any, Literal, Self
+from datetime import date
+from typing import Annotated, Any, Literal
 from uuid import UUID
-from zoneinfo import ZoneInfo, available_timezones
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, Query, Response
-from fastapi.exceptions import RequestValidationError
-from pydantic import (
-    UUID7,
-    AfterValidator,
-    AwareDatetime,
-    BaseModel,
-    BeforeValidator,
-    ConfigDict,
-    Field,
-    model_validator,
-)
+from pydantic import UUID7, BaseModel, BeforeValidator, ConfigDict, Field
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from health_api.catalogs import CatalogName, problems
-from health_api.db import DbSession
+from health_api.db import DbSession, violated_constraint
+from health_api.entries import (
+    DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE,
+    Occurrence,
+    PutOccurrence,
+    encode_cursor,
+    invalid_field,
+    range_filters,
+)
 from health_api.identity import CurrentUser
 from health_api.problems import KIND_IMMUTABLE, LAST_FOOD_ENTRY, CatalogRef, ProblemError
 
-MAX_FUTURE = timedelta(minutes=5)
 # Far above any real Meal. Bounds the rows one request can write.
 MAX_FOOD_ENTRIES = 100
-DEFAULT_PAGE_SIZE = 50
-MAX_PAGE_SIZE = 200
-
-RFC_3339 = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})")
-TIMEZONES = available_timezones()
 
 # Which field a failed foreign key means. Same-owner links are composite FKs (ADR 0002), so
 # "no such item" and "someone else's item" are one error, and neither reveals the other.
@@ -52,32 +43,9 @@ REFERENCE_CONSTRAINTS = {
 Unit = Literal["g", "count"]
 
 
-def rfc_3339(value: object) -> object:
-    # Pydantic alone also takes numbers and numeric strings, as Unix timestamps.
-    if not isinstance(value, str) or not RFC_3339.fullmatch(value):
-        raise ValueError("Must be RFC 3339 with an offset.")
-    return value
-
-
-def not_in_the_future(value: datetime) -> datetime:
-    if value > datetime.now(UTC) + MAX_FUTURE:
-        raise ValueError("Must be at most 5 minutes in the future.")
-    return value
-
-
-def known_timezone(value: str) -> str:
-    if value not in TIMEZONES:
-        raise ValueError("Must be an IANA timezone name.")
-    return value
-
-
 def blank_to_none(value: object) -> object:
     # An empty form field sends "". One stored meaning for "no label": NULL.
     return None if isinstance(value, str) and not value.strip() else value
-
-
-OccurredAt = Annotated[AwareDatetime, BeforeValidator(rfc_3339), AfterValidator(not_in_the_future)]
-OccurredTz = Annotated[str, AfterValidator(known_timezone)]
 
 
 class PutFoodEntry(BaseModel):
@@ -88,26 +56,9 @@ class PutFoodEntry(BaseModel):
     unit: Unit
 
 
-class PutMealFields(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
+class PutMealFields(PutOccurrence):
     # Same rules as a Catalog name. Leaving it out clears it: a PUT replaces the whole Meal.
     label: Annotated[CatalogName | None, BeforeValidator(blank_to_none)] = None
-    occurred_at: OccurredAt
-    occurred_tz: OccurredTz
-
-    @property
-    def day(self) -> date:
-        return self.occurred_at.astimezone(ZoneInfo(self.occurred_tz)).date()
-
-    @model_validator(mode="after")
-    def day_exists(self) -> Self:
-        # ADR 0006 sets no past bound, but year 1 at a +14:00 offset has no UTC equivalent.
-        try:
-            _ = self.day
-        except OverflowError:
-            raise ValueError("occurred_at is out of range.") from None
-        return self
 
 
 class PutFoodsMeal(PutMealFields):
@@ -131,13 +82,8 @@ class FoodEntry(BaseModel):
     unit: Unit
 
 
-class MealFields(BaseModel):
-    id: UUID
+class MealFields(Occurrence):
     label: str | None
-    occurred_at: datetime
-    occurred_tz: str
-    day: date
-    number: int
 
 
 class FoodsMeal(MealFields):
@@ -156,28 +102,6 @@ Meal = Annotated[FoodsMeal | RestaurantMeal, Field(discriminator="kind")]
 class MealPage(BaseModel):
     items: list[Meal]
     next_cursor: str | None
-
-
-def encode_cursor(meal: FoodsMeal | RestaurantMeal) -> str:
-    position = f"{meal.day}|{meal.occurred_at.isoformat()}|{meal.id}"
-    return urlsafe_b64encode(position.encode()).decode()
-
-
-def decode_cursor(cursor: str) -> dict[str, Any]:
-    try:
-        day, occurred_at, meal_id = urlsafe_b64decode(cursor).decode().split("|")
-        return {
-            "cursor_day": date.fromisoformat(day),
-            "cursor_at": datetime.fromisoformat(occurred_at),
-            "cursor_id": UUID(meal_id),
-        }
-    except ValueError:
-        raise invalid_field(("query", "cursor"), "Not a cursor from this API.") from None
-
-
-def invalid_field(location: tuple[str, ...], message: str) -> RequestValidationError:
-    """A 422 found after parsing, in the same shape as one found by the request models."""
-    return RequestValidationError([{"type": "value_error", "loc": location, "msg": message}])
 
 
 def load_food_entries(
@@ -375,14 +299,7 @@ def meals_router() -> APIRouter:
         cursor: str | None = None,
         limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
     ) -> MealPage:
-        where = ["true"]
-        params: dict[str, Any] = {}
-        if from_day is not None:
-            where.append("m.day >= :from_day")
-            params["from_day"] = from_day
-        if to_day is not None:
-            where.append("m.day <= :to_day")
-            params["to_day"] = to_day
+        where, params = range_filters("m", from_day, to_day, cursor)
         if food_id is not None:
             where.append(
                 """
@@ -393,9 +310,6 @@ def meals_router() -> APIRouter:
                 """
             )
             params["food_id"] = food_id
-        if cursor is not None:
-            where.append("(m.day, m.occurred_at, m.id) < (:cursor_day, :cursor_at, :cursor_id)")
-            params.update(decode_cursor(cursor))
 
         # One extra row answers "is there a next page?" without a count.
         meals = select_meals(session, user, " AND ".join(where), limit + 1, **params)
@@ -434,10 +348,10 @@ def meals_router() -> APIRouter:
             created = write_meal(session, user, meal_id, body)
         except IntegrityError as error:
             session.rollback()
-            constraint = getattr(getattr(error.orig, "diag", None), "constraint_name", None)
-            if constraint not in REFERENCE_CONSTRAINTS:
+            reference = REFERENCE_CONSTRAINTS.get(violated_constraint(error))
+            if reference is None:
                 raise
-            field, message = REFERENCE_CONSTRAINTS[constraint]
+            field, message = reference
             raise invalid_field(("body", field), message) from None
         # Read before commit, so the response is what this transaction wrote.
         meal = load_meal(session, user, meal_id)

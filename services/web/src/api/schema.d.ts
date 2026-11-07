@@ -4,6 +4,54 @@
  */
 
 export interface paths {
+    "/api/v1/exercise-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Exercise Entries
+         * @description List Exercise Entries newest first, by Day range and Exercise, paged.
+         */
+        get: operations["list_exercise_entries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exercise-entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Exercise Entry
+         * @description Read one Exercise Entry.
+         */
+        get: operations["get_exercise_entry"];
+        /**
+         * Put Exercise Entry
+         * @description Create an Exercise Entry at a client-generated UUIDv7, or replace it.
+         */
+        put: operations["put_exercise_entry"];
+        post?: never;
+        /**
+         * Delete Exercise Entry
+         * @description Delete an Exercise Entry.
+         */
+        delete: operations["delete_exercise_entry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/exercises": {
         parameters: {
             query?: never;
@@ -16,6 +64,26 @@ export interface paths {
          * @description Suggest Exercise items: matches for q, or the most recently used when q is empty.
          */
         get: operations["suggest_exercises"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exercises/{exercise_id}/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Exercise Sessions
+         * @description List an Exercise's last N Sessions, newest first, with numbered Sets.
+         */
+        get: operations["get_exercise_sessions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -267,6 +335,50 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** ExerciseEntry */
+        ExerciseEntry: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            exercise: components["schemas"]["CatalogRef"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Occurred Tz */
+            occurred_tz: string;
+            /** Reps */
+            reps: number;
+            /** Weight Lb */
+            weight_lb: number | null;
+        };
+        /** ExerciseEntryPage */
+        ExerciseEntryPage: {
+            /** Items */
+            items: components["schemas"]["ExerciseEntry"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** ExerciseSession */
+        ExerciseSession: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Sets */
+            sets: components["schemas"]["SessionSet"][];
+        };
         /** FieldError */
         FieldError: {
             /** Field */
@@ -379,6 +491,25 @@ export interface components {
              */
             type: string;
         };
+        /** PutExerciseEntry */
+        PutExerciseEntry: {
+            /**
+             * Exercise Id
+             * Format: uuid
+             */
+            exercise_id: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Occurred Tz */
+            occurred_tz: string;
+            /** Reps */
+            reps: number;
+            /** Weight Lb */
+            weight_lb?: number | null;
+        };
         /** PutFoodEntry */
         PutFoodEntry: {
             /**
@@ -475,6 +606,15 @@ export interface components {
             occurred_tz: string;
             restaurant: components["schemas"]["CatalogRef"];
         };
+        /** SessionSet */
+        SessionSet: {
+            /** Number */
+            number: number;
+            /** Reps */
+            reps: number;
+            /** Weight Lb */
+            weight_lb: number | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -484,6 +624,199 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_exercise_entries: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                exercise_id?: string | null;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseEntryPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_exercise_entry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseEntry"];
+                };
+            };
+            /** @description Missing, or not yours. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    put_exercise_entry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutExerciseEntry"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseEntry"];
+                };
+            };
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseEntry"];
+                };
+            };
+            /** @description Missing, or not yours. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    delete_exercise_entry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     suggest_exercises: {
         parameters: {
             query?: {
@@ -504,6 +837,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogRef"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_exercise_sessions: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                exercise_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseSession"][];
+                };
+            };
+            /** @description Missing, or not yours. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Validation Error */
