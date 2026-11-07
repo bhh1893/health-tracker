@@ -9,6 +9,6 @@ resources:
 # CI rewrites newTag on each merge (ADR 0016). All zeros until the first image is pushed.
 images:
   - name: ghcr.io/bhh1893/health-tracker-api
-    newTag: "f9548ab43a3c6c8fe1e2df0da390f95ed7a201c2"
+    newTag: "772d2c15de0ef675b6ed16db775026b847b36781"
   - name: ghcr.io/bhh1893/health-tracker-web
-    newTag: "1b1aec28b191222c448f98cb974e930758be7eb0"
+    newTag: "772d2c15de0ef675b6ed16db775026b847b36781"
