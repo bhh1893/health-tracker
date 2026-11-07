@@ -17,6 +17,21 @@ spec:
     spec:
       # Neither container calls the Kubernetes API, so neither gets a credential for it.
       automountServiceAccountToken: false
+      # One pod per worker, so losing a worker leaves one serving. This acts only when a pod
+      # is scheduled: nothing moves pods back after a worker returns, until they restart.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          # Leave out nodes this pod cannot run on. Otherwise the control plane counts as a
+          # worker with zero pods, and a rollout's extra pod could never be placed.
+          nodeTaintsPolicy: Honor
+          # Count only this rollout's pods, so the old ones it is replacing do not skew it.
+          matchLabelKeys:
+            - pod-template-hash
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: api
       securityContext:
         runAsNonRoot: true
         seccompProfile:
