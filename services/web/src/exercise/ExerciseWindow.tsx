@@ -8,6 +8,7 @@ import { defaultOccurredAt } from "../lib/occurred";
 import { useViewedDay } from "../lib/useViewedDay";
 import { uuidv7 } from "../lib/uuidv7";
 import { DeleteSessionSheet } from "./DeleteSessionSheet";
+import { EditSessionSheet } from "./EditSessionSheet";
 import { newEntry, useAddSet, useDayEntries } from "./queries";
 import { SessionCard } from "./SessionCard";
 import { groupSessions, type ExerciseEntry, type Session } from "./sessions";
@@ -15,6 +16,7 @@ import { SetSheet } from "./SetSheet";
 
 type Sheet =
   | { kind: "add"; previous?: ExerciseEntry }
+  | { kind: "edit"; session: Session }
   | { kind: "delete"; session: Session };
 
 export function ExerciseWindow() {
@@ -56,6 +58,9 @@ export function ExerciseWindow() {
           onAddSet={(previous) => {
             setSheet({ kind: "add", previous });
           }}
+          onEdit={() => {
+            setSheet({ kind: "edit", session });
+          }}
           onDelete={() => {
             setSheet({ kind: "delete", session });
           }}
@@ -77,6 +82,15 @@ export function ExerciseWindow() {
         <SetSheet
           day={day}
           previous={sheet.previous}
+          onClose={() => {
+            setSheet(null);
+          }}
+        />
+      )}
+      {sheet?.kind === "edit" && (
+        <EditSessionSheet
+          day={day}
+          session={sheet.session}
           onClose={() => {
             setSheet(null);
           }}

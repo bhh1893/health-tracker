@@ -414,3 +414,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Contract testing**: checking that a running service really behaves as its published interface says, so clients can trust that interface.
 - **Schemathesis**: a tool that turns an OpenAPI document into generated requests and checks each response against that document.
 - **Lax vs strict validation**: lax mode converts near matches (`"5"` to `5`, `0` to `false`); strict mode refuses them, so the service accepts only what its contract says.
+- **Form diffing**: comparing what a form holds with what was last saved, so Save sends writes only for what differs.
+- **Partial failure**: some requests of a multi-request save succeed and others fail, leaving the data between the old state and the new one; there is no transaction across requests, so the client must show what is left and allow a retry.
+- **`Intl.DateTimeFormat`**: the browser's built-in date formatter; given a time zone, it can report that zone's UTC offset at a moment, daylight saving included.

@@ -34,6 +34,18 @@ export function groupSessions(entries: ExerciseEntry[]) {
   return [...sessions.values()];
 }
 
+// The Set rules every form shares: whole reps above zero, and a blank weight means
+// bodyweight. Null when the text is not a valid Set.
+export function parseSetFields(weight: string, reps: string) {
+  const repsValue = Number(reps);
+  const weightValue = weight === "" ? null : Number(weight);
+  const repsAreValid = Number.isInteger(repsValue) && repsValue > 0;
+  const weightIsValid = weightValue === null || weightValue > 0;
+  return repsAreValid && weightIsValid
+    ? { reps: repsValue, weight_lb: weightValue }
+    : null;
+}
+
 export function formatSet({
   weight_lb,
   reps,
