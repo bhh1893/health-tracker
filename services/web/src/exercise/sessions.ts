@@ -1,6 +1,7 @@
 import type { components } from "../api/schema";
+import type { CatalogRef } from "../catalog/catalogs";
 
-export type CatalogRef = components["schemas"]["CatalogRef"];
+export type { CatalogRef };
 export type ExerciseEntry = components["schemas"]["ExerciseEntry"];
 export type ExerciseEntryPage = components["schemas"]["ExerciseEntryPage"];
 

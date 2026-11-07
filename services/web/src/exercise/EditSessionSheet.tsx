@@ -2,6 +2,7 @@ import { useState, type SyntheticEvent } from "react";
 import { Button } from "react-aria-components";
 
 import { BottomSheet } from "../components/BottomSheet";
+import { fieldClass, labelClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDay } from "../lib/day";
 import {
@@ -12,7 +13,6 @@ import {
   type SetRow,
   type SetWrite,
 } from "./editSession";
-import { fieldClass, labelClass } from "./formStyles";
 import { useDeleteSet, useEditSet } from "./queries";
 import { formatSet, type Session } from "./sessions";
 
