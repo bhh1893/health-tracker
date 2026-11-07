@@ -209,6 +209,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`docker buildx` layer cache**: reuses unchanged image layers between builds to speed up CI.
 - **GitHub Actions**: GitHub's built-in automation; a workflow file in `.github/workflows/` runs jobs on GitHub-hosted machines when events like a PR happen.
 - **Workflow / job / step**: a workflow is one YAML file; it holds jobs (each on its own fresh runner, in parallel unless chained with `needs`); a job holds steps run in order.
+- **`workflow_dispatch`**: a GitHub Actions trigger that lets a person start a workflow by hand; it only works once the workflow file is on the default branch.
 - **Runner**: the machine that executes a job (`ubuntu-24.04` is a GitHub-hosted Linux VM, thrown away afterward).
 - **Path filter**: a check of which files a PR changed, used to skip jobs that have nothing to do (here via `dorny/paths-filter`).
 - **Status check / required check**: a pass/fail result shown on a PR; a required one blocks merge until it passes.
