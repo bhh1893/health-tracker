@@ -6,6 +6,7 @@ interface SessionCardProps {
   session: Session;
   onRepeat: (last: ExerciseEntry) => void;
   onAddSet: (last: ExerciseEntry) => void;
+  onEdit: () => void;
   onDelete: () => void;
 }
 
@@ -13,6 +14,7 @@ export function SessionCard({
   session,
   onRepeat,
   onAddSet,
+  onEdit,
   onDelete,
 }: SessionCardProps) {
   const { exercise, sets } = session;
@@ -28,24 +30,33 @@ export function SessionCard({
     >
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">{exercise.name}</h3>
-        <Button
-          aria-label={`Delete ${exercise.name} for the Day`}
-          className="rounded-lg p-2 text-gray-500"
-          onPress={onDelete}
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="size-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="flex items-center">
+          <Button
+            aria-label={`Edit ${exercise.name}`}
+            className="rounded-lg p-2 text-base text-teal-700"
+            onPress={onEdit}
           >
-            <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
-          </svg>
-        </Button>
+            Edit
+          </Button>
+          <Button
+            aria-label={`Delete ${exercise.name} for the Day`}
+            className="rounded-lg p-2 text-gray-500"
+            onPress={onDelete}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
+            </svg>
+          </Button>
+        </div>
       </div>
       <ol className="flex flex-col">
         {sets.map((set, index) => (

@@ -498,3 +498,199 @@ describe("deleting a Session", () => {
     expect(api.entries.size).toBe(0);
   });
 });
+
+describe("editing a Session", () => {
+  const threeSets = () => {
+    seedApi(
+      aSet({ id: "a", occurred_at: "2026-11-02T18:00:00+13:00" }),
+      aSet({ id: "b", occurred_at: "2026-11-02T18:05:00+13:00" }),
+      aSet({ id: "c", occurred_at: "2026-11-02T18:10:00+13:00" }),
+    );
+  };
+  const openEdit = async () => {
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Edit Bench Press" }),
+    );
+    return screen.getByRole("dialog");
+  };
+  const row = (dialog: HTMLElement, name: string) =>
+    within(within(dialog).getByRole("group", { name }));
+  const setReps = async (dialog: HTMLElement, name: string, reps: string) => {
+    const input = row(dialog, name).getByLabelText("Reps");
+    await userEvent.clear(input);
+    await userEvent.type(input, reps);
+  };
+  const removeSet = (dialog: HTMLElement, name: string) =>
+    userEvent.click(
+      row(dialog, name).getByRole("button", { name: `Delete ${name}` }),
+    );
+  const save = (dialog: HTMLElement) =>
+    userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+  const sheetCloses = () =>
+    waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+  // Records every write, and refuses the ids in `broken`.
+  function watchWrites(broken = new Set<string>()) {
+    const sent: string[] = [];
+    const [, put, remove] = api.handlers;
+    server.use(
+      http.put("*/api/v1/exercise-entries/:id", async (info) => {
+        const id = String(info.params.id);
+        sent.push(`PUT ${id}`);
+        return broken.has(id) ? refused() : (await put?.run(info))?.response;
+      }),
+      http.delete("*/api/v1/exercise-entries/:id", async (info) => {
+        const id = String(info.params.id);
+        sent.push(`DELETE ${id}`);
+        return broken.has(id) ? refused() : (await remove?.run(info))?.response;
+      }),
+    );
+    return sent;
+  }
+
+  it("sends nothing when nothing changed", async () => {
+    threeSets();
+    const sent = watchWrites();
+    renderAt(PAST_URL, <ExerciseWindow />);
+
+    await save(await openEdit());
+
+    await sheetCloses();
+    expect(sent).toEqual([]);
+  });
+
+  it("sends one PUT per changed Set and one DELETE per removed Set", async () => {
+    threeSets();
+    const sent = watchWrites();
+    renderAt(PAST_URL, <ExerciseWindow />);
+
+    const dialog = await openEdit();
+    await setReps(dialog, "Set 1", "8");
+    await removeSet(dialog, "Set 3");
+    await save(dialog);
+
+    await sheetCloses();
+    expect(sent).toEqual(["PUT a", "DELETE c"]);
+    expect(api.entries.get("a")?.reps).toBe(8);
+    expect(api.entries.get("a")?.occurred_at).toBe("2026-11-02T18:00:00+13:00");
+  });
+
+  it("removes a mis-tapped Set and the change survives a reload", async () => {
+    threeSets();
+    const { client, unmount } = renderAt(PAST_URL, <ExerciseWindow />);
+
+    const dialog = await openEdit();
+    await removeSet(dialog, "Set 2");
+    await save(dialog);
+    await sheetCloses();
+
+    unmount();
+    client.clear();
+    renderAt(PAST_URL, <ExerciseWindow />);
+    await repeatButton();
+    expect(setRows()).toHaveLength(2);
+  });
+
+  it("moves a Set to a new time, and the feed reorders", async () => {
+    seedApi(
+      aSet({ id: "a", reps: 1, occurred_at: "2026-11-02T18:00:00+13:00" }),
+      aSet({ id: "b", reps: 2, occurred_at: "2026-11-02T18:05:00+13:00" }),
+    );
+    renderAt(PAST_URL, <ExerciseWindow />);
+
+    const dialog = await openEdit();
+    const time = row(dialog, "Set 2").getByLabelText("Time");
+    await userEvent.clear(time);
+    await userEvent.type(time, "07:30");
+    await save(dialog);
+    await sheetCloses();
+
+    expect(api.entries.get("b")?.occurred_at).toBe("2026-11-02T07:30:00+13:00");
+    expect(setRows()[0]).toHaveTextContent("Set 1 135 lb × 2");
+  });
+
+  it("undoes a removal row by row, sending nothing for it", async () => {
+    threeSets();
+    const sent = watchWrites();
+    renderAt(PAST_URL, <ExerciseWindow />);
+
+    const dialog = await openEdit();
+    await removeSet(dialog, "Set 1");
+    await removeSet(dialog, "Set 2");
+    await userEvent.click(
+      row(dialog, "Set 1").getByRole("button", { name: "Undo Set 1" }),
+    );
+    await save(dialog);
+
+    await sheetCloses();
+    expect(sent).toEqual(["DELETE b"]);
+  });
+
+  it("will not save a Set with invalid reps", async () => {
+    threeSets();
+    renderAt(PAST_URL, <ExerciseWindow />);
+
+    const dialog = await openEdit();
+    await setReps(dialog, "Set 1", "1.5");
+
+    expect(within(dialog).getByRole("button", { name: "Save" })).toBeDisabled();
+  });
+
+  it("on partial failure keeps the unsent row, and retry sends only it", async () => {
+    threeSets();
+    const broken = new Set(["b"]);
+    const sent = watchWrites(broken);
+    renderAt(PAST_URL, <ExerciseWindow />);
+
+    const dialog = await openEdit();
+    await setReps(dialog, "Set 1", "8");
+    await setReps(dialog, "Set 2", "9");
+    await removeSet(dialog, "Set 3");
+    await save(dialog);
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      "Unprocessable Content",
+    );
+    expect(sent).toEqual(["PUT a", "PUT b", "DELETE c"]);
+    expect(within(dialog).getAllByRole("group")).toHaveLength(2);
+    expect(row(dialog, "Set 2").getByText("Not saved")).toBeInTheDocument();
+    expect(row(dialog, "Set 2").getByLabelText("Reps")).toHaveValue(9);
+
+    broken.clear();
+    sent.length = 0;
+    await save(dialog);
+
+    await sheetCloses();
+    expect(sent).toEqual(["PUT b"]);
+    expect(api.entries.get("b")?.reps).toBe(9);
+    expect(api.entries.size).toBe(2);
+  });
+
+  it("shows edits at once and rolls back only the write that failed", async () => {
+    threeSets();
+    watchWrites(new Set(["b"]));
+    renderAt(PAST_URL, <ExerciseWindow />);
+
+    const dialog = await openEdit();
+    // The refetch after the failure never answers, so only the rollback can
+    // restore the Set.
+    server.use(
+      http.get("*/api/v1/exercise-entries", async () => {
+        await delay("infinite");
+        return new HttpResponse(null);
+      }),
+    );
+    await setReps(dialog, "Set 1", "8");
+    await setReps(dialog, "Set 2", "9");
+    await save(dialog);
+
+    await within(dialog).findByRole("alert");
+    const [first, second] = within(
+      screen.getByRole("article", { name: "Bench Press", hidden: true }),
+    ).getAllByRole("listitem", { hidden: true });
+    expect(first).toHaveTextContent("135 lb × 8");
+    expect(second).toHaveTextContent("135 lb × 5");
+  });
+});

@@ -111,24 +111,27 @@ function refreshWhenIdle(queryClient: QueryClient, day: string) {
   }
 }
 
+function putEntry(entry: ExerciseEntry) {
+  return unwrap(
+    api.PUT("/api/v1/exercise-entries/{entry_id}", {
+      params: { path: { entry_id: entry.id } },
+      body: {
+        exercise_id: entry.exercise.id,
+        reps: entry.reps,
+        weight_lb: entry.weight_lb,
+        occurred_at: entry.occurred_at,
+        occurred_tz: entry.occurred_tz,
+      },
+    }),
+  );
+}
+
 export function useAddSet() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ENTRY_WRITES_KEY,
     scope: ENTRY_WRITES_SCOPE,
-    mutationFn: (entry: ExerciseEntry) =>
-      unwrap(
-        api.PUT("/api/v1/exercise-entries/{entry_id}", {
-          params: { path: { entry_id: entry.id } },
-          body: {
-            exercise_id: entry.exercise.id,
-            reps: entry.reps,
-            weight_lb: entry.weight_lb,
-            occurred_at: entry.occurred_at,
-            occurred_tz: entry.occurred_tz,
-          },
-        }),
-      ),
+    mutationFn: putEntry,
     onMutate: async (entry) => {
       await cancelDayFetch(queryClient, entry.day);
       editDay(queryClient, entry.day, withEntry(entry));
@@ -140,6 +143,31 @@ export function useAddSet() {
     },
     onSettled: (_data, _error, entry) => {
       refreshWhenIdle(queryClient, entry.day);
+    },
+  });
+}
+
+interface SetEdit {
+  before: ExerciseEntry;
+  after: ExerciseEntry;
+}
+
+// Only time, weight and reps can change, so a Set stays on its Day.
+export function useEditSet() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ENTRY_WRITES_KEY,
+    scope: ENTRY_WRITES_SCOPE,
+    mutationFn: ({ after }: SetEdit) => putEntry(after),
+    onMutate: async ({ after }) => {
+      await cancelDayFetch(queryClient, after.day);
+      editDay(queryClient, after.day, withEntry(after));
+    },
+    onError: (_error, { before }) => {
+      editDay(queryClient, before.day, withEntry(before));
+    },
+    onSettled: (_data, _error, { after }) => {
+      refreshWhenIdle(queryClient, after.day);
     },
   });
 }

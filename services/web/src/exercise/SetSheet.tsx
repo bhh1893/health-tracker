@@ -8,12 +8,8 @@ import { defaultOccurredAt, onDay, timeOfDay } from "../lib/occurred";
 import { uuidv7 } from "../lib/uuidv7";
 import { ExerciseComboBox } from "./ExerciseComboBox";
 import { newEntry, useAddSet } from "./queries";
-import type { ExerciseEntry } from "./sessions";
-
-const fieldClass =
-  "w-full min-w-0 rounded-xl border border-gray-300 bg-white p-3 text-base";
-const labelClass =
-  "flex min-w-0 flex-col gap-1 text-sm font-medium text-gray-600";
+import { fieldClass, labelClass } from "./formStyles";
+import { parseSetFields, type ExerciseEntry } from "./sessions";
 
 interface SetSheetProps {
   day: string;
@@ -35,14 +31,11 @@ export function SetSheet({ day, previous, onClose }: SetSheetProps) {
   const [reps, setReps] = useState(previous?.reps.toString() ?? "");
   const addSet = useAddSet();
 
-  const repsValue = Number(reps);
-  const weightValue = weight === "" ? null : Number(weight);
-  const repsAreValid = Number.isInteger(repsValue) && repsValue > 0;
-  const weightIsValid = weightValue === null || weightValue > 0;
+  const fields = parseSetFields(weight, reps);
 
   function save(event: SyntheticEvent) {
     event.preventDefault();
-    if (picked === null || time === "" || !repsAreValid || !weightIsValid) {
+    if (picked === null || time === "" || fields === null) {
       return;
     }
     addSet.mutate(
@@ -50,8 +43,7 @@ export function SetSheet({ day, previous, onClose }: SetSheetProps) {
         id,
         day,
         exercise: picked,
-        reps: repsValue,
-        weight_lb: weightValue,
+        ...fields,
         // Untouched, keep the seconds: Sets logged in the same minute stay in order.
         occurredAt:
           time === timeOfDay(defaultAt) ? defaultAt : onDay(day, time),
@@ -121,12 +113,7 @@ export function SetSheet({ day, previous, onClose }: SetSheetProps) {
           <Button
             type="submit"
             className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
-            isDisabled={
-              picked === null ||
-              !repsAreValid ||
-              !weightIsValid ||
-              addSet.isPending
-            }
+            isDisabled={picked === null || fields === null || addSet.isPending}
           >
             Save
           </Button>
