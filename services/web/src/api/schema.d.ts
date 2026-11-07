@@ -108,6 +108,54 @@ export interface paths {
         patch: operations["patch_food"];
         trace?: never;
     };
+    "/api/v1/meals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Meals
+         * @description List Meals newest first, by Day range and Food, one page at a time.
+         */
+        get: operations["list_meals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/meals/{meal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Meal
+         * @description Read one Meal with its Food Entries or Restaurant.
+         */
+        get: operations["get_meal"];
+        /**
+         * Put Meal
+         * @description Create a Meal at a client-generated UUIDv7, or replace the whole Meal.
+         */
+        put: operations["put_meal"];
+        post?: never;
+        /**
+         * Delete Meal
+         * @description Delete a Meal and its Food Entries.
+         */
+        delete: operations["delete_meal"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/restaurants": {
         parameters: {
             query?: never;
@@ -242,6 +290,48 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** FoodEntry */
+        FoodEntry: {
+            food: components["schemas"]["CatalogRef"];
+            /** Quantity */
+            quantity: number;
+            /**
+             * Unit
+             * @enum {string}
+             */
+            unit: "g" | "count";
+        };
+        /** FoodsMeal */
+        FoodsMeal: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Food Entries */
+            food_entries: components["schemas"]["FoodEntry"][];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "foods";
+            /** Label */
+            label: string | null;
+            /** Number */
+            number: number;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Occurred Tz */
+            occurred_tz: string;
+        };
         /** HealthStatus */
         HealthStatus: {
             /**
@@ -250,6 +340,13 @@ export interface components {
              * @constant
              */
             status: "ok";
+        };
+        /** MealPage */
+        MealPage: {
+            /** Items */
+            items: (components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"])[];
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /** PatchItem */
         PatchItem: {
@@ -282,6 +379,40 @@ export interface components {
              */
             type: string;
         };
+        /** PutFoodEntry */
+        PutFoodEntry: {
+            /**
+             * Food Id
+             * Format: uuid
+             */
+            food_id: string;
+            /** Quantity */
+            quantity: number;
+            /**
+             * Unit
+             * @enum {string}
+             */
+            unit: "g" | "count";
+        };
+        /** PutFoodsMeal */
+        PutFoodsMeal: {
+            /** Food Entries */
+            food_entries: components["schemas"]["PutFoodEntry"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "foods";
+            /** Label */
+            label?: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Occurred Tz */
+            occurred_tz: string;
+        };
         /** PutItem */
         PutItem: {
             /**
@@ -291,6 +422,58 @@ export interface components {
             allow_similar: boolean;
             /** Name */
             name: string;
+        };
+        /** PutRestaurantMeal */
+        PutRestaurantMeal: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "restaurant";
+            /** Label */
+            label?: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Occurred Tz */
+            occurred_tz: string;
+            /**
+             * Restaurant Id
+             * Format: uuid
+             */
+            restaurant_id: string;
+        };
+        /** RestaurantMeal */
+        RestaurantMeal: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "restaurant";
+            /** Label */
+            label: string | null;
+            /** Number */
+            number: number;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Occurred Tz */
+            occurred_tz: string;
+            restaurant: components["schemas"]["CatalogRef"];
         };
     };
     responses: never;
@@ -741,6 +924,172 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_meals: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                food_id?: string | null;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_meal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"];
+                };
+            };
+            /** @description Missing, or not yours. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    put_meal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutFoodsMeal"] | components["schemas"]["PutRestaurantMeal"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"];
+                };
+            };
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"];
+                };
+            };
+            /** @description Missing, or not yours. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflicts with the current state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    delete_meal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

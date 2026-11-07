@@ -375,3 +375,9 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`useSyncExternalStore`**: the React hook that re-renders a component when state held outside React changes.
 - **Query cache (TanStack Query)**: API responses kept in memory under a key, so screens share one result instead of each fetching it.
 - **`staleTime`**: how long a cached response counts as fresh; within it a remounted screen uses the cache without refetching.
+- **Transactional boundary**: the set of statements that commit or roll back as one; here one `PUT` covers the Meal row and all its Food Entries, so no reader sees half a Meal.
+- **Replace semantics**: a `PUT` body is the whole new state, so anything left out is removed, unlike `PATCH`, which changes only what it names.
+- **Correlated subquery**: a subquery that refers to the outer row and so runs once per row; here it counts the Day's earlier Meals to derive a Meal's number.
+- **Discriminated union**: several object shapes told apart by one field's value (`kind`), so validation and the OpenAPI schema pick the right shape without guessing.
+- **N+1 query**: one query for a list, then one more per item; the fix is one extra query for all items, as `load_food_entries` does.
+- **Mutation check**: break the code on purpose and confirm a test fails; a mutation that survives marks behavior no test covers.

@@ -2,12 +2,18 @@
 
 import json
 import threading
+import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any
 
 import pytest
+import uvicorn
+from fastapi import Request, Response
+from starlette.middleware.base import RequestResponseEndpoint
 
+from health_api.main import create_app
 from health_api.smoke import SmokeFailure, run
 
 TOKEN = "test-token"
@@ -16,7 +22,8 @@ TOKEN = "test-token"
 @dataclass
 class Stub:
     url: str = ""
-    items: dict[str, str] = field(default_factory=dict[str, str])
+    foods: dict[str, str] = field(default_factory=dict[str, str])
+    meals: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
     deletes: int = 0
     enforce_token: bool = True
     accept_any_token: bool = False
@@ -50,11 +57,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if not self.authorized():
             return
-        if self.path == "/api/v1/foods":
-            self.answer(200, [])
-        elif self.path in self.stub.items:
-            name = "wrong" if self.stub.corrupt_reads else self.stub.items[self.path]
-            self.answer(200, {"name": name})
+        if self.path == "/api/v1/meals":
+            self.answer(200, {"items": [], "next_cursor": None})
+        elif self.path in self.stub.meals:
+            food_id = self.stub.meals[self.path]["food_entries"][0]["food_id"]
+            name = self.stub.foods[f"/api/v1/foods/{food_id}"]
+            name = "wrong" if self.stub.corrupt_reads else name
+            self.answer(200, {"food_entries": [{"food": {"name": name}}]})
         else:
             self.answer(404)
 
@@ -62,14 +71,23 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authorized():
             return
         length = int(self.headers["Content-Length"])
-        self.stub.items[self.path] = json.loads(self.rfile.read(length))["name"]
+        body = json.loads(self.rfile.read(length))
+        if self.path.startswith("/api/v1/foods/"):
+            self.stub.foods[self.path] = body["name"]
+        else:
+            self.stub.meals[self.path] = body
         self.answer(201, {})
 
     def do_DELETE(self) -> None:
         if not self.authorized():
             return
         self.stub.deletes += 1
-        self.stub.items.pop(self.path, None)
+        # As the foreign key does: a Food in use cannot be deleted.
+        if self.path.startswith("/api/v1/foods/") and self.stub.meals:
+            self.answer(409)
+            return
+        self.stub.foods.pop(self.path, None)
+        self.stub.meals.pop(self.path, None)
         self.answer(204)
 
 
@@ -87,9 +105,37 @@ def stub() -> Iterator[Stub]:
     thread.join()
 
 
+@pytest.fixture
+def real_api(database_url: str) -> Iterator[str]:
+    """The real app on real Postgres, behind a stand-in for the sidecar's token check."""
+
+    async def check_token(request: Request, call_next: RequestResponseEndpoint) -> Response:
+        if request.headers.get("Authorization") != f"Bearer {TOKEN}":
+            return Response(status_code=401)
+        return await call_next(request)
+
+    app = create_app()
+    app.middleware("http")(check_token)
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=0, log_level="warning"))
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        time.sleep(0.01)
+    port = server.servers[0].sockets[0].getsockname()[1]
+    yield f"http://127.0.0.1:{port}"
+    server.should_exit = True
+    thread.join()
+
+
+def test_passes_against_the_real_api(real_api: str) -> None:
+    """The stub accepts any body. Only this proves the real API takes what the script sends."""
+    run(real_api, TOKEN)
+
+
 def test_passes_and_leaves_no_rows_behind(stub: Stub) -> None:
     run(stub.url, TOKEN)
-    assert stub.items == {}
+    assert stub.foods == {}
+    assert stub.meals == {}
 
 
 def test_never_prints_the_token(stub: Stub, capsys: pytest.CaptureFixture[str]) -> None:
@@ -116,7 +162,8 @@ def test_fails_on_a_bad_token(stub: Stub) -> None:
 
 def test_cleans_up_when_the_read_back_is_wrong(stub: Stub) -> None:
     stub.corrupt_reads = True
-    with pytest.raises(SmokeFailure, match="wrong name"):
+    with pytest.raises(SmokeFailure, match="wrong Food"):
         run(stub.url, TOKEN)
-    assert stub.deletes == 1
-    assert stub.items == {}
+    assert stub.deletes == 2
+    assert stub.foods == {}
+    assert stub.meals == {}
