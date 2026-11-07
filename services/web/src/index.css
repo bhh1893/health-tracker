@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+/* The page scrolls but never zooms: no pinch, and two quick taps on a repeat button
+   stay two taps instead of a double-tap zoom. iOS ignores user-scalable=no, so this
+   is the only switch that works there (ADR 0008). */
+html {
+  touch-action: pan-x pan-y;
+}
