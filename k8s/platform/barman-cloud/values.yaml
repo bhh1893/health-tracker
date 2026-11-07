@@ -1,3 +1,10 @@
-# Only what differs from the chart defaults (ADR 0011). Nothing does yet: the
-# defaults install the ObjectStore CRD, the plugin pod and its certificates.
-{}
+# Only what differs from the chart defaults (ADR 0005, ADR 0011).
+# Failover waits for this pod too: CNPG stops reconciling when it cannot load a plugin. One
+# replica on purpose: only the leader serves gRPC, but a standby still passes its readiness
+# probe, so the Service would send it connections it refuses.
+nodeSelector:
+  node-role.kubernetes.io/control-plane: ""
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule

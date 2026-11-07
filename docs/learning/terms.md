@@ -381,3 +381,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Discriminated union**: several object shapes told apart by one field's value (`kind`), so validation and the OpenAPI schema pick the right shape without guessing.
 - **N+1 query**: one query for a list, then one more per item; the fix is one extra query for all items, as `load_food_entries` does.
 - **Mutation check**: break the code on purpose and confirm a test fails; a mutation that survives marks behavior no test covers.
+- **Failure domain**: the set of things that fail together, such as every pod on one worker.
+- **Fate sharing**: placing a component with something it cannot work without, so that it adds no failure of its own; here the operator runs beside the Kubernetes API it depends on.

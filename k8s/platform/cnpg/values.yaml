@@ -1,3 +1,9 @@
-# Only what differs from the chart defaults (ADR 0005). Nothing does yet: the defaults
-# install the CRDs and one operator pod that watches every namespace.
-{}
+# Only what differs from the chart defaults (ADR 0005).
+# On the control plane, so losing a worker cannot take the operator with it. Failover needs
+# the Kubernetes API anyway, so with one control plane this adds no new way to fail.
+nodeSelector:
+  node-role.kubernetes.io/control-plane: ""
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
