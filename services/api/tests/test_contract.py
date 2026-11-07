@@ -37,6 +37,16 @@ def test_operation_ids_are_unique() -> None:
     assert len(ids) == len(set(ids))
 
 
+def test_every_api_route_documents_the_outage_status() -> None:
+    missing = [
+        name
+        for name, operation in operations()
+        if " /api/v1/" in name and "503" not in operation["responses"]
+    ]
+
+    assert not missing, "include the router with responses=DATABASE_UNAVAILABLE"
+
+
 def test_conflicts_document_the_problem_extensions() -> None:
     schema = json.loads(OPENAPI_PATH.read_text())
 

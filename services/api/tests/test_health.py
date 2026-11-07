@@ -46,6 +46,24 @@ def test_readyz_is_503_when_the_database_is_unreachable(monkeypatch: pytest.Monk
     assert response.json()["detail"] == "Could not connect to the database."
 
 
+def test_route_is_a_503_problem_when_the_database_is_unreachable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", NOWHERE)
+
+    with TestClient(create_app()) as client:
+        response = client.get("/api/v1/foods")
+
+    assert response.status_code == 503
+    assert response.headers["content-type"] == PROBLEM_MEDIA_TYPE
+    assert response.json() == {
+        "type": "about:blank",
+        "title": "Service Unavailable",
+        "status": 503,
+        "detail": "The database is unavailable. Try again shortly.",
+    }
+
+
 @pytest.mark.parametrize(
     ("setup", "status", "detail"),
     [
