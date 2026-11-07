@@ -118,19 +118,7 @@ export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
           </ToggleButton>
         </ToggleButtonGroup>
 
-        <div className="grid grid-cols-[auto_1fr] gap-3">
-          <label className={labelClass}>
-            Time
-            <input
-              type="time"
-              required
-              className={fieldClass}
-              value={draft.time}
-              onChange={({ target }) => {
-                change({ time: target.value });
-              }}
-            />
-          </label>
+        <div className="grid grid-cols-[2fr_1fr] gap-3">
           <label className={labelClass}>
             Label
             <input
@@ -141,6 +129,20 @@ export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
               value={draft.label}
               onChange={({ target }) => {
                 change({ label: target.value });
+              }}
+            />
+          </label>
+          <label className={labelClass}>
+            Time
+            <input
+              type="time"
+              required
+              // iOS draws time inputs natively, wider and taller than the CSS asks.
+              // appearance-none makes it a plain box sized like the fields beside it.
+              className={`${fieldClass} appearance-none`}
+              value={draft.time}
+              onChange={({ target }) => {
+                change({ time: target.value });
               }}
             />
           </label>

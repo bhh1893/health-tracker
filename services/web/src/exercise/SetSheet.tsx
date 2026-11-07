@@ -58,24 +58,26 @@ export function SetSheet({ day, previous, onClose }: SetSheetProps) {
   return (
     <BottomSheet title={`Add Set to ${formatDay(day)}`} onClose={onClose}>
       <form className="flex flex-col gap-4" onSubmit={save}>
-        <div className="grid grid-cols-[auto_1fr] gap-3">
+        <div className="grid grid-cols-[2fr_1fr] gap-3">
+          <CatalogComboBox
+            catalog={exerciseCatalog}
+            value={picked}
+            onChange={setPicked}
+          />
           <label className={labelClass}>
             Time
             <input
               type="time"
               required
-              className={fieldClass}
+              // iOS draws time inputs natively, wider and taller than the CSS asks.
+              // appearance-none makes it a plain box sized like the fields beside it.
+              className={`${fieldClass} appearance-none`}
               value={time}
               onChange={({ target }) => {
                 setTime(target.value);
               }}
             />
           </label>
-          <CatalogComboBox
-            catalog={exerciseCatalog}
-            value={picked}
-            onChange={setPicked}
-          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <label className={labelClass}>
