@@ -406,3 +406,10 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Topology spread constraint**: a scheduling rule that keeps a Deployment's pods balanced across failure domains; `maxSkew: 1` means the fullest and emptiest node may differ by at most one pod.
 - **`pod-template-hash`**: a label Kubernetes adds to a Deployment's pods, with one value per revision of the pod template, so it tells a rollout's new pods from the old ones.
 - **Synchronous replication**: the primary reports a commit as done only after a replica has it, so a failover cannot lose it; asynchronous replication reports first and copies after, which is faster but can lose the last commits.
+- **Property-based testing**: state a rule that must hold for every input ("never a 5xx"), and let a tool generate the inputs, instead of writing examples by hand.
+- **Hypothesis**: the Python property-based testing library under Schemathesis; it generates inputs and shrinks a failure to the smallest one that still fails.
+- **Shrinking**: reducing a failing generated input to its simplest form, so the report shows `name: "0"` and not 200 random characters.
+- **Fuzzing**: sending large amounts of generated, often malformed, input to find crashes nobody thought to test; a safety net, because it finds likely bugs and not every bug.
+- **Contract testing**: checking that a running service really behaves as its published interface says, so clients can trust that interface.
+- **Schemathesis**: a tool that turns an OpenAPI document into generated requests and checks each response against that document.
+- **Lax vs strict validation**: lax mode converts near matches (`"5"` to `5`, `0` to `false`); strict mode refuses them, so the service accepts only what its contract says.

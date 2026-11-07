@@ -750,6 +750,15 @@ export interface operations {
                     "application/json": components["schemas"]["ExerciseEntry"];
                 };
             };
+            /** @description The body could not be read as JSON text. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Missing, or not yours. */
             404: {
                 headers: {
@@ -992,6 +1001,15 @@ export interface operations {
                     "application/json": components["schemas"]["CatalogRef"];
                 };
             };
+            /** @description The body could not be read as JSON text. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Missing, or not yours. */
             404: {
                 headers: {
@@ -1099,6 +1117,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogRef"];
+                };
+            };
+            /** @description The body could not be read as JSON text. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing, or not yours. */
@@ -1263,6 +1290,15 @@ export interface operations {
                     "application/json": components["schemas"]["Food"];
                 };
             };
+            /** @description The body could not be read as JSON text. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Missing, or not yours. */
             404: {
                 headers: {
@@ -1370,6 +1406,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Food"];
+                };
+            };
+            /** @description The body could not be read as JSON text. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing, or not yours. */
@@ -1534,6 +1579,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"];
+                };
+            };
+            /** @description The body could not be read as JSON text. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing, or not yours. */
@@ -1736,6 +1790,15 @@ export interface operations {
                     "application/json": components["schemas"]["CatalogRef"];
                 };
             };
+            /** @description The body could not be read as JSON text. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Missing, or not yours. */
             404: {
                 headers: {
@@ -1843,6 +1906,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogRef"];
+                };
+            };
+            /** @description The body could not be read as JSON text. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing, or not yours. */

@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from health_api.entries import MAX_AMOUNT
 from health_api.exercise_entries import DEFAULT_SESSIONS, MAX_REPS
 from health_api.problems import PROBLEM_MEDIA_TYPE
 
@@ -679,3 +680,26 @@ def test_sessions_of_another_users_exercise_are_404(
 @pytest.mark.parametrize("limit", [0, 201])
 def test_session_limit_is_bounded(client: TestClient, squat: UUID, limit: int) -> None:
     assert client.get(sessions_url(squat), params={"limit": limit}).status_code == 422
+
+
+@pytest.mark.parametrize("day", ["0", "1700000000"])
+def test_range_days_must_be_iso_dates(client: TestClient, day: str) -> None:
+    assert error_fields(client.get(ENTRIES, params={"from": day})) == ["query.from"]
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"reps": "5"},
+        {"reps": 5.0},
+        {"weight_lb": "135"},
+        {"weight_lb": MAX_AMOUNT + 1},
+        {"weight_lb": 1.7976931348623157e308},
+    ],
+)
+def test_numbers_must_be_numbers_in_range(client: TestClient, fields: dict[str, Any]) -> None:
+    exercise = create_exercise(client, "Squat")
+
+    response = client.put(entry_url(uuid7()), json=body(exercise, **fields))
+
+    assert response.status_code == 422, response.text

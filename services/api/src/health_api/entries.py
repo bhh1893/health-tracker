@@ -20,8 +20,12 @@ from pydantic import (
 MAX_FUTURE = timedelta(minutes=5)
 DEFAULT_PAGE_SIZE = 50
 MAX_PAGE_SIZE = 200
+# Far above any real quantity or weight. Near a float's limit Postgres rounds the value up, it
+# reads back as infinity, and that serializes as null: on weight_lb, a different meaning.
+MAX_AMOUNT = 1_000_000
 
 RFC_3339 = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})")
+ISO_DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 TIMEZONES = available_timezones()
 
 
@@ -29,6 +33,13 @@ def rfc_3339(value: object) -> object:
     # Pydantic alone also takes numbers and numeric strings, as Unix timestamps.
     if not isinstance(value, str) or not RFC_3339.fullmatch(value):
         raise ValueError("Must be RFC 3339 with an offset.")
+    return value
+
+
+def iso_day(value: object) -> object:
+    # Same trap as rfc_3339: alone, Pydantic reads ?to=0 as a Unix timestamp, so as 1970-01-01.
+    if not isinstance(value, str) or not ISO_DAY.fullmatch(value):
+        raise ValueError("Must be a date as YYYY-MM-DD.")
     return value
 
 
@@ -46,6 +57,7 @@ def known_timezone(value: str) -> str:
 
 OccurredAt = Annotated[AwareDatetime, BeforeValidator(rfc_3339), AfterValidator(not_in_the_future)]
 OccurredTz = Annotated[str, AfterValidator(known_timezone)]
+Day = Annotated[date, BeforeValidator(iso_day)]
 
 
 class PutOccurrence(BaseModel):

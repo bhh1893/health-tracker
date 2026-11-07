@@ -131,3 +131,28 @@ def test_contract_documents_every_error_as_a_problem() -> None:
     assert schema["paths"]["/readyz"]["get"]["responses"]["503"]["content"] == problem
     assert schema["paths"]["/numbers"]["get"]["responses"]["422"]["content"] == problem
     assert "HTTPValidationError" not in schema["components"]["schemas"]
+
+
+def test_method_not_allowed_names_every_method_on_the_path() -> None:
+    item = "/api/v1/foods/019a0000-0000-7000-8000-00000000000a"
+
+    response = TestClient(create_app()).post(item)
+
+    assert response.status_code == 405
+    assert response.headers["allow"] == "DELETE, GET, PATCH, PUT"
+    assert response.headers["content-type"] == PROBLEM_MEDIA_TYPE
+
+
+def test_body_that_is_not_text_is_a_documented_400() -> None:
+    app = create_app()
+    item = "/api/v1/foods/{item_id}"
+
+    response = TestClient(app).put(
+        item.format(item_id="019a0000-0000-7000-8000-00000000000a"),
+        content=b"\xff",
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 400
+    assert response.headers["content-type"] == PROBLEM_MEDIA_TYPE
+    assert "400" in app.openapi()["paths"][item]["put"]["responses"]

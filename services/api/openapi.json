@@ -478,6 +478,7 @@
             "anyOf": [
               {
                 "exclusiveMinimum": 0.0,
+                "maximum": 1000000.0,
                 "type": "number"
               },
               {
@@ -506,6 +507,7 @@
           },
           "quantity": {
             "exclusiveMinimum": 0.0,
+            "maximum": 1000000.0,
             "title": "Quantity",
             "type": "number"
           },
@@ -1013,6 +1015,16 @@
             },
             "description": "Created."
           },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The body could not be read as JSON text."
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -1366,6 +1378,16 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The body could not be read as JSON text."
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -1457,6 +1479,16 @@
               }
             },
             "description": "Created."
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The body could not be read as JSON text."
           },
           "404": {
             "content": {
@@ -1741,6 +1773,16 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The body could not be read as JSON text."
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -1832,6 +1874,16 @@
               }
             },
             "description": "Created."
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The body could not be read as JSON text."
           },
           "404": {
             "content": {
@@ -2217,6 +2269,16 @@
             },
             "description": "Created."
           },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The body could not be read as JSON text."
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2500,6 +2562,16 @@
             },
             "description": "Successful Response"
           },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The body could not be read as JSON text."
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2591,6 +2663,16 @@
               }
             },
             "description": "Created."
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The body could not be read as JSON text."
           },
           "404": {
             "content": {

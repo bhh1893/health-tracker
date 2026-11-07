@@ -9,7 +9,7 @@ from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Response
-from pydantic import UUID7, AfterValidator, BaseModel, ConfigDict, StringConstraints
+from pydantic import UUID7, AfterValidator, BaseModel, ConfigDict, StrictBool, StringConstraints
 from sqlalchemy import Row, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -59,15 +59,15 @@ class PutItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: CatalogName
-    allow_similar: bool = False
+    allow_similar: StrictBool = False
 
 
 class PatchItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: CatalogName | None = None
-    archived: bool | None = None
-    allow_similar: bool = False
+    archived: StrictBool | None = None
+    allow_similar: StrictBool = False
 
 
 @dataclass(frozen=True)
