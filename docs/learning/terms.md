@@ -423,3 +423,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Remount by `key`**: changing a component's `key` makes React discard it and mount a fresh one, the simplest way to reset its internal state from outside.
 - **Stretched link**: one real button whose `::after` box is stretched over a whole card, so the card is tappable anywhere while assistive tech still sees one named button.
 - **Fast Refresh**: the dev server's hot reload for React; it only works on files that export components alone, which is why shared helpers live in their own modules.
+- **Pseudo-element (`::after`)**: an extra box CSS draws on an element without any HTML for it; Tailwind's `after:` prefix styles it.
+- **`appearance: none`**: turns off the browser's native drawing of a form control (iOS time pickers, select arrows), so the control follows the page's CSS like a plain box.

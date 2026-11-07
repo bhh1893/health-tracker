@@ -12,11 +12,11 @@ status: accepted
 - **Session card:** Sets listed in order, numbered at read time. Header: **Edit** and a trash can. Footer, two buttons:
   - dashed `+ 135 lb × 5`: one tap duplicates the previous Set (new id, Occurred At now);
   - solid `+ Set N`: opens the Set sheet with this Exercise and the previous weight and reps prefilled.
-- **Set sheet:** row 1 Time | Exercise, row 2 Weight | Reps (blank weight = bodyweight). Save in a fixed footer.
+- **Set sheet:** row 1 Exercise (2/3) | Time (1/3), row 2 Weight | Reps (blank weight = bodyweight). Save in a fixed footer.
 - **Edit Session sheet:** every Set of the Session editable in place, with per-row delete and undo. Save sends one `PUT` per changed Set and one `DELETE` per removed Set; unchanged Sets send nothing.
 - **Delete Exercise for the Day:** a confirm sheet listing the Sets, then one `DELETE` per Set. There is no Session resource: a Session is derived.
 - **Meal card:** tap opens the Meal sheet in edit mode, with Delete Meal.
-- **Meal sheet:** top to bottom: Foods | Restaurant toggle; Time | Label; the Meal's Food Entries (quantity and g/count editable inline), the only part that scrolls. Fixed footer: food search (2/3) + **Add** (1/3), recent-Food chips in one horizontal row, Save. Picking a suggestion selects it; **Add** commits it to the Meal. Restaurant mode swaps the Food Entries for a Restaurant search plus recent-Restaurant chips.
+- **Meal sheet:** top to bottom: Foods | Restaurant toggle; Label (2/3) | Time (1/3); the Meal's Food Entries (quantity and g/count editable inline), the only part that scrolls. Fixed footer: food search (2/3) + **Add** (1/3), recent-Food chips in one horizontal row, Save. Picking a suggestion selects it; **Add** commits it to the Meal. Restaurant mode swaps the Food Entries for a Restaurant search plus recent-Restaurant chips.
 - **Time:** a time-only input; the date is the Day being viewed. Occurred At defaults to now.
 - **Catalog search:** React Aria `ComboBox`, suggestions from `GET /{kind}s?q=` (ADR 0006) with a ~150 ms debounce. A trailing `+ Create "<text>"` row creates the item first, so the near-duplicate `409` can open a "Did you mean?" dialog (use existing, unarchive, or create anyway) before the Entry is saved.
 - **Partial failure:** a sheet that sends several requests (Edit Session, Delete Exercise) stays open on any failure and keeps the unsent rows; retrying is safe because every `PUT` and `DELETE` is idempotent.
