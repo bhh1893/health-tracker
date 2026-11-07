@@ -9,6 +9,7 @@ Postgres runs inside the Kubernetes cluster, managed by the CloudNativePG (CNPG)
 ## Shape
 
 - **Operator:** CNPG installed with Helm from `k8s/platform/cnpg/` into namespace `cnpg-system`, by Ansible (amended by ADR 0016).
+- **Operator placement:** the CNPG operator and the Barman Cloud plugin run on the control plane, one replica each, pinned in their Helm values. Failover needs both: the operator promotes the replica, and it stops reconciling when it cannot load the plugin. With one control plane, failover already needs that node for the Kubernetes API, so the pin adds no new way to fail, and losing a worker cannot touch either pod.
 - **Cluster:** `Cluster` named `pg` in the app namespace (`health-tracker`), next to `api`, because a pod can only read Secrets from its own namespace. `bootstrap.initdb` creates database `health` owned by role `app`. A second role, `api_rw`, and both passwords are managed as in ADR 0015.
 - **Version:** Postgres major 18 pinned (ADR 0002 needs native `uuidv7()`). Minor updates by image tag bump; CNPG rolls the replica, then switches over the primary. A major upgrade is a planned event, method chosen when it happens.
 - **Instances:** 2, a primary and a streaming replica, with required pod anti-affinity so they sit on different workers. CNPG fails over automatically. The replica is for availability (drain a worker without downtime), not durability: it copies mistakes instantly.
@@ -24,6 +25,8 @@ Postgres runs inside the Kubernetes cluster, managed by the CloudNativePG (CNPG)
 - **Hand-written StatefulSet.** Rejected: init, users, backups, failover and upgrades would all be ours to build, producing a worse CNPG.
 - **Single instance.** Rejected: draining or losing the one worker holding the volume takes the database down until a restore. The replica costs about 0.5 GB RAM, which the 4 GB workers have.
 - **Shared network storage (NFS, Longhorn) so the volume can follow the pod.** Rejected: CNPG's guidance is local disks plus Postgres streaming replication (shared-nothing). Network storage adds a component and a latency path for no gain.
+- **Operator on 2 replicas with anti-affinity, plugin on 1 with a short `tolerationSeconds`.** Rejected: works on any Kubernetes, but the plugin must still be rescheduled before failover can start, which adds about 30s when it shared the dead worker.
+- **Plugin on 2 replicas.** Rejected: its gRPC server runs only on the leader, while its readiness probe checks a separate port. A standby looks ready, so the Service sends it connections it refuses.
 - **A separate `db` namespace.** Rejected: CNPG's generated Secret would have to be copied into the app namespace.
 
 ## Consequences
@@ -31,4 +34,5 @@ Postgres runs inside the Kubernetes cluster, managed by the CloudNativePG (CNPG)
 - local-path has no volume snapshots, so CNPG backups must go to S3-compatible object storage (Barman Cloud plugin) somewhere off the node VMs. Where that lives is decided in ADR 0011 (Garage on the dev VM).
 - Each worker carries one Postgres instance; a worker's RAM budget includes 512 Mi for it.
 - The DDL (migration) vs read/write (`api`) role split is decided in ADR 0015: role `app` for the migration Job, `api_rw` for `api`.
+- The pin assumes a control plane that can run pods. Managed Kubernetes has none, so a move there must change these values; if it does not, the Helm install fails instead of running somewhere unsafe. With more than one control plane node, the "no new way to fail" argument needs a fresh look.
 - v2 on a managed database: delete `Cluster` `pg` and the CNPG chart, point the overlay's `DATABASE_URL` at the managed endpoint. Backups and failover become the provider's job.
