@@ -2,20 +2,16 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { MemoryRouter, useLocation } from "react-router";
+import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createQueryClient } from "./api/query-client";
 import { App } from "./App";
 import { forgetToken, saveToken } from "./auth/token";
 import { toDay } from "./lib/day";
-import { exercisesBehindEdge, GOOD_TOKEN } from "./test-handlers";
+import { CurrentUrl } from "./test-current-url";
+import { emptyDay, exercisesBehindEdge, GOOD_TOKEN } from "./test-handlers";
 import { server } from "./test-server";
-
-function CurrentUrl() {
-  const { pathname, search } = useLocation();
-  return <output aria-label="url">{`${pathname}${search}`}</output>;
-}
 
 function renderAt(path: string) {
   render(
@@ -38,7 +34,7 @@ async function submitSecret(secret: string) {
 
 beforeEach(() => {
   forgetToken();
-  server.use(exercisesBehindEdge);
+  server.use(exercisesBehindEdge, emptyDay);
 });
 
 describe("the 401 flow", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isValidDay, resolveViewedDay, toDay } from "./day";
+import { addDays, formatDay, isValidDay, resolveViewedDay, toDay } from "./day";
 
 describe("toDay", () => {
   it("uses the device's local date, not UTC", () => {
@@ -39,5 +39,25 @@ describe("resolveViewedDay", () => {
   it("falls back to today for a future or malformed Day", () => {
     expect(resolveViewedDay("2026-11-07", today)).toBe(today);
     expect(resolveViewedDay("garbage", today)).toBe(today);
+  });
+});
+
+describe("addDays", () => {
+  it("crosses month and year ends", () => {
+    expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
+    expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
+  });
+
+  // New Zealand's clocks change on these dates, so these Days are 25 and 23 hours.
+  it("steps exactly one Day across daylight saving changes", () => {
+    expect(addDays("2026-04-05", 1)).toBe("2026-04-06");
+    expect(addDays("2026-09-27", 1)).toBe("2026-09-28");
+    expect(addDays("2026-09-28", -1)).toBe("2026-09-27");
+  });
+});
+
+describe("formatDay", () => {
+  it("writes the short form with no comma", () => {
+    expect(formatDay("2026-11-02")).toBe("Mon Nov 2");
   });
 });

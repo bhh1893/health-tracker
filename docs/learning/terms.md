@@ -387,3 +387,12 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Window function**: SQL that computes a value per row from related rows without collapsing them, as `GROUP BY` would; `row_number() OVER (PARTITION BY day ORDER BY occurred_at, id)` numbers the Sets within each Day.
 - **Tie-break column**: a unique column added last to a sort, so rows with equal sort values still have one fixed order; without it a keyset page can skip or repeat them.
 - **DST (daylight saving time)**: a timezone's offset changing twice a year, so one local hour is repeated in autumn and one skipped in spring; this is why the moment is stored as an instant and not as local clock time.
+- **Optimistic update**: showing a write as done before the server answers, then undoing it if the server refuses; the screen feels instant, at the price of a rollback path.
+- **Rollback by inverse**: undoing one failed write by reversing only that write, not by restoring a saved copy of the list, which would also erase other writes made since.
+- **Mutation (TanStack Query)**: a write, tracked with its own pending, error and success state, as a query tracks a read.
+- **Mutation scope**: a TanStack Query label that makes writes sharing it run one at a time, in order.
+- **Query invalidation**: marking cached data as out of date so it is fetched again, which replaces an optimistic guess with the server's answer.
+- **Modal**: a layer that blocks the page behind it until closed, keeping keyboard focus and screen readers inside.
+- **Focus trap**: keeping keyboard focus inside a modal, so Tab cannot reach the hidden page behind it.
+- **Visual viewport**: the part of the page actually visible, which shrinks when a phone's keyboard opens, unlike the layout viewport.
+- **`visibilitychange`**: the browser event fired when a page is hidden or shown again, such as when an app returns from the background.
