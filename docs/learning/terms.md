@@ -396,3 +396,10 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Focus trap**: keeping keyboard focus inside a modal, so Tab cannot reach the hidden page behind it.
 - **Visual viewport**: the part of the page actually visible, which shrinks when a phone's keyboard opens, unlike the layout viewport.
 - **`visibilitychange`**: the browser event fired when a page is hidden or shown again, such as when an app returns from the background.
+- **Planner statistics (`ANALYZE`)**: a random sample of each table that Postgres keeps, so it can estimate row counts and pick a plan; a fresh sample can change a close call between two plans.
+- **Correlation (planner)**: how closely a column's order matches the rows' order on disk; high correlation makes index scans look cheap, so test data must not be loaded more tidily than real data arrives.
+- **Bitmap scan / `BitmapAnd`**: reads one or more indexes into a bitmap of matching pages, combines them, then visits each page once; how Postgres uses two indexes for one query.
+- **`COPY`**: Postgres's bulk load command, one stream of rows rather than one statement per row.
+- **Zipf distribution**: a skew where the item at rank N is used about 1/N as often as the top one; a few Foods dominate, as in real logs.
+- **pytest marker**: a label on tests that lets a run include or exclude them; `index_plans` keeps the full-seed checks out of the PR suite.
+- **Mutation check**: breaking the thing on purpose to prove a test can fail; here, dropping indexes and watching the plan checks go red.
