@@ -34,6 +34,7 @@ Postgres runs inside the Kubernetes cluster, managed by the CloudNativePG (CNPG)
 
 ## Consequences
 
+- Measured on 2026-11-07 (#100) by hard powering off the worker holding the primary, the Gateway IP and one `api` and `web` pod: the database was unavailable for 71s, down from 6m31s on #57 with the operator on a worker. Most of it is Kubernetes noticing the node: `NotReady` after 45s, failover started 4s later, new primary 19s after that. `api` answered again after 78s, through the Gateway. Further cuts mean a shorter node-monitor grace period, which trades speed for false failovers on a slow network.
 - local-path has no volume snapshots, so CNPG backups must go to S3-compatible object storage (Barman Cloud plugin) somewhere off the node VMs. Where that lives is decided in ADR 0011 (Garage on the dev VM).
 - Each worker carries one Postgres instance; a worker's RAM budget includes 512 Mi for it.
 - The DDL (migration) vs read/write (`api`) role split is decided in ADR 0015: role `app` for the migration Job, `api_rw` for `api`.
