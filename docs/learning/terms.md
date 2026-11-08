@@ -425,3 +425,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Fast Refresh**: the dev server's hot reload for React; it only works on files that export components alone, which is why shared helpers live in their own modules.
 - **Pseudo-element (`::after`)**: an extra box CSS draws on an element without any HTML for it; Tailwind's `after:` prefix styles it.
 - **`appearance: none`**: turns off the browser's native drawing of a form control (iOS time pickers, select arrows), so the control follows the page's CSS like a plain box.
+- **Taint-based eviction**: when a node stops reporting, Kubernetes taints it `unreachable:NoExecute`, and pods without a matching toleration are deleted so their controllers can replace them elsewhere.
+- **`tolerationSeconds`**: how long a pod tolerates a `NoExecute` taint before eviction; Kubernetes adds 300s for `unreachable` to every pod, which is why a dead worker's pods move after about 5 minutes.
+- **`pg_rewind`**: a Postgres tool that winds a former primary back to the point where it diverged from the new one, so it can rejoin as a replica without a full copy.
+- **Minimum recovery point**: the WAL position a replica must replay to before its data is consistent; until then it refuses connections.
+- **Checkpoint**: Postgres writing every changed page to disk and recording a WAL marker, so crash recovery can start from there.
