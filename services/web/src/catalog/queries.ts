@@ -4,12 +4,16 @@ import type { Catalog } from "./catalogs";
 
 const SUGGESTION_LIMIT = 10;
 
-export function useSuggestions(catalog: Catalog, q: string) {
+export function useSuggestions(
+  catalog: Catalog,
+  q: string,
+  includeArchived: boolean,
+) {
   return useQuery({
     // q in the key means a slow answer for "ben" can never replace the one for
     // "bench": each lands in its own cache slot (ADR 0008).
-    queryKey: [catalog.key, q],
-    queryFn: () => catalog.suggest(q, SUGGESTION_LIMIT),
+    queryKey: [catalog.key, q, includeArchived],
+    queryFn: () => catalog.suggest(q, SUGGESTION_LIMIT, includeArchived),
   });
 }
 

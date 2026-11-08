@@ -1,6 +1,7 @@
 import { Button } from "react-aria-components";
 
 import { formatSet, type ExerciseEntry, type Session } from "./sessions";
+import { SetList } from "./SetList";
 
 interface SessionCardProps {
   session: Session;
@@ -58,24 +59,7 @@ export function SessionCard({
           </Button>
         </div>
       </div>
-      <ol className="flex flex-col">
-        {sets.map((set, index) => (
-          <li
-            key={set.id}
-            className="flex justify-between border-b border-gray-100 py-2"
-          >
-            <span>
-              <span className="text-gray-500">Set {index + 1}</span>{" "}
-              {formatSet(set)}
-            </span>
-            {/* occurred_at is written in the Set's own zone, so this is the clock
-                time where it happened, wherever the phone is now. */}
-            <span className="text-sm text-gray-500">
-              {set.occurred_at.slice(11, 16)}
-            </span>
-          </li>
-        ))}
-      </ol>
+      <SetList sets={sets} />
       <div className="mt-2 grid grid-cols-2 gap-2">
         <Button
           className="rounded-xl border-2 border-dashed border-teal-400 p-2 text-base text-teal-700 data-pressed:bg-teal-50"

@@ -1,24 +1,9 @@
-import { useSyncExternalStore } from "react";
 import { useSearchParams } from "react-router";
 
-import { resolveViewedDay, toDay } from "./day";
+import { resolveViewedDay } from "./day";
+import { useToday } from "./useToday";
 
 const DAY_PARAM = "day";
-
-function subscribeToReturn(onChange: () => void) {
-  document.addEventListener("visibilitychange", onChange);
-  return () => {
-    document.removeEventListener("visibilitychange", onChange);
-  };
-}
-
-const currentDay = () => toDay(new Date());
-
-// A home-screen app sits suspended overnight and resumes without reloading. Reading
-// the date again on return stops this morning's Sets from landing on yesterday.
-function useToday() {
-  return useSyncExternalStore(subscribeToReturn, currentDay);
-}
 
 // The viewed Day lives in the URL, not component state, so reload, the back
 // button and links from Search all keep it (ADR 0013). No param means Today.

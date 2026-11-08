@@ -1,6 +1,7 @@
 import { Button } from "react-aria-components";
 
-import { clockTime, formatAmount, mealName, type Meal } from "./meals";
+import { MealContents } from "./MealContents";
+import { clockTime, mealName, type Meal } from "./meals";
 
 interface MealCardProps {
   meal: Meal;
@@ -28,18 +29,7 @@ export function MealCard({ meal, number, onEdit }: MealCardProps) {
         </Button>
         <span className="text-sm text-gray-500">{clockTime(meal)}</span>
       </div>
-      <ul className="mt-1 flex flex-col gap-1">
-        {meal.kind === "restaurant" ? (
-          <li>At {meal.restaurant.name}</li>
-        ) : (
-          meal.food_entries.map((entry, index) => (
-            <li key={index} className="flex justify-between">
-              <span>{entry.food.name}</span>
-              <span className="text-gray-600">{formatAmount(entry)}</span>
-            </li>
-          ))
-        )}
-      </ul>
+      <MealContents meal={meal} />
     </article>
   );
 }
