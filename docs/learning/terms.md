@@ -432,3 +432,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Read-only view**: a screen that shows data without edit controls, so it can answer questions with no risk of changing anything; edits are a link away, on the screen built for them.
 - **`useEffectEvent`**: a React hook for a function an effect calls but should not re-run for; it always sees the latest props, so the effect can depend on nothing.
 - **Accessible name**: the text a screen reader announces for a control, computed from its content or `aria-label`; adjacent `<span>`s can run together ("Nov 62 sets") unless the name is set explicitly.
+- **Taint-based eviction**: when a node stops reporting, Kubernetes taints it `unreachable:NoExecute`, and pods without a matching toleration are deleted so their controllers can replace them elsewhere.
+- **`tolerationSeconds`**: how long a pod tolerates a `NoExecute` taint before eviction; Kubernetes adds 300s for `unreachable` to every pod, which is why a dead worker's pods move after about 5 minutes.
+- **`pg_rewind`**: a Postgres tool that winds a former primary back to the point where it diverged from the new one, so it can rejoin as a replica without a full copy.
+- **Minimum recovery point**: the WAL position a replica must replay to before its data is consistent; until then it refuses connections.
+- **Checkpoint**: Postgres writing every changed page to disk and recording a WAL marker, so crash recovery can start from there.

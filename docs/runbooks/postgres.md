@@ -65,6 +65,18 @@ kubectl -n health-tracker get cluster pg -w
 
 The replica takes over within seconds, and the old primary comes back as a replica on its own worker. The new primary's `pg_stat_archiver` shows `failed_count` 1 for a `.history` file, with `switchover in progress, refusing archiving` in its log. That is one refused attempt during promotion, which Postgres retries. Worry only if `ContinuousArchiving` stays `False`.
 
+Deleting the pod is the gentle case. Powering off the primary's worker takes about 70s, most of it waiting for the node to go `NotReady` (ADR 0005).
+
+## Rejoin a replica stuck in recovery
+
+After a hard failure, the old primary comes back as a replica through `pg_rewind`. If nothing has been written since, it can stay `Ready=False` for good, with `Consistent recovery state has not been yet reached` in its log, while `pg_stat_replication` on the primary shows it streaming with no lag. It needs WAL just past the primary's last flushed position, and an idle primary writes none. Any write fixes it, including a checkpoint, which changes no data:
+
+```
+kubectl -n health-tracker exec "$(kubectl -n health-tracker get cluster pg -o jsonpath='{.status.currentPrimary}')" -c postgres -- psql -c checkpoint
+```
+
+Check it with `pg_controldata` on the replica: `Minimum recovery ending location` is a few bytes past the primary's `pg_current_wal_flush_lsn()`.
+
 ## Good to know
 
 - With 2 workers and required anti-affinity, draining a worker leaves its instance `Pending` until the worker returns. The database keeps running on the other one, with no replica.
