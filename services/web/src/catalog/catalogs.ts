@@ -23,7 +23,12 @@ export interface Catalog {
   key: string;
   label: string;
   placeholder: string;
-  suggest: (q: string, limit: number) => Promise<CatalogItem[]>;
+  // Logging hides archived items; Search shows them, since their history is real.
+  suggest: (
+    q: string,
+    limit: number,
+    includeArchived: boolean,
+  ) => Promise<CatalogItem[]>;
   create: (item: NewItem) => Promise<CatalogItem>;
   unarchive: (id: string) => Promise<CatalogItem>;
 }
@@ -34,8 +39,12 @@ export const exerciseCatalog: Catalog = {
   key: "exercises",
   label: "Exercise",
   placeholder: "Search Exercises",
-  suggest: (q, limit) =>
-    unwrap(api.GET("/api/v1/exercises", { params: { query: { q, limit } } })),
+  suggest: (q, limit, includeArchived) =>
+    unwrap(
+      api.GET("/api/v1/exercises", {
+        params: { query: { q, limit, include_archived: includeArchived } },
+      }),
+    ),
   create: ({ id, name, allowSimilar }) =>
     unwrap(
       api.PUT("/api/v1/exercises/{item_id}", {
@@ -56,8 +65,12 @@ export const foodCatalog: Catalog = {
   key: "foods",
   label: "Food",
   placeholder: "Search Foods",
-  suggest: (q, limit) =>
-    unwrap(api.GET("/api/v1/foods", { params: { query: { q, limit } } })),
+  suggest: (q, limit, includeArchived) =>
+    unwrap(
+      api.GET("/api/v1/foods", {
+        params: { query: { q, limit, include_archived: includeArchived } },
+      }),
+    ),
   create: ({ id, name, allowSimilar }) =>
     unwrap(
       api.PUT("/api/v1/foods/{item_id}", {
@@ -78,8 +91,12 @@ export const restaurantCatalog: Catalog = {
   key: "restaurants",
   label: "Restaurant",
   placeholder: "Search Restaurants",
-  suggest: (q, limit) =>
-    unwrap(api.GET("/api/v1/restaurants", { params: { query: { q, limit } } })),
+  suggest: (q, limit, includeArchived) =>
+    unwrap(
+      api.GET("/api/v1/restaurants", {
+        params: { query: { q, limit, include_archived: includeArchived } },
+      }),
+    ),
   create: ({ id, name, allowSimilar }) =>
     unwrap(
       api.PUT("/api/v1/restaurants/{item_id}", {

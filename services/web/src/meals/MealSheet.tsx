@@ -378,7 +378,7 @@ interface RecentChipsProps {
 // The most recently used items, one tap each. An empty q is the API's "recent"
 // list (ADR 0008), and the same cache entry the search shows on focus.
 function RecentChips({ catalog, onPick }: RecentChipsProps) {
-  const recent = useSuggestions(catalog, "");
+  const recent = useSuggestions(catalog, "", false);
   const items = (recent.data ?? []).slice(0, RECENT_CHIPS);
   if (items.length === 0) {
     return null;

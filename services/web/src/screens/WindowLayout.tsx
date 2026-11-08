@@ -13,7 +13,7 @@ const segmentClass = ({ isActive }: { isActive: boolean }) =>
 // header, not a third window, so the daily logging screen stays quiet (ADR 0013).
 export function WindowLayout() {
   // Keeps ?day= when switching windows, so both show the same Day.
-  const { search } = useLocation();
+  const { pathname, search } = useLocation();
 
   // One small authenticated call, so a wrong secret fails at load instead of at
   // the first save. A 401 here returns to the secret screen via the API middleware.
@@ -29,6 +29,8 @@ export function WindowLayout() {
         <h1 className="text-xl font-semibold">Health Tracker</h1>
         <Link
           to="/search"
+          // Search's Back link returns here, to this window and Day.
+          state={{ back: `${pathname}${search}` }}
           aria-label="Search"
           className="rounded-lg p-2 text-teal-700"
         >

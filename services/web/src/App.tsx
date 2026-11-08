@@ -5,7 +5,7 @@ import { getAuthState, subscribe } from "./auth/token";
 import { ExerciseWindow } from "./exercise/ExerciseWindow";
 import { EnterSecret } from "./screens/EnterSecret";
 import { MealsWindow } from "./meals/MealsWindow";
-import { SearchScreen } from "./screens/placeholders";
+import { SearchScreen } from "./search/SearchScreen";
 import { WindowLayout } from "./screens/WindowLayout";
 
 function NotFound() {

@@ -425,3 +425,10 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Fast Refresh**: the dev server's hot reload for React; it only works on files that export components alone, which is why shared helpers live in their own modules.
 - **Pseudo-element (`::after`)**: an extra box CSS draws on an element without any HTML for it; Tailwind's `after:` prefix styles it.
 - **`appearance: none`**: turns off the browser's native drawing of a form control (iOS time pickers, select arrows), so the control follows the page's CSS like a plain box.
+- **Infinite scroll**: a list that loads its next page when the user scrolls near its end, instead of numbered pages; here it is driven by keyset cursors, so rows never repeat or skip.
+- **`IntersectionObserver`**: a browser API that calls back when an element enters or leaves the viewport; the cheap way to notice "the end of the list is on screen" without scroll listeners.
+- **`useInfiniteQuery`**: TanStack Query's hook for paged data; it keeps every loaded page in one cache entry and fetches the next with `getNextPageParam` (here, the page's `next_cursor`).
+- **Merging cursor streams**: reading two separately paged, same-ordered lists into one view; an item is safe to show only once every unfinished stream has read past its position.
+- **Read-only view**: a screen that shows data without edit controls, so it can answer questions with no risk of changing anything; edits are a link away, on the screen built for them.
+- **`useEffectEvent`**: a React hook for a function an effect calls but should not re-run for; it always sees the latest props, so the effect can depend on nothing.
+- **Accessible name**: the text a screen reader announces for a control, computed from its content or `aria-label`; adjacent `<span>`s can run together ("Nov 62 sets") unless the name is set explicitly.

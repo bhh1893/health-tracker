@@ -38,16 +38,22 @@ interface CatalogComboBoxProps {
   onChange: (item: CatalogItem | null) => void;
   // Overrides the Catalog's label, e.g. "Add Food" in the Meal sheet.
   label?: string;
+  // False for Search (ADR 0013): no Create row, archived items included, and text
+  // that matches nothing says so.
+  canCreate?: boolean;
 }
 
 // ADR 0008. React Aria supplies the combobox's roles, keyboard handling and screen
 // reader announcements; this adds the search and the create flow. One component for
 // every Catalog, so a fix to the create or "Did you mean?" flow lands everywhere.
+// Search reuses it with canCreate={false}: picking works the same, only creating
+// differs, so a flag beats a second copy of the picking logic.
 export function CatalogComboBox({
   catalog,
   value,
   onChange,
   label = catalog.label,
+  canCreate = true,
 }: CatalogComboBoxProps) {
   const [text, setText] = useState(value?.name ?? "");
   const [conflict, setConflict] = useState<Conflict | null>(null);
@@ -58,7 +64,7 @@ export function CatalogComboBox({
     trimmed === value?.name ? "" : trimmed,
     DEBOUNCE_MS,
   );
-  const suggestions = useSuggestions(catalog, q);
+  const suggestions = useSuggestions(catalog, q, !canCreate);
   const createItem = useCreateItem(catalog);
   const unarchiveItem = useUnarchiveItem(catalog);
 
@@ -72,7 +78,7 @@ export function CatalogComboBox({
     ({ name }) => name.toLowerCase() === trimmed.toLowerCase(),
   );
   const rows =
-    trimmed === "" || hasExactMatch
+    !canCreate || trimmed === "" || hasExactMatch
       ? items
       : [...items, { id: CREATE_ROW, name: trimmed, archived: false }];
 
@@ -156,6 +162,8 @@ export function CatalogComboBox({
         // when the selection changes, and an open menu would cover any error.
         value={createItem.isPending ? CREATE_ROW : (value?.id ?? null)}
         allowsCustomValue
+        // Keeps the menu open on zero rows, so Search can say "No match".
+        allowsEmptyCollection={!canCreate}
         menuTrigger="focus"
         onInputChange={(next) => {
           setText(next);
@@ -183,7 +191,14 @@ export function CatalogComboBox({
           </p>
         )}
         <Popover className="w-(--trigger-width) overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg">
-          <ListBox<CatalogItem> className="max-h-72 outline-none">
+          <ListBox<CatalogItem>
+            className="max-h-72 outline-none"
+            renderEmptyState={() => (
+              <p className="p-3 text-base text-gray-500">
+                {suggestions.isFetching ? "Searching..." : "No match"}
+              </p>
+            )}
+          >
             {(row) => (
               <ListBoxItem
                 id={row.id}
@@ -192,6 +207,8 @@ export function CatalogComboBox({
               >
                 {row.id === CREATE_ROW ? (
                   <span className="text-teal-700">+ Create "{row.name}"</span>
+                ) : row.archived ? (
+                  `${row.name} (archived)`
                 ) : (
                   row.name
                 )}

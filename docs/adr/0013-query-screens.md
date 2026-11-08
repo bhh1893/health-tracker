@@ -22,7 +22,9 @@ Browsing the past has two jobs, and v1 gives each its own surface. The two loggi
 - **Results are collapsed Day rows**, newest first: the Day, plus a one-line summary ("4 sets, top 140 lb × 5" for an Exercise query; "2 exercises, 9 sets, 3 meals" for Everything; meal counts for Food). Tapping a row expands its Sessions and Meals in place. A scan of a month stays one screen long.
 - **Last N Sessions:** once an Exercise is picked, a mode replaces the range with a stepper (default 5) and shows a progression table per Session: Day, Sets, top Set, volume (`GET /exercises/{id}/sessions?limit=N`).
 - **Jump to Day:** an expanded Day row has an "Open this Day" link to the Day pager at that Day.
-- Range queries fetch `GET /meals` and `GET /exercise-entries` with `from`/`to` and the Catalog id, following the keyset cursor to the end (a month is far below the 200-item page cap per page, so normally one request each). The client merges the two collections by Day and groups Sets into Sessions.
+- Range queries fetch `GET /meals` and `GET /exercise-entries` with `from`/`to` and the Catalog id, a screen at a time: pages of 50 Entries until 15 Days are whole, then 15 more each time the end of the list scrolls into view (infinite scroll, with a "Load more" button as fallback). The client merges the two collections by Day and groups Sets into Sessions. A Day is shown only once every unfinished stream has read past it, so a row never appears half filled; the next page always comes from the stream that has read the least far back. _Amended during the build ([#68](https://github.com/bhh1893/health-tracker/issues/68)): this first said "follow the cursor to the end", assuming a month fits one page, but Everything at ~20 Sets a Day is ~600 Sets a month, and a custom range can span years._
+- **The question is URL state** (`/search?what=food&id=...&name=Oats&range=7d`), like the viewed Day, so "Open this Day" then Back returns to the same results.
+- **Suggestions include archived items** (`include_archived=true`, marked "(archived)"): an archived Food still has real history to find. The add forms keep hiding them.
 
 ## Considered Options
 
