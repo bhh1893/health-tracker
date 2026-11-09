@@ -1,16 +1,23 @@
 <#
 .SYNOPSIS
-    Destroys and recreates the three cluster nodes, then proves they work (ADR 0004).
+    Destroys and recreates the three cluster nodes, restores the data and deploys the
+    app, then proves it works (ADR 0004, 0011, 0016).
 
 .DESCRIPTION
     Runs on Windows. Vagrant runs here, Ansible runs on the dev VM over `ssh dev`.
     The dev VM itself is never destroyed: this script does not know its Vagrantfile.
 
-    Exit code: 0 means all nodes are Ready, Cilium is healthy, and a second playbook
-    run changed nothing. Anything else means do not trust the cluster.
+    Exit code: 0 means all nodes are Ready, Cilium is healthy, a second playbook run
+    changed nothing, the database is restored, and Argo CD has deployed the app and its
+    smoke test passed. Anything else means do not trust the cluster.
 
 .PARAMETER Ref
-    The git ref Ansible runs from. It must exist in the dev VM's repo.
+    The git ref Ansible and the scripts run from. It must exist in the dev VM's repo.
+    Argo CD still deploys `main`: it is told so by the Application, not by this.
+
+.PARAMETER Fresh
+    First install only: start with an empty database instead of restoring the newest
+    backup. Refused if the bucket holds a backup, so it cannot discard data.
 
 .EXAMPLE
     .\iac\rebuild-cluster.ps1
@@ -20,7 +27,8 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Ref = 'origin/main'
+    [string]$Ref = 'origin/main',
+    [switch]$Fresh
 )
 
 # Stops on PowerShell errors only. A native program such as ssh or vagrant reports
@@ -204,6 +212,14 @@ function Invoke-Rebuild {
     Invoke-Dev 'Wait for Cilium to be healthy' (
         'cilium status --wait --wait-duration=5m'
     )
+
+    # restore-data applies the secrets first (ADR 0015), so no path can forget them. It
+    # stops with an error, rather than starting empty, if the bucket has no backup.
+    $restore = if ($Fresh) { 'restore-data --fresh' } else { 'restore-data' }
+    Invoke-Dev "Apply secrets and restore the database ($restore)" "$CheckoutOnDev/iac/scripts/$restore"
+
+    # Last, because auto-sync starts the migration, the rollout and the smoke test.
+    Invoke-Dev 'Deploy the app and wait for the smoke test' "$CheckoutOnDev/iac/scripts/deploy-app"
 }
 
 $timer = [System.Diagnostics.Stopwatch]::StartNew()
