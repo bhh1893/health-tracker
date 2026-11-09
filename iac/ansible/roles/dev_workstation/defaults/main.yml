@@ -22,6 +22,8 @@ dev_workstation_uv_release: "https://github.com/astral-sh/uv/releases/download/{
 dev_workstation_ansible_lint_version: "26.10.1"
 dev_workstation_ansible_core_version: "2.20.1"
 dev_workstation_yamllint_version: "1.38.0"
+# shellcheck-py wraps the shellcheck binary; 0.11.0.1 ships shellcheck 0.11.0.
+dev_workstation_shellcheck_py_version: "0.11.0.1"
 
 # Third-party apt repos. `key` is the publisher's signing key: apt refuses
 # packages from a repo unless they are signed by the key tied to it.

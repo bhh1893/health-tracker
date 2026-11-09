@@ -452,3 +452,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **TailVIP / Tailscale Service**: a stable tailnet address that belongs to a service rather than a machine, so it survives the machines behind it being replaced.
 - **ProxyGroup**: a set of Tailscale proxy pods run by the Tailscale Kubernetes Operator that carry tailnet traffic into the cluster.
 - **Grey cloud (DNS only)**: a Cloudflare record that just answers DNS, without routing traffic through Cloudflare's proxy.
+- **shellcheck**: a static analyser for shell scripts that flags quoting bugs, unset-variable traps and portability problems before the script runs.
+- **Shebang (`#!`)**: a script's first line, naming the interpreter that runs it; the OS reads it, and our CI uses it to find shell scripts.
