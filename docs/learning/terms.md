@@ -454,3 +454,11 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Grey cloud (DNS only)**: a Cloudflare record that just answers DNS, without routing traffic through Cloudflare's proxy.
 - **shellcheck**: a static analyser for shell scripts that flags quoting bugs, unset-variable traps and portability problems before the script runs.
 - **Shebang (`#!`)**: a script's first line, naming the interpreter that runs it; the OS reads it, and our CI uses it to find shell scripts.
+- **Base backup**: a full copy of a database's data files from one moment; useless alone for Postgres PITR, since WAL replayed on top is what brings it forward.
+- **Generation (backup)**: one `pg` Cluster's lifetime, stored as its own `serverName` folder in the bucket; each restore starts a new one.
+- **RPO (recovery point objective)**: how much recent data a disaster may cost, measured in time; ours is about a minute.
+- **RTO (recovery time objective)**: how long until the service is back after a disaster; ours is the length of a restore.
+- **PITR (point-in-time recovery)**: restoring a base backup, then replaying WAL only up to a chosen moment, e.g. just before a bad delete.
+- **`pg_switch_wal()`**: closes the current WAL segment early so it can be archived now instead of when it fills or times out.
+- **AWS SigV4**: the scheme S3-compatible APIs use to sign each request with a secret key; curl can do it with `--aws-sigv4`.
+- **Restore drill**: actually restoring a backup on a schedule, because a backup nobody has restored has not been shown to work.

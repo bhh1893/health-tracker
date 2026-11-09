@@ -1,19 +1,16 @@
 # Postgres
 
-`pg` is a CNPG `Cluster` in namespace `health-tracker`: a primary, a streaming replica, continuous WAL to Garage on the dev VM, and a base backup every day at 21:00 UTC (ADR 0005, ADR 0011). The manifests are in `k8s/envs/vagrant/pg/`. Run everything on the dev VM from the repo root. Argo CD does not manage `pg` (ADR 0016).
+`pg` is a CNPG `Cluster` in namespace `health-tracker`: a primary, a streaming replica, continuous WAL to Garage on the dev VM, and a base backup every day at 21:00 UTC (ADR 0005, ADR 0011). The manifests are in `k8s/envs/vagrant/pg/`. Run everything on the dev VM from the repo root. Argo CD does not manage `pg` (ADR 0016). Backups and restores have their own runbook: `docs/runbooks/backup-restore.md`.
 
 ## Create an empty database
 
-Only for a first install. This is the `fresh` overlay, which starts with no data.
+Only for a first install, with an empty bucket:
 
 ```
-iac/scripts/apply-secrets
-gen="pg-$(date -u +%Y%m%dT%H%M%SZ)"
-kubectl kustomize k8s/envs/vagrant/pg/fresh | sed "s/pg-GENERATION/$gen/" | kubectl create -f -
-kubectl -n health-tracker wait cluster/pg --for=condition=Ready --timeout=400s
+iac/scripts/restore-data --fresh
 ```
 
-`gen` is the `serverName`: this generation's folder in the bucket (ADR 0011). The command uses `create`, not `apply`, so it fails if `pg` already exists.
+It refuses if the bucket holds a backup; restore instead (`docs/runbooks/backup-restore.md`). The new `serverName`, `pg-<timestamp>`, is this generation's folder in the bucket (ADR 0011).
 
 ## Check it worked
 
@@ -27,12 +24,16 @@ Expect `Cluster in healthy state`, `pg-1` and `pg-2` on different workers, and `
 
 ## Change a setting on the running cluster
 
-Edit `base/`, then apply with the live `serverName`. Applying the placeholder would point archiving at a folder called `pg-GENERATION`. Add `--dry-run=server` first to check.
+Edit `base/`, then apply through the overlay that created the cluster, with its live placeholders. Applying a placeholder as is would point archiving at a folder called `pg-GENERATION`. Add `--dry-run=server` first to check.
 
 ```
 gen=$(kubectl -n health-tracker get cluster pg -o jsonpath='{.spec.plugins[0].parameters.serverName}')
-kubectl kustomize k8s/envs/vagrant/pg/fresh | sed "s/pg-GENERATION/$gen/" | kubectl apply -f -
+src=$(kubectl -n health-tracker get cluster pg -o jsonpath='{.spec.externalClusters[0].plugin.parameters.serverName}')
+overlay=$([ -n "$src" ] && echo restore || echo fresh)
+kubectl kustomize k8s/envs/vagrant/pg/$overlay | sed -e "s/pg-GENERATION/$gen/" -e "s/pg-SOURCE/$src/" | kubectl apply -f -
 ```
+
+A cluster restored with `--at` loses `recoveryTarget` from its spec here, which changes nothing.
 
 The `bootstrap` block, including the locale, is read only when the cluster is created. Changing it later does nothing.
 

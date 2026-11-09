@@ -1,0 +1,322 @@
+#!/usr/bin/env bash
+# Recreates the pg Cluster from the newest backup in the bucket (ADR 0011).
+# Run on the dev VM from anywhere in the repo. Every step is explained in
+# docs/runbooks/backup-restore.md.
+#
+#   restore-data              restore to the end of the newest backup's WAL
+#   restore-data --at TIME    point-in-time recovery, TIME as 2026-11-09T05:00:00Z
+#   restore-data --fresh      empty database; refused if the bucket holds a backup
+#   restore-data --dry-run    print what would happen, change nothing
+#
+# Destructive: it deletes the running pg Cluster and its volumes. The bucket must
+# hold a base backup first, so a mistake costs downtime, not data.
+set -euo pipefail
+
+namespace=health-tracker
+repo_root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+overlays="$repo_root/k8s/envs/vagrant/pg"
+backup_env="$HOME/.config/health-tracker/backup.env"
+ready_timeout=15m
+
+target_time=""
+fresh=false
+dry_run=false
+
+usage() {
+  sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' >&2
+  exit 2
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --at)
+      [[ $# -ge 2 ]] || usage
+      target_time=$2
+      shift 2
+      ;;
+    --fresh) fresh=true; shift ;;
+    --dry-run) dry_run=true; shift ;;
+    *) usage ;;
+  esac
+done
+
+log() { echo "==> $*"; }
+die() { echo "restore-data: $*" >&2; exit 1; }
+
+if [[ -n "$target_time" ]]; then
+  $fresh && die "--at and --fresh do not go together"
+  [[ "$target_time" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] ||
+    die "--at wants UTC as 2026-11-09T05:00:00Z, got '$target_time'"
+fi
+
+# --- The bucket ---------------------------------------------------------------
+# The bucket is the only record of generations (ADR 0011), so we ask it, not the
+# cluster we are about to delete. curl signs requests itself (AWS SigV4), so no S3
+# client is needed. The key goes to curl on stdin, never on its command line.
+
+[[ -s "$backup_env" ]] || die "$backup_env is missing; run iac/ansible/dev.yml"
+# shellcheck source=/dev/null
+source "$backup_env"
+
+# Prints the "folders" (common prefixes) directly under $1, one per line, without $1.
+list_folders() {
+  local prefix=$1 xml
+  xml=$(printf 'user = "%s:%s"\n' "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" |
+    curl --silent --show-error --fail --config - \
+      --aws-sigv4 "aws:amz:$AWS_DEFAULT_REGION:s3" \
+      --get "$BACKUP_ENDPOINT_URL/$BACKUP_BUCKET" \
+      --data-urlencode "list-type=2" \
+      --data-urlencode "delimiter=/" \
+      --data-urlencode "prefix=$prefix") || die "cannot list s3://$BACKUP_BUCKET/$prefix"
+  grep -o '<Prefix>[^<]*/</Prefix>' <<<"$xml" |
+    sed -e 's|<Prefix>||' -e 's|/</Prefix>||' -e "s|^$prefix||" || true
+}
+
+# A generation is restorable only once it holds a finished base backup: WAL alone
+# has nothing to replay onto. Barman writes backup.info inside each base backup.
+# Prints the base backup IDs (UTC timestamps, so they sort by time) in a generation.
+base_backups() {
+  local generation=$1 id
+  for id in $(list_folders "$generation/base/"); do
+    if printf 'user = "%s:%s"\n' "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" |
+      curl --silent --fail --output /dev/null --head --config - \
+        --aws-sigv4 "aws:amz:$AWS_DEFAULT_REGION:s3" \
+        "$BACKUP_ENDPOINT_URL/$BACKUP_BUCKET/$generation/base/$id/backup.info"; then
+      echo "$id"
+    fi
+  done
+}
+
+# Generation folders are named pg-<UTC timestamp>, so sorting them sorts by age.
+# With --at, the base backup must start before the target, so skip newer ones.
+source_generation=""
+for generation in $(list_folders "" | grep '^pg-' | sort -r); do
+  newest=$(base_backups "$generation" | sort | tail -1)
+  [[ -n "$newest" ]] || continue
+  if [[ -n "$target_time" ]]; then
+    oldest=$(base_backups "$generation" | sort | head -1)
+    # Backup IDs look like 20261106T011129; turn the target into the same shape.
+    target_id=$(tr -d ':-' <<<"${target_time%Z}")
+    [[ "$oldest" < "$target_id" ]] || continue
+  fi
+  source_generation=$generation
+  break
+done
+
+new_generation="pg-$(date -u +%Y%m%dT%H%M%SZ)"
+
+if $fresh; then
+  [[ -z "$source_generation" ]] ||
+    die "the bucket holds backups ($source_generation); --fresh would ignore them. Restore instead."
+  overlay=fresh
+  log "Plan: new empty database, writing to $new_generation"
+else
+  # ADR 0015: a missing backup must never fall through to an empty database.
+  [[ -n "$source_generation" ]] ||
+    die "no restorable backup in s3://$BACKUP_BUCKET/${target_time:+ before $target_time}. For a first install, use --fresh."
+  overlay=restore
+  [[ -n "$target_time" ]] && overlay=restore-pitr
+  log "Plan: restore from $source_generation${target_time:+ up to $target_time}, writing to $new_generation"
+fi
+
+render() {
+  kubectl kustomize "$overlays/$overlay" |
+    sed -e "s/pg-GENERATION/$new_generation/" \
+      -e "s/pg-SOURCE/$source_generation/" \
+      -e "s/TARGET-TIME/$target_time/"
+}
+
+if $dry_run; then
+  render | kubectl apply --dry-run=server -f - >/dev/null
+  log "Dry run: the $overlay overlay renders and the API server accepts it. Nothing changed."
+  exit 0
+fi
+
+# --- Helpers on the running cluster -----------------------------------------------
+
+# psql on the primary, as the postgres superuser over the local socket.
+psql_primary() {
+  local primary
+  primary=$(kubectl -n "$namespace" get cluster pg -o jsonpath='{.status.currentPrimary}')
+  kubectl -n "$namespace" exec "$primary" -c postgres -- psql -d health -XAtq "$@"
+}
+
+# One line per table: name and exact row count. Tables come from the catalog, so a
+# new table is counted without editing this script.
+row_counts() {
+  psql_primary -c "
+    select string_agg(format(
+      'select %L as t, count(*) as n from %I.%I', relname, schemaname, relname), ' union all ')
+    from pg_stat_user_tables where schemaname = 'public'" |
+    {
+      read -r query
+      psql_primary -F ' ' -c "$query"
+    } | sort
+}
+
+# kubectl wait --for=delete fails when nothing matches, so poll instead.
+wait_gone() {
+  local kind=$1 selector=$2
+  for _ in $(seq 1 60); do
+    [[ -z "$(kubectl -n "$namespace" get "$kind" -l "$selector" -o name)" ]] && return 0
+    sleep 2
+  done
+  die "$kind with $selector still exist after 2 minutes"
+}
+
+# Logs in over TCP with the DATABASE_URL in a Secret, the way api and the migration
+# Job do. A one-off pod reads the Secret, so the password never passes through here.
+# Prints the role it logged in as, which must match the one expected.
+check_login() {
+  local secret=$1 role=$2 image overrides who
+  image=$(kubectl -n "$namespace" get cluster pg -o jsonpath='{.spec.imageName}')
+  # $DATABASE_URL is expanded by the shell in the pod, not here.
+  # shellcheck disable=SC2016
+  overrides=$(jq -cn --arg image "$image" --arg secret "$secret" '{spec: {containers: [{
+    name: "login-check", image: $image,
+    command: ["sh", "-c", "psql \"$DATABASE_URL\" -XAtc \"select current_user\""],
+    envFrom: [{secretRef: {name: $secret}}]}]}}')
+  for _ in $(seq 1 12); do
+    who=$(kubectl -n "$namespace" run "login-check-$secret" --rm --attach --quiet \
+      --restart=Never --image="$image" --overrides="$overrides" 2>/dev/null | tail -1) || true
+    if [[ "$who" == "$role" ]]; then
+      echo "logged in as $who with the $secret Secret"
+      return 0
+    fi
+    # Managed roles are reconciled shortly after Ready, not before.
+    sleep 5
+  done
+  die "cannot log in as $role with the $secret Secret"
+}
+
+argo_app() {
+  kubectl -n argocd get application health-tracker "$@" 2>/dev/null
+}
+
+# --- 1. Secrets -------------------------------------------------------------------
+# CNPG backs up data, not Kubernetes Secrets. The roles' passwords come from these.
+log "Apply secrets"
+"$repo_root/iac/scripts/apply-secrets"
+
+# Steps 2 and 3 note what they changed in an annotation on the object itself, so a
+# re-run after a failure still knows what to put back at the end.
+saved=health-tracker/restore-data
+
+# --- 2. Suspend Argo auto-sync ----------------------------------------------------
+# Otherwise its self-heal scales api straight back up while pg is gone (ADR 0016).
+sync_was_on=false
+if [[ -n "$(argo_app -o name || true)" ]]; then
+  if [[ -n "$(argo_app -o jsonpath='{.spec.syncPolicy.automated}')" ]]; then
+    kubectl -n argocd annotate application health-tracker "$saved=sync-suspended" --overwrite
+    log "Suspend Argo CD auto-sync"
+    kubectl -n argocd patch application health-tracker --type=json \
+      -p '[{"op": "remove", "path": "/spec/syncPolicy/automated"}]'
+  fi
+  [[ "$(argo_app -o jsonpath="{.metadata.annotations['$saved']}")" == sync-suspended ]] &&
+    sync_was_on=true
+fi
+
+# On failure, leave api stopped and sync off rather than resume onto a broken pg.
+finished=false
+trap '$finished || echo "restore-data: FAILED. api may be stopped and Argo auto-sync off; see docs/runbooks/backup-restore.md" >&2' EXIT
+
+# --- 3. Stop api ------------------------------------------------------------------
+api_replicas=0
+if kubectl -n "$namespace" get deployment api >/dev/null 2>&1; then
+  api_replicas=$(kubectl -n "$namespace" get deployment api -o jsonpath="{.metadata.annotations['$saved']}")
+  if [[ -z "$api_replicas" ]]; then
+    api_replicas=$(kubectl -n "$namespace" get deployment api -o jsonpath='{.spec.replicas}')
+    kubectl -n "$namespace" annotate deployment api "$saved=$api_replicas"
+  fi
+  log "Stop api (was $api_replicas replicas)"
+  kubectl -n "$namespace" scale deployment api --replicas=0
+  wait_gone pod app.kubernetes.io/name=api
+fi
+
+# --- 4. Ship the last WAL, count rows ---------------------------------------------
+# With api stopped nothing writes. Closing the current WAL segment and waiting for it
+# to reach the bucket makes the restore lose nothing, instead of up to a minute.
+counts_before=""
+if kubectl -n "$namespace" get cluster pg >/dev/null 2>&1; then
+  if [[ "$(kubectl -n "$namespace" get cluster pg -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')" == True ]]; then
+    counts_before=$(row_counts)
+    # The switch returns the position just past the closed segment, which is the
+    # first byte of the next one when the segment is full; step back one byte.
+    last_wal=$(psql_primary -c "select pg_walfile_name(pg_switch_wal() - 1)")
+    log "Wait for WAL $last_wal to reach the bucket"
+    for _ in $(seq 1 60); do
+      archived=$(psql_primary -c "select coalesce(last_archived_wal, '') from pg_stat_archiver")
+      [[ "$archived" > "$last_wal" || "$archived" == "$last_wal" ]] && break
+      sleep 2
+    done
+    [[ "$archived" > "$last_wal" || "$archived" == "$last_wal" ]] ||
+      die "WAL $last_wal was not archived within 2 minutes; pg is untouched"
+  else
+    log "pg exists but is not Ready: skipping the WAL flush, writes since the last archived WAL are lost"
+  fi
+
+  # --- 5. Delete pg -----------------------------------------------------------------
+  # The Cluster owns its pods and volumes, so they go with it. Backups do not:
+  # they live in the bucket.
+  log "Delete pg"
+  kubectl -n "$namespace" delete cluster pg --wait=true
+  wait_gone pvc cnpg.io/cluster=pg
+fi
+
+# --- 6. Recreate pg ---------------------------------------------------------------
+log "Create pg from the $overlay overlay"
+render | kubectl apply -f -
+log "Wait for pg to be Ready (up to $ready_timeout)"
+kubectl -n "$namespace" wait cluster/pg --for=condition=Ready --timeout="$ready_timeout"
+
+# --- 7. Check -----------------------------------------------------------------------
+log "Log in as both roles"
+check_login db-owner app
+check_login db-api api_rw
+
+if ! $fresh; then
+  counts_after=$(row_counts)
+  echo "$counts_after"
+  if [[ -n "$counts_before" && -z "$target_time" && "$counts_before" != "$counts_after" ]]; then
+    diff <(echo "$counts_before") <(echo "$counts_after") >&2 || true
+    die "row counts differ from before the restore"
+  fi
+fi
+
+# --- 8. Base backup -----------------------------------------------------------------
+# The new generation holds WAL only until its first base backup, so on its own it is
+# not restorable. Take one now rather than at 21:00.
+log "Take a base backup of $new_generation"
+backup_name="pg-restore-$(date -u +%Y%m%d%H%M%S)"
+kubectl -n "$namespace" create -f - <<YAML
+apiVersion: postgresql.cnpg.io/v1
+kind: Backup
+metadata:
+  name: $backup_name
+spec:
+  cluster:
+    name: pg
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+YAML
+kubectl -n "$namespace" wait "backup/$backup_name" \
+  --for=jsonpath='{.status.phase}'=completed --timeout=10m
+
+# --- 9. Restart api, resume sync ----------------------------------------------------
+if [[ "$api_replicas" -gt 0 ]]; then
+  log "Start api ($api_replicas replicas)"
+  kubectl -n "$namespace" scale deployment api --replicas="$api_replicas"
+  kubectl -n "$namespace" rollout status deployment api --timeout=5m
+  kubectl -n "$namespace" annotate deployment api "$saved-"
+fi
+
+if $sync_was_on; then
+  log "Resume Argo CD auto-sync"
+  kubectl -n argocd patch application health-tracker --type=merge \
+    -p '{"spec": {"syncPolicy": {"automated": {"prune": true, "selfHeal": true}}}}'
+  kubectl -n argocd annotate application health-tracker "$saved-"
+fi
+
+finished=true
+log "Restore OK: pg is $new_generation${source_generation:+, restored from $source_generation}"
