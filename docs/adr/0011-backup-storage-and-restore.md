@@ -38,6 +38,20 @@ Checked at build, 2026-11-06 ([#51](https://github.com/bhh1893/health-tracker/is
 - **Schedule clock:** the operator runs in UTC, so 21:00 means 21:00 UTC.
 - **Locale:** `initdb` uses `C.UTF-8`. CNPG's default `C` splits `jalapeño` at the `ñ` in `pg_trgm` (tested), which hurts typeahead. Rejected: `en_US.UTF-8`, which matches the test image but whose sort order can shift with glibc, and a physical restore carries indexes across images.
 
+## Amendment: restore details settled at build
+
+Checked at build, 2026-11-09 ([#52](https://github.com/bhh1893/health-tracker/issues/52)).
+
+- **"Newest" means newest with a finished base backup.** A generation with only WAL (a restore that failed before its first backup) has nothing to replay onto, so `restore-data` skips it. With `--at`, the generation must also hold a base backup from before the target.
+- **A base backup right after every restore.** Otherwise the new generation is not restorable by itself until 21:00, and losing it before then would mean restoring the previous generation and losing every write since.
+- **No loss on a planned restore.** With `api` stopped, `restore-data` closes the current WAL segment and waits for it to reach the bucket before deleting `pg`. The one-minute window applies to unplanned losses only.
+- **Checks:** row counts must match before and after a full restore, and both roles must log in over the network with their Secrets (ADR 0015's rotation case).
+- **Listing the bucket:** `curl --aws-sigv4`, which signs S3 requests itself, rather than installing an S3 client on the dev VM. Rejected: reading generations from the `ObjectStore` status, which lives in the cluster a rebuild destroys.
+- **`backup-status`** reads the Barman Cloud plugin's `ObjectStore` status for this generation's last base backup, and CNPG's `ContinuousArchiving` condition. A generation with no base backup yet fails too.
+- **PITR** is a third overlay, `restore-pitr`, on top of `restore`, so each overlay still reads on its own.
+- **Drill passed, 2026-11-09:** a base backup, a rotation of `api_rw`'s password, then a point-in-time restore to before the rotation. The restored database held the old password and CNPG set the new one from the Secret; both roles logged in. Then a full restore from that new generation, with matching row counts. Each took about 90 seconds, which is the measured RTO.
+- **Found by the drill:** `pg_walfile_name(pg_switch_wal())` names the segment after the one just closed, so the wait never ended; the script uses `pg_switch_wal() - 1`. A re-run after a failure did not restart `api` or resume sync; annotations now record what to restore. Also found: `pg-daily` stopped firing after 2026-11-06 ([#130](https://github.com/bhh1893/health-tracker/issues/130)).
+
 ## Considered Options
 
 - **A cloud bucket (Backblaze B2, R2, S3) from the start.** Better durability (survives losing the PC) and no WAL-pileup risk, but an account and a credential to manage in v1. Deferred to v2, where it is a swap of endpoint and credentials, since the S3 API is the same.

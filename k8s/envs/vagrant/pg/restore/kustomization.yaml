@@ -1,0 +1,17 @@
+# Recreates pg from the newest backup in the bucket (ADR 0011). Destructive when pg
+# already exists, so run it through iac/scripts/restore-data, which fills in both
+# placeholders: pg-SOURCE is the generation folder to read, pg-GENERATION the new one
+# to write. They must differ: a recovered cluster may not archive into its parent's folder.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../base
+patches:
+  - path: bootstrap.yaml
+  - target:
+      kind: Cluster
+      name: pg
+    patch: |-
+      - op: add
+        path: /spec/plugins/0/parameters/serverName
+        value: pg-GENERATION

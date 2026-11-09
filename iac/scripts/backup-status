@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Is the database being backed up? (ADR 0011). Run on the dev VM, weekly, and after
+# any restore or backup.env rotation. Read-only.
+#
+# Exit 0: this generation's last base backup is under 36 hours old and WAL archiving
+# works. Anything else means the next restore could lose data or fail.
+set -euo pipefail
+
+namespace=health-tracker
+max_age_hours=36
+
+status=0
+fail() { echo "FAIL: $*"; status=1; }
+
+cluster_json=$(kubectl -n "$namespace" get cluster pg -o json) || {
+  echo "FAIL: no pg Cluster in $namespace"
+  exit 1
+}
+generation=$(jq -r '.spec.plugins[0].parameters.serverName // empty' <<<"$cluster_json")
+echo "generation:      $generation"
+
+# --- Base backup ----------------------------------------------------------------
+# The Barman Cloud plugin reads the bucket and records, per generation, the newest
+# finished base backup and the oldest moment it can restore to.
+window=$(kubectl -n "$namespace" get objectstore garage -o json |
+  jq -c --arg g "$generation" '.status.serverRecoveryWindow[$g] // {}')
+last_backup=$(jq -r '.lastSuccessfulBackupTime // empty' <<<"$window")
+first_point=$(jq -r '.firstRecoverabilityPoint // empty' <<<"$window")
+
+if [[ -z "$last_backup" ]]; then
+  # A generation with WAL but no base backup cannot be restored from on its own.
+  fail "no base backup yet for $generation"
+else
+  age_hours=$((($(date -u +%s) - $(date -u -d "$last_backup" +%s)) / 3600))
+  echo "last backup:     $last_backup (${age_hours}h ago)"
+  echo "restorable from: $first_point"
+  ((age_hours < max_age_hours)) ||
+    fail "last base backup is ${age_hours}h old (limit ${max_age_hours}h); is the ScheduledBackup firing?"
+fi
+
+# --- WAL archiving ----------------------------------------------------------------
+# CNPG sets this condition from Postgres's archiver: False after a failed attempt
+# that has not been retried successfully.
+archiving=$(jq -r '.status.conditions[]? | select(.type == "ContinuousArchiving") |
+  "\(.status) \(.message)"' <<<"$cluster_json")
+echo "WAL archiving:   ${archiving:-unknown}"
+[[ "$archiving" == True* ]] || fail "WAL archiving is not working"
+
+# The archiver's own view, from the primary. An idle database ships no WAL, so an
+# old last_archived_time alone is not a failure.
+primary=$(jq -r '.status.currentPrimary' <<<"$cluster_json")
+kubectl -n "$namespace" exec "$primary" -c postgres -- psql -XAtq -F ' ' -c "
+  select 'last archived:   ' || coalesce(last_archived_time::text, 'never'),
+         '(failures: ' || failed_count || ', last ' || coalesce(last_failed_time::text, 'never') || ')'
+  from pg_stat_archiver" || fail "cannot read pg_stat_archiver on $primary"
+
+((status == 0)) && echo "OK"
+exit "$status"
