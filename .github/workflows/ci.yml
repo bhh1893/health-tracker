@@ -81,6 +81,32 @@ jobs:
             || 'HEAD' }}
         run: ./gitleaks git --redact --verbose --log-opts="${LOG_OPTS}" .
 
+  # Lints every shell script. They are found by their first line, not by path, so a
+  # script in a new folder is covered without editing this, and for the same reason
+  # there is no path filter. Pin matches the dev_workstation role defaults.
+  shellcheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: pipx install shellcheck-py==0.11.0.1
+      - name: Lint every shell script
+        # Explicit bash for -o pipefail: a failed listing must not pass as "no scripts".
+        shell: bash
+        run: |
+          git ls-files -z |
+            while IFS= read -r -d '' file; do
+              case "${file}" in
+                *.sh | *.bash) echo "${file}"; continue ;;
+              esac
+              if head -n 1 "${file}" | grep -qE '^#!.*\b(ba|da)?sh\b'; then
+                echo "${file}"
+              fi
+            done > scripts.txt
+          echo "checking:"; cat scripts.txt
+          # An empty list would make xargs run shellcheck with no files, which passes.
+          test -s scripts.txt
+          xargs -d '\n' shellcheck < scripts.txt
+
   yamllint:
     needs: changes
     if: needs.changes.outputs.yaml == 'true'
@@ -329,6 +355,7 @@ jobs:
     needs:
       - changes
       - gitleaks
+      - shellcheck
       - yamllint
       - ansible-lint
       - kubeconform
