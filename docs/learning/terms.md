@@ -437,3 +437,18 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`pg_rewind`**: a Postgres tool that winds a former primary back to the point where it diverged from the new one, so it can rejoin as a replica without a full copy.
 - **Minimum recovery point**: the WAL position a replica must replay to before its data is consistent; until then it refuses connections.
 - **Checkpoint**: Postgres writing every changed page to disk and recording a WAL marker, so crash recovery can start from there.
+- **Tailscale / tailnet**: a WireGuard-based private network that joins your devices wherever they are; your tailnet is the set of devices allowed in, so nothing outside it can even connect.
+- **Defense in depth**: several independent layers of protection, so one failing (a device admitted by mistake) does not expose everything (a Pending User still sees no data).
+- **OIDC (OpenID Connect)**: a standard login protocol on top of OAuth 2.0; an identity provider signs a token saying who the person is, and the app trusts that signature instead of storing passwords.
+- **OAuth client ID**: identifies an application registered with an identity provider (our `web` app), never a person.
+- **`sub` (subject)**: the OIDC claim holding a person's stable, unique ID at one identity provider; the key that links a sign-in to our User.
+- **Identity provider (IdP)**: the service that signs people in and issues OIDC tokens (e.g. Authentik, Zitadel, Auth0).
+- **Registrar**: the company you rent a domain name from; its job here is only to say which nameservers are authoritative for the domain.
+- **Nameservers (DNS host)**: the servers that answer lookups for a domain; switching them at the registrar moves where you edit records.
+- **A record**: a DNS row mapping a name to an IPv4 address.
+- **DNS-01 challenge**: Let's Encrypt proves you control a domain by checking a TXT record you publish; it never connects to the server, so private IPs are fine.
+- **DNS rebinding protection**: a router or resolver feature that drops public DNS answers pointing at private addresses, to stop websites from attacking your LAN.
+- **Split DNS**: sending lookups for one domain to a chosen resolver; Tailscale pushes this to devices on the tailnet.
+- **TailVIP / Tailscale Service**: a stable tailnet address that belongs to a service rather than a machine, so it survives the machines behind it being replaced.
+- **ProxyGroup**: a set of Tailscale proxy pods run by the Tailscale Kubernetes Operator that carry tailnet traffic into the cluster.
+- **Grey cloud (DNS only)**: a Cloudflare record that just answers DNS, without routing traffic through Cloudflare's proxy.

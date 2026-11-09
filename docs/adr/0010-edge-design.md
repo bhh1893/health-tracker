@@ -6,6 +6,8 @@ status: accepted
 
 The phone reaches one Cilium Gateway (Gateway API, ADR 0001) on a LoadBalancer IP from the L2 pool. The Gateway routes `/api/*` to `api` and everything else to `web`. In v1 it serves plain HTTP on `:80`: no domain, no certificates. The shared secret is checked by a small nginx sidecar container inside the `api` pod, not by the Gateway and not by `api` itself ([Edge design](https://github.com/bhh1893/health-tracker/issues/11)). This amends [HTTPS on the home network](https://github.com/bhh1893/health-tracker/issues/6): HTTPS moves to v2, and the design for it is recorded below so v2 starts from here.
 
+**Amended by ADR 0020:** v1 now serves HTTPS at `health.nibblejiggle.xyz` through a Tailscale Service; the LAN LoadBalancer IP and bridged path are removed. The "v2 starting point: HTTPS" section is carried out there.
+
 ## Shape (v1)
 
 - **Gateway:** one `Gateway` in namespace `edge`, owned by `k8s/platform` (ADR 0003), listening on `:80`. The Service Cilium creates for it takes `192.168.0.250` from the pool (`.251` spare). It admits `HTTPRoute`s from the app namespace only. The routes themselves ship with each service's Kustomize base: `/api/*` to the `api` pod's sidecar port, `/` to `web`. `/healthz` and `/readyz` are not routed (ADR 0006).

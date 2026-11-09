@@ -55,3 +55,25 @@ _Avoid_: Place, venue
 **Archived**:
 A Catalog item hidden from suggestions because the user no longer wants it offered, while past Entries that refer to it keep showing it.
 _Avoid_: Deleted, removed
+
+## People
+
+**User**:
+A person with an account. Owns their own Catalogs and Entries; no User sees another's.
+_Avoid_: Client, client ID (those name the app, not a person), account holder
+
+**Role**:
+What a User may do. Every User has exactly one: Admin, Member or Pending.
+_Avoid_: Permission, access level, access row
+
+**Pending**:
+The Role every new User starts with. Signed up but not yet approved; can do nothing but wait.
+_Avoid_: None, unverified, inactive
+
+**Member**:
+A User approved to log and query their own Entries.
+_Avoid_: User (as a Role name; User is the person)
+
+**Admin**:
+The owner. Approves Users by changing their Role.
+_Avoid_: Superuser, root

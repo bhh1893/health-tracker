@@ -6,6 +6,8 @@ status: accepted
 
 Workers admit only port 80 from the home LAN, using two controls because no single one covers everything. An nftables table on the bridged NIC filters host services and the Gateway. A Cilium setting keeps NodePorts off that NIC, because Cilium handles them in eBPF before netfilter runs ([ticket #85](https://github.com/bhh1893/health-tracker/issues/85)).
 
+**Amended by ADR 0020:** the bridged NIC is removed, so the LAN-facing rules here go with it; nothing in the cluster is reachable from the home LAN.
+
 The constraint that shaped it, measured on a worker with a default-drop nftables table on `eth2`:
 
 | Traffic | Result | Packets nftables counted |
