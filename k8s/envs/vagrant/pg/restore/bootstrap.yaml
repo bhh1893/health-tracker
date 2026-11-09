@@ -1,0 +1,24 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pg
+spec:
+  bootstrap:
+    # Copy the newest base backup in `origin`, then replay its WAL to the end (or to
+    # recoveryTarget, see restore-pitr). The locale comes with the data files.
+    recovery:
+      source: origin
+      # Same as initdb in fresh: CNPG resets the owner's password from this Secret
+      # instead of generating a pg-app Secret nobody uses.
+      database: health
+      owner: app
+      secret:
+        name: db-owner
+  # A cluster we read from, not one we run. Here it is just a folder in the bucket.
+  externalClusters:
+    - name: origin
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: garage
+          serverName: pg-SOURCE

@@ -1,0 +1,17 @@
+# The restore overlay, stopped at a moment in time instead of replaying all WAL
+# (point-in-time recovery, ADR 0011). restore-data --at fills in TARGET-TIME as
+# RFC 3339 UTC, e.g. 2026-11-09T05:00:00Z. CNPG picks the newest base backup
+# taken before it.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../restore
+patches:
+  - target:
+      kind: Cluster
+      name: pg
+    patch: |-
+      - op: add
+        path: /spec/bootstrap/recovery/recoveryTarget
+        value:
+          targetTime: TARGET-TIME
