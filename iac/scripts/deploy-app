@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Turns on Argo CD auto-sync and waits until the app is deployed and smoke-tested
+# (ADR 0016). Run on the dev VM. Safe to re-run: with sync already on and the app
+# healthy it returns at once.
+#
+# Auto-sync starts off on purpose (platform/argocd/application.yaml) so that secrets and
+# data are in place before anything deploys. rebuild-cluster.ps1 calls this last.
+#
+#   deploy-app    exit 0 once synced, healthy, and the smoke Job has succeeded
+#
+# Argo CD deploys what is on `main`, whatever ref the rebuild ran Ansible from.
+set -euo pipefail
+
+readonly namespace=health-tracker
+timeout_seconds=1200
+
+log() { echo "==> $*"; }
+die() { echo "deploy-app: $*" >&2; exit 1; }
+
+app() {
+  kubectl -n argocd get application health-tracker "$@" 2>/dev/null
+}
+
+app -o name >/dev/null || die "no Argo CD Application 'health-tracker'; did the playbook run?"
+
+log "Turn on auto-sync"
+kubectl -n argocd patch application health-tracker --type=merge \
+  -p '{"spec": {"syncPolicy": {"automated": {"prune": true, "selfHeal": true}}}}'
+# Argo CD looks at git every 3 minutes by itself. Ask for a look now.
+kubectl -n argocd annotate application health-tracker \
+  argocd.argoproj.io/refresh=hard --overwrite >/dev/null
+
+# Green means all four at once. Each one alone can be true for the wrong reason: Synced
+# before the hooks ran, Healthy while the migration is still going, a Succeeded
+# operation that predates this one.
+log "Wait for sync, migration, rollout and smoke test (up to $((timeout_seconds / 60)) minutes)"
+last=""
+deadline=$((SECONDS + timeout_seconds))
+while [[ $SECONDS -lt $deadline ]]; do
+  sync=$(app -o jsonpath='{.status.sync.status}' || true)
+  health=$(app -o jsonpath='{.status.health.status}' || true)
+  phase=$(app -o jsonpath='{.status.operationState.phase}' || true)
+  smoke=$(kubectl -n "$namespace" get job api-smoke -o jsonpath='{.status.succeeded}' 2>/dev/null || true)
+
+  status="sync=${sync:-?} health=${health:-?} operation=${phase:-none} smoke=${smoke:-0}"
+  if [[ "$status" != "$last" ]]; then
+    log "$status"
+    last=$status
+  fi
+
+  if [[ "$sync" == Synced && "$health" == Healthy && "$phase" == Succeeded && "$smoke" == 1 ]]; then
+    log "App deployed and smoke-tested"
+    exit 0
+  fi
+  # Argo CD retries a failed sync itself; Failed or Error is what is left once it gives up.
+  if [[ "$phase" == Failed || "$phase" == Error ]]; then
+    app -o jsonpath='{.status.operationState.message}{"\n"}' >&2 || true
+    die "the sync failed. Logs: kubectl -n $namespace logs job/api-migrate, then job/api-smoke"
+  fi
+  sleep 5
+done
+die "not deployed after $((timeout_seconds / 60)) minutes ($last)"

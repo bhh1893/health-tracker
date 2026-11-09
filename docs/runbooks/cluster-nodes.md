@@ -12,7 +12,7 @@ From the repo root:
 .\iac\rebuild-cluster.ps1
 ```
 
-This runs steps 1 to 3 below, then waits for all nodes `Ready` and Cilium healthy. It took about 13 minutes on 2026-11-05, before `site.yml` installed the platform components, so expect longer now. Exit code 0 means all of that passed, and the last line reads `REBUILD OK`. Anything else means do not trust the cluster.
+This runs steps 1 to 3 below, waits for all nodes `Ready` and Cilium healthy, then restores the database and deploys the app: see `rebuild.md`, which is the runbook for the whole rebuild. It took about 13 minutes on 2026-11-05, before `site.yml` installed the platform components, so expect longer now. Exit code 0 means all of that passed, and the last line reads `REBUILD OK`. Anything else means do not trust the cluster.
 
 - Ansible runs from `~/rebuild-checkout` on the dev VM, set to `origin/main`, so unpushed work is not tested. To test a branch, push it and pass `-Ref origin/<branch>`.
 - The Vagrantfile comes from your Windows checkout.

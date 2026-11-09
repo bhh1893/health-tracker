@@ -462,3 +462,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`pg_switch_wal()`**: closes the current WAL segment early so it can be archived now instead of when it fills or times out.
 - **AWS SigV4**: the scheme S3-compatible APIs use to sign each request with a secret key; curl can do it with `--aws-sigv4`.
 - **Restore drill**: actually restoring a backup on a schedule, because a backup nobody has restored has not been shown to work.
+- **Hard refresh (Argo CD)**: the `argocd.argoproj.io/refresh=hard` annotation, which makes Argo re-read git and re-render now instead of at its next 3-minute poll.
+- **Bootstrap ordering**: building a system in the order its dependencies need (secrets, then database, then app, then auto-sync) so nothing starts against something that does not exist yet.
