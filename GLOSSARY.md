@@ -66,6 +66,14 @@ _Avoid_: Client, client ID (those name the app, not a person), account holder
 What a User may do. Every User has exactly one: Admin, Member or Pending.
 _Avoid_: Permission, access level, access row
 
+**Sign-up**:
+A person's first sign-in, which creates their User as Pending.
+_Avoid_: Registration, account creation
+
+**Approval**:
+An Admin changing a Pending User to Member.
+_Avoid_: Activation, verification
+
 **Pending**:
 The Role every new User starts with. Signed up but not yet approved; can do nothing but wait.
 _Avoid_: None, unverified, inactive
