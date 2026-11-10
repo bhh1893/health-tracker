@@ -4,6 +4,8 @@
 # token needs a restart (ADR 0015). The token is hex: nothing here needs escaping.
 set -eu
 umask 077
+# $expected_authorization is nginx's variable, not the shell's: it must stay literal.
+# shellcheck disable=SC2016
 printf 'set $expected_authorization "Bearer %s";\n' "$(cat /run/secrets/api-token/token)" \
   > /tmp/expected-authorization.conf
 exec nginx -g 'daemon off;'

@@ -63,7 +63,7 @@ Expect about 90 seconds of downtime for `api` (measured in the 2026-11-09 drill)
 7. **Create `pg` from the `restore` overlay** (`k8s/envs/vagrant/pg/restore/`): `bootstrap.recovery` reads the chosen generation as `externalClusters: origin` and writes to a new `pg-<now>` generation. `--at` uses `restore-pitr`, which adds `recoveryTarget.targetTime`. It waits up to 15 minutes for `Ready`.
 8. **Check.** It logs in over the network as `app` and as `api_rw`, using the Secrets just as `api` and the migration Job do. It prints row counts and, for a full restore, fails if they differ from step 5.
 9. **Take a base backup** of the new generation, so it can be restored from by itself straight away instead of only after 21:00.
-10. **Start `api`** with its old replica count, then **resume auto-sync**.
+10. **Start `api`** with its old replica count, then **resume auto-sync**. On a rebuild, sync was never on and `api` was never deployed, so both are skipped: `deploy-app` turns sync on afterwards.
 
 ### If it fails
 
@@ -90,7 +90,7 @@ kubectl -n argocd annotate application health-tracker health-tracker/restore-dat
 ## RPO and RTO
 
 - **RPO (how much data a disaster can cost):** about a minute, since `archive_timeout` is `1min`. A planned restore of a healthy `pg` costs nothing (step 5). Losing the dev VM's disk costs everything, because the bucket lives there (ADR 0011, fixed in v2 with a cloud bucket).
-- **RTO (how long until the app is back):** about 90 seconds, measured in the 2026-11-09 drill on a 10-row database restored from a base backup minutes old. It grows with the database size and with the time since the last base backup, because all WAL since then is replayed. A restore after a cluster rebuild adds the rebuild itself.
+- **RTO (how long until the app is back):** about 90 seconds, measured in the 2026-11-09 drill on a 10-row database restored from a base backup minutes old. It grows with the database size and with the time since the last base backup, because all WAL since then is replayed. A restore after a cluster rebuild adds the rebuild itself (`docs/runbooks/rebuild.md`, which calls `restore-data` and then `deploy-app`).
 
 ## Drill
 

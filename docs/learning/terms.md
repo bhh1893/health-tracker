@@ -452,6 +452,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **TailVIP / Tailscale Service**: a stable tailnet address that belongs to a service rather than a machine, so it survives the machines behind it being replaced.
 - **ProxyGroup**: a set of Tailscale proxy pods run by the Tailscale Kubernetes Operator that carry tailnet traffic into the cluster.
 - **Grey cloud (DNS only)**: a Cloudflare record that just answers DNS, without routing traffic through Cloudflare's proxy.
+- **shellcheck**: a static analyser for shell scripts that flags quoting bugs, unset-variable traps and portability problems before the script runs.
+- **Shebang (`#!`)**: a script's first line, naming the interpreter that runs it; the OS reads it, and our CI uses it to find shell scripts.
 - **Base backup**: a full copy of a database's data files from one moment; useless alone for Postgres PITR, since WAL replayed on top is what brings it forward.
 - **Generation (backup)**: one `pg` Cluster's lifetime, stored as its own `serverName` folder in the bucket; each restore starts a new one.
 - **RPO (recovery point objective)**: how much recent data a disaster may cost, measured in time; ours is about a minute.
@@ -462,3 +464,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Restore drill**: actually restoring a backup on a schedule, because a backup nobody has restored has not been shown to work.
 - **Passkey**: a login credential (a key pair) stored on your device and synced by iCloud Keychain; the site keeps only the public key, so there is no password to phish or leak.
 - **Standalone mode**: an iPhone Home Screen web app running in its own window without Safari's interface, with cookies and storage separate from Safari.
+- **Hard refresh (Argo CD)**: the `argocd.argoproj.io/refresh=hard` annotation, which makes Argo re-read git and re-render now instead of at its next 3-minute poll.
+- **Bootstrap ordering**: building a system in the order its dependencies need (secrets, then database, then app, then auto-sync) so nothing starts against something that does not exist yet.

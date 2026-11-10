@@ -23,6 +23,14 @@ status: accepted
   - No numeric coverage threshold. Failing or flaky checks are fixed when found, even if unrelated.
 - **Config location:** test and lint config lives inside each service (ADR 0003); no root workspace.
 
+## Amendment: shellcheck
+
+Added 2026-11-09, after #52 added `restore-data` and `backup-status`. Those scripts delete the database and handle secrets, yet no linter checked them.
+
+- **`shellcheck` joins `ci-gate`.** It runs on every PR with no path filter, like `gitleaks`. Scripts are found by their first line (`#!` naming `sh`, `bash` or `dash`) or a `.sh`/`.bash` name, not by folder, so a new script anywhere is covered. If it finds no scripts at all, it fails.
+- **Pinned** to `shellcheck-py` 0.11.0.1 in both CI and the `dev_workstation` role, so a local run matches CI.
+- **A finding is fixed, or silenced on that one line** with a `# shellcheck disable=` directive and a comment saying why. No repo-wide disable list.
+
 ## Considered Options
 
 - **Mocked repositories under a classic test pyramid.** Rejected: fast, but proves nothing about the SQL, constraints or trigram behavior where the bugs would be.

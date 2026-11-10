@@ -58,3 +58,9 @@
     cmd: "uv tool install yamllint=={{ dev_workstation_yamllint_version }}"
   register: dev_workstation_yamllint_install
   changed_when: "'already installed' not in dev_workstation_yamllint_install.stderr"
+
+- name: Install shellcheck
+  ansible.builtin.command:
+    cmd: "uv tool install shellcheck-py=={{ dev_workstation_shellcheck_py_version }}"
+  register: dev_workstation_shellcheck_install
+  changed_when: "'already installed' not in dev_workstation_shellcheck_install.stderr"
