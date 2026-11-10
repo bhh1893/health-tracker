@@ -6,6 +6,8 @@ status: accepted
 
 The v1 API is a JSON REST API under `/api/v1`, described by the generated OpenAPI schema (the client/server contract, ADR 0003). The Meal is written whole, every create is an idempotent `PUT` to a client-generated ID, and queries are filtered collections rather than special-purpose endpoints. Each endpoint has a stable `operationId` so a later Claude MCP wrapper is a mechanical mapping, one tool per operation.
 
+**Amended by ADR 0021:** `401` comes from oauth2-proxy as a plain response, not a Problem; Pending Users get `403` (`pending-approval`) on everything but `GET /api/me`; identity comes from proxy headers, not the seeded User.
+
 ## Shape
 
 - **Resources:**
