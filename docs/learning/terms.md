@@ -369,7 +369,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Prune (Argo CD)**: during a sync, delete tracked resources that no longer exist in git; without it they stay in the cluster and the app shows `OutOfSync`.
 - **Sync retry (Argo CD)**: an automated sync that fails runs again, 5 times by default, before it ends as `Failed`; each attempt re-creates the hook Jobs.
 - **Client-side routing**: the page's JavaScript maps the URL to a screen without asking the server for a new page; nginx only has to serve `index.html` for any path.
-- **Bearer token**: a secret sent in the `Authorization` header; whoever holds it is let in, so anyone who reads it can act as you.
 - **`localStorage`**: per-origin browser storage that survives restarts; any script running on the page can read it, which is why it is a poor home for a secret on a page with untrusted scripts.
 - **XSS (cross-site scripting)**: an attacker's script running inside your page, with the same access to `localStorage` and the API as your own code.
 - **Middleware (`openapi-fetch`)**: a function every request and response passes through, so a concern like auth lives in one place instead of in every call.
@@ -464,3 +463,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Restore drill**: actually restoring a backup on a schedule, because a backup nobody has restored has not been shown to work.
 - **Hard refresh (Argo CD)**: the `argocd.argoproj.io/refresh=hard` annotation, which makes Argo re-read git and re-render now instead of at its next 3-minute poll.
 - **Bootstrap ordering**: building a system in the order its dependencies need (secrets, then database, then app, then auto-sync) so nothing starts against something that does not exist yet.
+- **Authorization code flow**: the browser goes to the identity provider, the person signs in, the provider redirects back with a one-time code, and the app's server swaps that code plus its client secret for tokens.
+- **ID token**: the signed JWT an OIDC provider returns, stating who signed in; its `sub` claim becomes the User's key.
+- **Redirect URI**: the exact URL an identity provider may send the browser back to with the code; registered in advance so a code cannot be delivered elsewhere.
+- **OAuth consent screen**: Google's settings for what people see when signing in and who may sign in (Testing: a hand-listed allowlist; In production: any Google account).
+- **`HttpOnly` cookie**: a cookie the browser sends with each request but page JavaScript cannot read, so an injected script cannot steal the session.
