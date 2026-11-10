@@ -462,5 +462,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`pg_switch_wal()`**: closes the current WAL segment early so it can be archived now instead of when it fills or times out.
 - **AWS SigV4**: the scheme S3-compatible APIs use to sign each request with a secret key; curl can do it with `--aws-sigv4`.
 - **Restore drill**: actually restoring a backup on a schedule, because a backup nobody has restored has not been shown to work.
+- **Passkey**: a login credential (a key pair) stored on your device and synced by iCloud Keychain; the site keeps only the public key, so there is no password to phish or leak.
+- **Standalone mode**: an iPhone Home Screen web app running in its own window without Safari's interface, with cookies and storage separate from Safari.
 - **Hard refresh (Argo CD)**: the `argocd.argoproj.io/refresh=hard` annotation, which makes Argo re-read git and re-render now instead of at its next 3-minute poll.
 - **Bootstrap ordering**: building a system in the order its dependencies need (secrets, then database, then app, then auto-sync) so nothing starts against something that does not exist yet.
