@@ -31,14 +31,14 @@ Nothing is served without a session, not even the `web` bundle. oauth2-proxy rep
 
 ### Identity into `api`
 
-- **Trusted headers.** The proxy sets headers carrying the issuer, `sub` and `name` (oauth2-proxy alpha config `injectRequestHeaders`) and overwrites any copies the client sent. No token reaches `api`.
+- **Trusted headers.** The proxy sets headers carrying the issuer, `sub`, `name` and `email` (oauth2-proxy alpha config `injectRequestHeaders`; `email` added by ADR 0022) and overwrites any copies the client sent. No token reaches `api`.
 - **Key:** Users are keyed by `(issuer, sub)`. `sub` is unique only within one provider, and this design has already changed provider once.
 - **`current_user` dependency** runs on every request:
   - Identity headers missing: `401`. There is no fallback to the seeded User. In production `api` cannot be reached without the proxy, so this only fires if a later change opens another way in.
   - Unknown `(issuer, sub)`: insert a Pending User with `INSERT ... ON CONFLICT DO NOTHING`, so two simultaneous first requests are safe. This insert is Sign-up.
   - Pending, on any route but `GET /api/me`: `403` Problem, type `urn:health-tracker:problem:pending-approval`.
   - Otherwise: the User's internal UUID. Every existing query stays scoped exactly as before (ADR 0002).
-- The table shape, Roles and the approval command are decided in [Users, Roles and the approval command](https://github.com/bhh1893/health-tracker/issues/125).
+- The table shape, Roles and the approval command are decided in [Users, Roles and the approval command](https://github.com/bhh1893/health-tracker/issues/125) (ADR 0022).
 
 ### Session
 
@@ -68,4 +68,4 @@ Nothing is served without a session, not even the `web` bundle. oauth2-proxy rep
 - Every pod carries a second container; two proxies use more memory than one. Accepted.
 - A stolen cookie works until it expires. Rotating the cookie secret signs out every User at once.
 - How integration tests, Schemathesis and the smoke Job present an identity is decided in a follow-up ticket. Tests that skip the proxy must set the headers themselves.
-- **Verify at build:** client-sent identity headers are overwritten, not passed through; the `name` claim reaches `api` as a header; both sidecars accept one session; `/oauth2/callback` reaches the `web` sidecar; the `api` sidecar answers `/api/*` with `401`, never a redirect; probes pass with both backends on `127.0.0.1`.
+- **Verify at build:** client-sent identity headers are overwritten, not passed through; the `name` and `email` claims reach `api` as headers; both sidecars accept one session; `/oauth2/callback` reaches the `web` sidecar; the `api` sidecar answers `/api/*` with `401`, never a redirect; probes pass with both backends on `127.0.0.1`.
