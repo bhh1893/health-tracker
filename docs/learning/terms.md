@@ -475,3 +475,10 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Session store**: where a proxy keeps session state; either inside the encrypted cookie itself (stateless) or in a server-side database like Redis (revocable).
 - **Kustomize component**: a reusable chunk of Kubernetes config that several Kustomize bases include and patch, so shared settings live in one place.
 - **`__Host-` cookie prefix**: a cookie name prefix that makes the browser reject the cookie unless it is `Secure`, has `Path=/` and has no `Domain`, pinning it to one exact host.
+- **`iss` (issuer)**: the OIDC claim naming who issued a token, e.g. `https://accounts.google.com`; a `sub` is unique only within one issuer, so Users are keyed by both.
+- **Audit log (table)**: an append-only table recording who changed what and when, written in the same transaction as the change so the two cannot disagree.
+- **`kubectl exec`**: runs a command inside a container that is already running in the cluster, like SSH into it; used here to run admin commands with the pod's own config and database account.
+- **Management command**: an admin task shipped inside the app's own image and run against live config (Django's `manage.py`, `rails console`), so it shares the app's code and tests.
+- **Refresh token**: a long-lived credential an identity provider can issue at sign-in so a server can get fresh short-lived tokens later without the person signing in again; Google issues one only when asked with `access_type=offline`.
+- **Sliding vs fixed expiry**: sliding resets the expiry clock with each use (expires after N idle days); fixed counts from sign-in (expires N days later no matter what).
+- **ITP (Intelligent Tracking Prevention)**: Safari's rules that delete or cap stored site data to limit tracking, e.g. a 7-day cap on storage that page JavaScript writes.
