@@ -470,3 +470,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Redirect URI**: the exact URL an identity provider may send the browser back to with the code; registered in advance so a code cannot be delivered elsewhere.
 - **OAuth consent screen**: Google's settings for what people see when signing in and who may sign in (Testing: a hand-listed allowlist; In production: any Google account).
 - **`HttpOnly` cookie**: a cookie the browser sends with each request but page JavaScript cannot read, so an injected script cannot steal the session.
+- **oauth2-proxy**: an open-source reverse proxy that runs the OIDC sign-in, keeps the session in a cookie, and forwards only requests that have one.
+- **Trusted header**: an identity header (e.g. `X-Forwarded-User`) set by a proxy and believed by the backend; safe only when nothing but the proxy can reach that backend.
+- **Session store**: where a proxy keeps session state; either inside the encrypted cookie itself (stateless) or in a server-side database like Redis (revocable).
+- **Kustomize component**: a reusable chunk of Kubernetes config that several Kustomize bases include and patch, so shared settings live in one place.
+- **`__Host-` cookie prefix**: a cookie name prefix that makes the browser reject the cookie unless it is `Secure`, has `Path=/` and has no `Domain`, pinning it to one exact host.

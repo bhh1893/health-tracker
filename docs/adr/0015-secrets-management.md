@@ -6,6 +6,8 @@ status: accepted
 
 Every secret value is generated once on the dev VM into files outside the repo, and one script copies them into Kubernetes Secrets. Git holds only Secret names, never values, not even encrypted. CNPG does not back up Kubernetes Secrets, so a restore brings data back but not credentials; the dev VM files are what survive a cluster rebuild ([Secrets management](https://github.com/bhh1893/health-tracker/issues/34)). This answers the open questions in ADR 0005, ADR 0010 and ADR 0011.
 
+**Amended by ADR 0021:** `api-token` and `show-token` are retired; the Google client secret and the auth proxy's cookie secret replace them.
+
 ## Threat model
 
 - **In scope:** a secret leaking through git (history is permanent, even in a private repo), through an image, CI log or app log, or into Claude's context on the dev VM.
