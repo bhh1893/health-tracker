@@ -482,3 +482,4 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Refresh token**: a long-lived credential an identity provider can issue at sign-in so a server can get fresh short-lived tokens later without the person signing in again; Google issues one only when asked with `access_type=offline`.
 - **Sliding vs fixed expiry**: sliding resets the expiry clock with each use (expires after N idle days); fixed counts from sign-in (expires N days later no matter what).
 - **ITP (Intelligent Tracking Prevention)**: Safari's rules that delete or cap stored site data to limit tracking, e.g. a 7-day cap on storage that page JavaScript writes.
+- **Cookie secret**: the key oauth2-proxy uses to encrypt and sign session cookies; whoever holds it can forge a session for any User.

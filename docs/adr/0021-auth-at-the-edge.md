@@ -68,7 +68,7 @@ Nothing is served without a session, not even the `web` bundle. oauth2-proxy rep
 
 - **Amends ADR 0006:** `401` now comes from oauth2-proxy as a plain response, not `application/problem+json`, and without `WWW-Authenticate: Bearer`. `403` with type `pending-approval` is added. Identity is still implicit ("/me"), now resolved from proxy headers instead of the seeded User.
 - **Amends ADR 0010:** the nginx sidecar, its token check and its health port are gone. `web` gets a sidecar too and binds `127.0.0.1`. ADR 0010's planned swap happens with no `HTTPRoute` changes.
-- **Amends ADR 0015:** `api-token` and `show-token` are retired. The Google client secret and the cookie secret replace them; where they are generated and stored is decided in a follow-up ticket.
+- **Amends ADR 0015:** `api-token` and `show-token` are retired. The Google client secret and the cookie secret replace them, as one `auth-proxy` Secret; how they are made, applied and rotated is in ADR 0015's Auth secrets section.
 - Every pod carries a second container; two proxies use more memory than one. Accepted.
 - Every User signs in again every 30 days; signing out of Google or removing the app's access in the Google account does not end an existing sign-in session.
 - A stolen cookie works until it expires (up to 30 days). Rotating the cookie secret signs out every User at once.

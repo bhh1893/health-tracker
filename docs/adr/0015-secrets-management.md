@@ -6,7 +6,7 @@ status: accepted
 
 Every secret value is generated once on the dev VM into files outside the repo, and one script copies them into Kubernetes Secrets. Git holds only Secret names, never values, not even encrypted. CNPG does not back up Kubernetes Secrets, so a restore brings data back but not credentials; the dev VM files are what survive a cluster rebuild ([Secrets management](https://github.com/bhh1893/health-tracker/issues/34)). This answers the open questions in ADR 0005, ADR 0010 and ADR 0011.
 
-**Amended by ADR 0021:** `api-token` and `show-token` are retired; the Google client secret and the auth proxy's cookie secret replace them.
+**Amended by ADR 0021:** `api-token` and `show-token` are retired; the Google client secret and the auth proxy's cookie secret replace them. How those two are made, applied and rotated is in [Auth secrets](#auth-secrets-amended-by-adr-0021), decided in [Auth secrets: Google client and cookie secret](https://github.com/bhh1893/health-tracker/issues/138).
 
 ## Threat model
 
@@ -26,7 +26,7 @@ Every secret value is generated once on the dev VM into files outside the repo, 
   | `db-api` | Role `api_rw`: `username`, `password`, `DATABASE_URL` | `api` |
   | backup key | Garage access key (ADR 0011) | CNPG Barman Cloud plugin |
 
-  The GitHub key and ops SSH key are unchanged (ADR 0009, ADR 0004); they never enter the cluster.
+  ADR 0021 replaces `api-token` with `auth-proxy`, see [Auth secrets](#auth-secrets-amended-by-adr-0021). The GitHub key and ops SSH key are unchanged (ADR 0009, ADR 0004); they never enter the cluster.
 - **`apply-secrets` (bash, `iac/scripts/`, run on the dev VM):** creates the namespace if needed and applies every Secret. Safe to re-run. Values go through stdin, never command-line arguments, which `ps` can read. It is the first step of `restore-data`, so `rebuild-cluster.ps1` gets it too and no path can forget it. If `api` starts first it waits in `CreateContainerConfigError` and recovers by itself.
 - **Database roles:** `app` owns the tables and does DDL, used only by the short-lived migration Job. `api_rw` reads and writes rows only (`SELECT`, `INSERT`, `UPDATE`, `DELETE`), so a bug or injection in `api` cannot drop a table.
 - **Role management:** both roles are inline `.spec.managed.roles` on the `Cluster`, with their Secrets typed `kubernetes.io/basic-auth` and labelled `cnpg.io/reload: "true"` so a password change applies immediately. Passwords are hex, so `DATABASE_URL` needs no escaping. Both overlays (`fresh`, `restore`) share this. CNPG superuser access stays off.
@@ -36,6 +36,24 @@ Every secret value is generated once on the dev VM into files outside the repo, 
 - **Rotation:** only on suspected exposure, no schedule. Steps live in `docs/runbooks/secrets.md`: replace the value, run `apply-secrets`, restart the pods (env vars and nginx's file read do not update a running process), and re-paste on the phone for the token.
 - **Claude guardrail:** committed `.claude/settings.json` denies reading `~/.config/health-tracker/**`, any shell command naming that directory, and `kubectl get secret` in any argument order. This is a guardrail, not a boundary: Claude runs as the same Linux user, so it stops accidents, not a determined process.
 - **Acceptance for build tickets:** rehearse one rotation. In the restore drill, rotate a password, restore a backup from before the rotation, then log in as both roles. At build, use whichever role password field the pinned CNPG version supports (`passwordSecret` at v1.30.1; `main` docs mark it deprecated for a `password` stanza) and verify a basic-auth Secret may carry the extra `DATABASE_URL` key.
+
+## Auth secrets (amended by ADR 0021)
+
+| File | Made by | Secret key | Used by |
+| --- | --- | --- | --- |
+| `google-client-secret` | Google Cloud console, by hand | `auth-proxy` / `client-secret` | both oauth2-proxy sidecars |
+| `auth-cookie-secret` | `dev.yml`: 32 random bytes, URL-safe base64 | `auth-proxy` / `cookie-secret` | both oauth2-proxy sidecars |
+
+- **One Secret, `auth-proxy`,** shared by the `api` and `web` sidecars as env vars. Both need both values: oauth2-proxy won't start without a client secret, even in the `api` pod, which never handles the callback.
+- **The client ID is in git,** in `k8s/components/auth-proxy/`. It is not secret: Google puts it in the browser's address bar on every sign-in.
+- **The cookie secret is the most powerful auth value.** It encrypts and signs every session cookie, so anyone who has it can forge a session for any User. Treat it like the `api_rw` password. oauth2-proxy accepts only 16, 24 or 32 bytes, so the role's usual `openssl rand -hex 32` would be rejected.
+- **Console-made values enter by hand.** The runbook gives one command that reads the value at a hidden prompt (`read -rs`) and writes the file under `umask 077`, run by the owner, never through Claude. The Tailscale OAuth client and the Cloudflare token (ADR 0020) use the same command. `apply-secrets` stops with an error if any file is missing.
+- **Rotating the client secret costs nothing.** Add a second secret to the Google client, write the file, run `apply-secrets`, restart `api` and `web`, then delete the old secret in the console.
+- **Rotating the cookie secret signs every User out.** oauth2-proxy accepts only one at a time. Replace the file, run `apply-secrets`, restart `api` and `web`. While the rollout runs, a request may get `401` if the pod that answers holds the other secret. Accepted: today that is two people signing in once.
+- **Losing the dev VM:** no second copy of the client secret exists, because Google shows it only once. Recovery is making a new secret in the console, about two minutes. The cookie secret is generated again, and every User signs in again.
+- **Retiring `api-token`:** the build PR that replaces the nginx sidecar deletes `show-token`, `qrencode`, the `api-token` generation and runbook rows, and the cluster's `api-token` Secret (`kubectl delete`, because `apply-secrets` only adds Secrets). It lands only after the smoke Job has the credential decided in [Auth in CI, tests and the smoke Job](https://github.com/bhh1893/health-tracker/issues/139).
+- **Verify at build:** a Google web client can have two secrets enabled at once; Google shows a new client secret only once; oauth2-proxy accepts the `dev.yml` cookie secret.
+- **Considered:** keeping the client ID in the secrets file (rejected: nobody can review it, and it treats a public value as a secret); two Secrets (rejected: both sidecars need both values); a copy of the client secret in a password manager (rejected: a second place to keep in sync, to save two minutes after a rare loss).
 
 ## Considered Options
 
