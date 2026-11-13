@@ -40,6 +40,10 @@ Append-only (rows are only ever inserted): `id`, `user_id` (FK `users`), `from_r
 - Every subcommand that writes prints the row before and after and asks `y/N`.
 - Deleting a User and their data is out of scope for v1.
 
+### The query command (amended)
+
+`iac/scripts/query <day>` ("query by Day with one command") uses the same mechanism: `kubectl exec` runs `python -m health_api.query` in the `api` pod, as the seeded User (the owner's account after `claim-seeded`), reusing `api`'s own query code. No credential and no new path through the proxy: `kubectl` access is already full admin. Decided in [Auth in CI, tests and the smoke Job](https://github.com/bhh1893/health-tracker/issues/139).
+
 ## Considered Options
 
 - **Key on email.** Rejected: addresses change and get recycled. The OIDC spec says to key on `sub`.

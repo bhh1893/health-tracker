@@ -347,9 +347,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Native sidecar**: an init container with `restartPolicy: Always`; it keeps running, starts before the app containers and stops after them.
 - **Startup probe**: a check that holds off liveness until it first passes, so a slow boot is not mistaken for a hang.
 - **Argo CD hook**: an annotated resource Argo CD runs at a fixed point in a sync, such as `PreSync`, instead of treating it as ordinary desired state.
-- **`kubeconform`**: checks rendered manifests against the Kubernetes API schemas without needing a cluster.
 - **`readOnlyRootFilesystem`**: a container security setting that makes the image's files unwritable, so anything written at runtime needs a mounted volume.
-- **Smoke test**: a short check against the real deployed system that its main path works at all, run right after a deploy.
 - **Resource finalizer (Argo CD)**: a marker on an `Application` that makes deleting it also delete everything it deployed; left off here so the app survives.
 - **Router factory**: a function that builds a FastAPI `APIRouter` from parameters, so several resources with the same rules share one implementation.
 - **`LEFT JOIN LATERAL`**: a join whose subquery can read the current outer row, so it runs once per row; `LEFT` keeps rows where it finds nothing.
@@ -483,3 +481,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Sliding vs fixed expiry**: sliding resets the expiry clock with each use (expires after N idle days); fixed counts from sign-in (expires N days later no matter what).
 - **ITP (Intelligent Tracking Prevention)**: Safari's rules that delete or cap stored site data to limit tracking, e.g. a 7-day cap on storage that page JavaScript writes.
 - **Cookie secret**: the key oauth2-proxy uses to encrypt and sign session cookies; whoever holds it can forge a session for any User.
+- **Projected ServiceAccount token**: a short-lived JWT Kubernetes mounts into a pod, signed by the cluster, proving "I am ServiceAccount X in namespace Y" to whoever accepts that audience.
+- **Workload identity**: a machine proving who it is with a credential its platform issues on the fly (like a projected ServiceAccount token) instead of a stored secret.
