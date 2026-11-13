@@ -31,21 +31,23 @@ Nothing is served without a session, not even the `web` bundle. oauth2-proxy rep
 
 ### Identity into `api`
 
-- **Trusted headers.** The proxy sets headers carrying the issuer, `sub` and `name` (oauth2-proxy alpha config `injectRequestHeaders`) and overwrites any copies the client sent. No token reaches `api`.
+- **Trusted headers.** The proxy sets headers carrying the issuer, `sub`, `name` and `email` (oauth2-proxy alpha config `injectRequestHeaders`; `email` added by ADR 0022) and overwrites any copies the client sent. No token reaches `api`.
 - **Key:** Users are keyed by `(issuer, sub)`. `sub` is unique only within one provider, and this design has already changed provider once.
 - **`current_user` dependency** runs on every request:
   - Identity headers missing: `401`. There is no fallback to the seeded User. In production `api` cannot be reached without the proxy, so this only fires if a later change opens another way in.
   - Unknown `(issuer, sub)`: insert a Pending User with `INSERT ... ON CONFLICT DO NOTHING`, so two simultaneous first requests are safe. This insert is Sign-up.
   - Pending, on any route but `GET /api/me`: `403` Problem, type `urn:health-tracker:problem:pending-approval`.
   - Otherwise: the User's internal UUID. Every existing query stays scoped exactly as before (ADR 0002).
-- The table shape, Roles and the approval command are decided in [Users, Roles and the approval command](https://github.com/bhh1893/health-tracker/issues/125).
+- The table shape, Roles and the approval command are decided in [Users, Roles and the approval command](https://github.com/bhh1893/health-tracker/issues/125) (ADR 0022).
 
 ### Session
 
 - **Stored in the cookie**, encrypted with the cookie secret (oauth2-proxy's default). There is no server-side state to run, back up or restore. A large Google ID token can push it past 4 KB, in which case oauth2-proxy splits it across several cookies.
 - **Cookie:** `__Host-health_session`, `HttpOnly`, `Secure`, `SameSite=Lax`. The `__Host-` prefix makes the browser enforce `Secure`, `Path=/` and no `Domain` attribute.
 - **CSRF:** `SameSite=Lax` keeps the cookie off cross-site `PUT`/`DELETE`, and `api` sends no CORS headers, so other origins cannot make credentialed writes.
-- Lifetime and refresh are decided in Session lifetime on the phone.
+- **Lifetime: fixed 30 days from sign-in** (`--cookie-expire=720h`), with `--cookie-refresh` off (its default). oauth2-proxy accepts the cookie while its signed sign-in time is within `cookie-expire`; it does not check the Google ID token's 1-hour expiry when refresh is off. No request ever calls Google after sign-in, so a Google outage blocks only new sign-ins. Decided in [Session lifetime on the phone](https://github.com/bhh1893/health-tracker/issues/136).
+- **Expiry is rare enough** for the full-page reload on `401` to stay accepted: once every 30 days, usually on opening the app rather than mid-form. No draft saving in v1.
+- **iOS ITP does not apply.** Its 7-day cap covers storage that page JavaScript writes, not a server-set `HttpOnly` cookie, and Home Screen web apps are exempt from it anyway.
 
 ## Considered Options
 
@@ -58,14 +60,17 @@ Nothing is served without a session, not even the `web` bundle. oauth2-proxy rep
 - **Auto-redirect to Google with no Sign-in page.** Rejected: sign-out would still need its own page to stop an instant re-sign-in, so that is two rules where one does.
 - **The SPA runs the flow and holds tokens.** Rejected: any injected script could steal them, and Google web clients need the secret on the server anyway.
 - **`OWNER_EMAIL` setting or first-sign-in-wins for the seeded User.** Rejected: the first puts an email in a public repo's config and adds a code path that runs once; the second hands the owner's history to whoever signs in first.
+- **Sliding lifetime with `--cookie-refresh=1h`.** The cookie would extend with use and each refresh would re-check the account with Google. Rejected: the `oidc` provider does not send `access_type=offline`, so Google issues no refresh token and every sign-in session would end after 1 hour. Fixing that needs oauth2-proxy's unstable alpha config (`loginURLParameters`) plus `prompt=consent`, which shows a consent screen at every sign-in, all to save one sign-in a month. The per-request Role check in `api` already handles revocation.
+- **Longer fixed lifetime (90 days).** Rejected: fewer sign-ins, but a stolen cookie works three times as long.
 - **Consent screen in Testing mode.** Rejected: a hand-kept allowlist that repeats Approval.
 
 ## Consequences
 
 - **Amends ADR 0006:** `401` now comes from oauth2-proxy as a plain response, not `application/problem+json`, and without `WWW-Authenticate: Bearer`. `403` with type `pending-approval` is added. Identity is still implicit ("/me"), now resolved from proxy headers instead of the seeded User.
 - **Amends ADR 0010:** the nginx sidecar, its token check and its health port are gone. `web` gets a sidecar too and binds `127.0.0.1`. ADR 0010's planned swap happens with no `HTTPRoute` changes.
-- **Amends ADR 0015:** `api-token` and `show-token` are retired. The Google client secret and the cookie secret replace them; where they are generated and stored is decided in a follow-up ticket.
+- **Amends ADR 0015:** `api-token` and `show-token` are retired. The Google client secret and the cookie secret replace them, as one `auth-proxy` Secret; how they are made, applied and rotated is in ADR 0015's Auth secrets section.
 - Every pod carries a second container; two proxies use more memory than one. Accepted.
-- A stolen cookie works until it expires. Rotating the cookie secret signs out every User at once.
-- How integration tests, Schemathesis and the smoke Job present an identity is decided in a follow-up ticket. Tests that skip the proxy must set the headers themselves.
-- **Verify at build:** client-sent identity headers are overwritten, not passed through; the `name` claim reaches `api` as a header; both sidecars accept one session; `/oauth2/callback` reaches the `web` sidecar; the `api` sidecar answers `/api/*` with `401`, never a redirect; probes pass with both backends on `127.0.0.1`.
+- Every User signs in again every 30 days; signing out of Google or removing the app's access in the Google account does not end an existing sign-in session.
+- A stolen cookie works until it expires (up to 30 days). Rotating the cookie secret signs out every User at once.
+- Tests set the identity headers themselves; the smoke Job uses no credential and checks only the auth boundary. Decided in [Auth in CI, tests and the smoke Job](https://github.com/bhh1893/health-tracker/issues/139), recorded in ADR 0014.
+- **Verify at build:** client-sent identity headers are overwritten, not passed through; the `name` and `email` claims reach `api` as headers; both sidecars accept one session; `/oauth2/callback` reaches the `web` sidecar; the `api` sidecar answers `/api/*` with `401`, never a redirect; probes pass with both backends on `127.0.0.1`; a sign-in session older than 1 hour is still accepted, and one older than 30 days goes to sign-in; a signed-in request with forged `sub` headers still resolves to the signed-in User (ADR 0014).
