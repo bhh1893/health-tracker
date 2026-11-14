@@ -483,3 +483,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Cookie secret**: the key oauth2-proxy uses to encrypt and sign session cookies; whoever holds it can forge a session for any User.
 - **Projected ServiceAccount token**: a short-lived JWT Kubernetes mounts into a pod, signed by the cluster, proving "I am ServiceAccount X in namespace Y" to whoever accepts that audience.
 - **Workload identity**: a machine proving who it is with a credential its platform issues on the fly (like a projected ServiceAccount token) instead of a stored secret.
+- **Envoy**: an open-source L7 proxy; Cilium runs it to serve Gateway API resources, matching `HTTPRoute`s and forwarding to pods.
+- **EndpointSlice**: the list Kubernetes keeps of a Service's ready pod IPs; a pod failing readiness drops out of it.
+- **TLS termination**: the point where encrypted traffic is decrypted; past it, a proxy can read paths and headers.
+- **OAuth `state` parameter**: a random value the client stores in a cookie and sends to the IdP; the callback must return it unchanged, proving the sign-in was started here.
