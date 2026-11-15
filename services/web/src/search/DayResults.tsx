@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useRef } from "react";
 import { Button } from "react-aria-components";
 
 import { ProblemAlert } from "../components/ProblemAlert";
+import { useDayTotals } from "../nutrition/queries";
 import { DayRow } from "./DayRow";
 import { useSearchDays } from "./queries";
 import type { SearchQuery } from "./searchQuery";
@@ -45,15 +46,26 @@ function LoadMore({ onShow }: { onShow: () => void }) {
 export function DayResults({ query }: { query: SearchQuery }) {
   const { days, error, isLoading, hasMore, showMore, retry } =
     useSearchDays(query);
+  // One summary request for the range, beside the paged Entries: the server owns the
+  // Restaurant Day and Incomplete Day rules (ADR 0023). An Exercise question reads
+  // no Meals, so it has no totals to show.
+  const totals = useDayTotals(query.from, query.to, query.what !== "exercise");
+  const totalOf = new Map(totals.data?.map((total) => [total.day, total]));
 
   return (
     <section aria-label="Results" className="flex flex-col gap-2">
       {days.map((result) => (
-        <DayRow key={result.day} result={result} />
+        <DayRow
+          key={result.day}
+          result={result}
+          total={result.meals.length > 0 ? totalOf.get(result.day) : undefined}
+        />
       ))}
       {!isLoading && !hasMore && error === null && days.length === 0 && (
         <p className="text-gray-500">Nothing logged in this range.</p>
       )}
+      {/* The rows are still right without totals, so this failure does not replace them. */}
+      {totals.error !== null && <ProblemAlert error={totals.error} />}
       {error !== null && (
         <>
           <ProblemAlert error={error} />

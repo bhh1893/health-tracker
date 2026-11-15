@@ -7,6 +7,7 @@ import {
   toRfc3339,
   withClockTime,
 } from "../lib/occurred";
+import { UNKNOWN_TOTAL } from "../nutrition/totals";
 
 export type FoodsMeal = components["schemas"]["FoodsMeal"];
 export type RestaurantMeal = components["schemas"]["RestaurantMeal"];
@@ -146,7 +147,7 @@ export function buildMeal(input: BuildMeal): Meal | null {
     }
     food_entries.push({ ...entry, quantity });
   }
-  return { ...shared, kind: "foods", food_entries };
+  return { ...shared, kind: "foods", food_entries, total: UNKNOWN_TOTAL };
 }
 
 // The request body. Reads embed whole Catalog refs; writes send only their ids.
