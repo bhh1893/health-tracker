@@ -248,6 +248,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reference-foods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggest Reference Foods
+         * @description Suggest Reference Foods matching q, to copy Nutrition into a Food.
+         */
+        get: operations["suggest_reference_foods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/restaurants": {
         parameters: {
             query?: never;
@@ -659,6 +679,22 @@ export interface components {
              * Format: uuid
              */
             restaurant_id: string;
+        };
+        /**
+         * ReferenceFood
+         * @description Shaped like a Food's own fields, so "Fill from reference" copies them straight across.
+         */
+        ReferenceFood: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            nutrition: components["schemas"]["Nutrition"];
+            /** Piece G */
+            piece_g?: number | null;
         };
         /** RestaurantMeal */
         RestaurantMeal: {
@@ -1809,6 +1845,47 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    suggest_reference_foods: {
+        parameters: {
+            query?: {
+                q?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceFood"][];
+                };
             };
             /** @description Validation Error */
             422: {

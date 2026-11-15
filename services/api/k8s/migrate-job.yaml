@@ -1,5 +1,6 @@
-# Runs `alembic upgrade head` before each deploy (ADR 0016). If it fails, Argo CD stops
-# the sync and the old `api` keeps serving. The fixed name and BeforeHookCreation mean
+# Runs `alembic upgrade head`, then loads the Reference Foods CSV, before each deploy
+# (ADR 0016, ADR 0023). If either fails, Argo CD stops the sync and the old `api` keeps
+# serving. The fixed name and BeforeHookCreation mean
 # one Job at a time: Argo CD deletes the last run just before starting the next.
 apiVersion: batch/v1
 kind: Job
@@ -28,9 +29,15 @@ spec:
       containers:
         - name: migrate
           image: ghcr.io/bhh1893/health-tracker-api
-          command: ["alembic", "upgrade", "head"]
+          # A shell only for `&&`: the load must not run against a schema that failed to
+          # migrate. `exec` hands the container over to Python, so its exit code is the Job's.
+          command:
+            - sh
+            - -c
+            - alembic upgrade head && exec python -m health_api.reference_foods
           env:
-            # db-owner, not db-api: only this role may change tables (ADR 0015).
+            # db-owner, not db-api: only this role may change tables, or write to
+            # reference_foods (ADR 0015, ADR 0023).
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

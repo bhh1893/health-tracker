@@ -16,6 +16,7 @@ from health_api.problems import (
     document_problem_media_type,
     register_problem_handlers,
 )
+from health_api.reference_foods import reference_foods_router
 
 
 @asynccontextmanager
@@ -39,5 +40,6 @@ def create_app() -> FastAPI:
     app.include_router(meals_router(), responses=DATABASE_UNAVAILABLE)
     app.include_router(exercise_entries_router(), responses=DATABASE_UNAVAILABLE)
     app.include_router(me_router(), responses=DATABASE_UNAVAILABLE)
+    app.include_router(reference_foods_router(), responses=DATABASE_UNAVAILABLE)
     document_problem_media_type(app)
     return app

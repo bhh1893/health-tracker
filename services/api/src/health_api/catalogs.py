@@ -207,6 +207,27 @@ def load_item(session: Session, catalog: Catalog, user: UUID, item_id: UUID) -> 
     return items[0]
 
 
+def name_search(session: Session, query: str, name: str) -> tuple[str, str, dict[str, str]]:
+    """How every typeahead matches and ranks typed text against the SQL column `name`.
+
+    Returns the WHERE term, the ORDER BY terms and their parameters: prefix matches first,
+    then the closest fuzzy matches, then by name.
+    """
+    # A typed % or _ means itself. Unescaped, "%" would match the whole Catalog.
+    escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    prefix = rf"lower({name}) LIKE lower(:prefix) ESCAPE '\'"
+    match = prefix
+    if len(query) >= MIN_FUZZY_QUERY_LENGTH:
+        # The operator, not word_similarity() >= 0.4: only an operator can use the GIN index,
+        # and it reads its threshold from this setting. LOCAL ends with the transaction.
+        session.execute(
+            text(f"SET LOCAL pg_trgm.word_similarity_threshold = {WORD_SIMILARITY_THRESHOLD}")
+        )
+        match = f"({prefix} OR lower(:q) <% lower({name}))"
+    order = f"{prefix} DESC, word_similarity(lower(:q), lower({name})) DESC, lower({name})"
+    return match, order, {"q": query, "prefix": f"{escaped}%"}
+
+
 def suggest_items(
     session: Session, catalog: Catalog, user: UUID, q: str, limit: int, include_archived: bool
 ) -> list[CatalogRef]:
@@ -217,27 +238,9 @@ def suggest_items(
         order = "u.day DESC NULLS LAST, u.occurred_at DESC NULLS LAST, lower(c.name), c.id"
         return select_items(session, catalog, user, visible, order, limit)
 
-    # A typed % or _ means itself. Unescaped, "%" would match the whole Catalog.
-    escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-    prefix = r"lower(c.name) LIKE lower(:prefix) ESCAPE '\'"
-    match = prefix
-    if len(query) >= MIN_FUZZY_QUERY_LENGTH:
-        # The operator, not word_similarity() >= 0.4: only an operator can use the GIN index,
-        # and it reads its threshold from this setting. LOCAL ends with the transaction.
-        session.execute(
-            text(f"SET LOCAL pg_trgm.word_similarity_threshold = {WORD_SIMILARITY_THRESHOLD}")
-        )
-        match = f"({prefix} OR lower(:q) <% lower(c.name))"
-    order = f"{prefix} DESC, word_similarity(lower(:q), lower(c.name)) DESC, lower(c.name), c.id"
+    match, order, params = name_search(session, query, "c.name")
     return select_items(
-        session,
-        catalog,
-        user,
-        f"{visible} AND {match}",
-        order,
-        limit,
-        q=query,
-        prefix=f"{escaped}%",
+        session, catalog, user, f"{visible} AND {match}", f"{order}, c.id", limit, **params
     )
 
 

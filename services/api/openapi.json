@@ -843,6 +843,44 @@
         "title": "PutRestaurantMeal",
         "type": "object"
       },
+      "ReferenceFood": {
+        "description": "Shaped like a Food's own fields, so \"Fill from reference\" copies them straight across.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "pattern": "^[^\\x00]*$",
+            "title": "Name",
+            "type": "string"
+          },
+          "nutrition": {
+            "$ref": "#/components/schemas/Nutrition"
+          },
+          "piece_g": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1000000.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Piece G"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "nutrition"
+        ],
+        "title": "ReferenceFood",
+        "type": "object"
+      },
       "RestaurantMeal": {
         "properties": {
           "day": {
@@ -2616,6 +2654,78 @@
         "summary": "Put Meal",
         "tags": [
           "meals"
+        ]
+      }
+    },
+    "/api/v1/reference-foods": {
+      "get": {
+        "description": "Suggest Reference Foods matching q, to copy Nutrition into a Food.",
+        "operationId": "suggest_reference_foods",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "pattern": "^[^\\x00]*$",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReferenceFood"
+                  },
+                  "title": "Response Suggest Reference Foods",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The database is unavailable. Safe to retry."
+          }
+        },
+        "summary": "Suggest Reference Foods",
+        "tags": [
+          "reference-foods"
         ]
       }
     },
