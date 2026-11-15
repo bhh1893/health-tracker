@@ -502,3 +502,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Copy-on-pick**: picking a shared item copies its values into the User's own row, so later edits on either side never affect the other.
 - **Snapshot vs computed value**: a snapshot copies a value onto the row when it is written and never changes; a computed value is worked out from current data on every read, so corrections flow into history.
 - **`numeric`**: Postgres's exact decimal type; unlike `float`, `0.1 + 0.2` is exactly `0.3`, so sums of nutrition values do not drift.
+- **Multi-column CHECK**: a table-level CHECK that reads several columns of the row, for rules like "these five are all set or all null" that no single column can state.
+- **`num_nonnulls(...)`**: a Postgres function that counts how many of its arguments are not null; `IN (0, 5)` on five columns means all or nothing.
+- **CHECK and NULL**: a CHECK rejects a row only when it evaluates to false; null counts as a pass, so `kcal BETWEEN 0 AND 10000` allows a missing `kcal`.
+- **`REVOKE`**: removes a privilege granted earlier; here it narrows the default privileges for one table, so `api_rw` can read `reference_foods` but not write it.
+- **Fast default**: since Postgres 11, `ADD COLUMN ... DEFAULT <constant>` stores the default once in the catalog instead of rewriting every row, so it stays fast on a large table.
