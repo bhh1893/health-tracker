@@ -1,12 +1,9 @@
-import os
 import secrets
-import subprocess
-import sys
 from collections.abc import Iterator
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from migrate import alembic_upgrade, plain_url
 from sqlalchemy import URL, Engine, create_engine, text
 from sqlalchemy.orm import Session
 from testcontainers.community.postgres import PostgresContainer
@@ -14,13 +11,7 @@ from testcontainers.community.postgres import PostgresContainer
 from health_api.db import get_session
 from health_api.main import create_app
 
-SERVICE_DIR = Path(__file__).resolve().parents[1]
 POSTGRES_IMAGE = "postgres:18.6"
-
-
-def plain_url(url: URL) -> str:
-    """DATABASE_URL as the cluster's Secrets hold it: no driver name, real password."""
-    return url.set(drivername="postgresql").render_as_string(hide_password=False)
 
 
 @pytest.fixture(scope="session")
@@ -55,13 +46,7 @@ def role_urls(postgres: URL) -> dict[str, URL]:
 
 @pytest.fixture(scope="session")
 def migrated(role_urls: dict[str, URL]) -> None:
-    """Builds the schema the way the migration Job does: the real command, as `app`."""
-    subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
-        cwd=SERVICE_DIR,
-        env={**os.environ, "DATABASE_URL": plain_url(role_urls["app"])},
-        check=True,
-    )
+    alembic_upgrade(role_urls["app"])
 
 
 @pytest.fixture(scope="session")
@@ -88,6 +73,16 @@ def session(api_rw_engine: Engine) -> Iterator[Session]:
     with api_rw_engine.connect() as connection:
         transaction = connection.begin()
         with Session(connection, join_transaction_mode="create_savepoint") as test_session:
+            yield test_session
+        transaction.rollback()
+
+
+@pytest.fixture
+def owner_session(owner_engine: Engine) -> Iterator[Session]:
+    """`session`, but as the owner `app`: for tables api_rw may only read."""
+    with owner_engine.connect() as connection:
+        transaction = connection.begin()
+        with Session(connection) as test_session:
             yield test_session
         transaction.rollback()
 

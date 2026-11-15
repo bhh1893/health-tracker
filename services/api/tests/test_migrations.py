@@ -1,5 +1,6 @@
 import pytest
-from sqlalchemy import Engine, text
+from migrate import alembic_upgrade
+from sqlalchemy import URL, Engine, create_engine, text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
@@ -76,3 +77,23 @@ def test_each_test_starts_clean(session: Session, run: int) -> None:
     assert session.scalar(text("SELECT count(*) FROM users")) == 1
     session.execute(text("INSERT INTO users DEFAULT VALUES"))
     session.commit()
+
+
+def test_nutrition_migration_keeps_existing_rows(empty_database: dict[str, URL]) -> None:
+    """Rows from before 0003 survive it: Foods without Nutrition, Users at the default."""
+    alembic_upgrade(empty_database["app"], "0002")
+    owner = create_engine(empty_database["app"])
+    with owner.begin() as connection:
+        connection.execute(text("INSERT INTO foods (user_id, name) SELECT id, 'Rice' FROM users"))
+
+    alembic_upgrade(empty_database["app"])
+
+    with owner.connect() as connection:
+        food = connection.execute(
+            text("SELECT basis_g, kcal, protein_g, carbs_g, fat_g, piece_g FROM foods")
+        ).one()
+        restaurant_day_kcal = connection.scalar(text("SELECT restaurant_day_kcal FROM users"))
+    owner.dispose()
+
+    assert tuple(food) == (None,) * 6
+    assert restaurant_day_kcal == 5000

@@ -4,8 +4,9 @@ Each rejection names the constraint it expects, so a test cannot pass because so
 rule happened to fire first.
 """
 
+from decimal import Decimal
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import Engine, text
@@ -17,6 +18,7 @@ FOREIGN_KEY_VIOLATION = "23503"
 # ON DELETE RESTRICT has its own code, separate from the general foreign key one.
 RESTRICT_VIOLATION = "23001"
 UNIQUE_VIOLATION = "23505"
+NOT_NULL_VIOLATION = "23502"
 INSUFFICIENT_PRIVILEGE = "42501"
 
 WHEN = {"occurred_at": "2026-11-03T12:00:00+00:00", "occurred_tz": "UTC", "day": "2026-11-03"}
@@ -323,6 +325,7 @@ def test_api_rw_cannot_weaken_the_schema(api_rw_engine: Engine, statement: str) 
         ("foods_name_trgm", "gin (lower(name) gin_trgm_ops)"),
         ("exercises_name_trgm", "gin (lower(name) gin_trgm_ops)"),
         ("restaurants_name_trgm", "gin (lower(name) gin_trgm_ops)"),
+        ("reference_foods_name_trgm", "gin (lower(name) gin_trgm_ops)"),
     ],
 )
 def test_adr_0012_indexes_exist(session: Session, index: str, definition: str) -> None:
@@ -332,3 +335,155 @@ def test_adr_0012_indexes_exist(session: Session, index: str, definition: str) -
 
     assert created is not None
     assert created.endswith(definition)
+
+
+# Nutrition (ADR 0023)
+
+COLUMNS = ("basis_g", "kcal", "protein_g", "carbs_g", "fat_g", "piece_g")
+# A label's "per 60 g serving: 250 kcal", stored as typed.
+LABEL = {"basis_g": 60, "kcal": 250, "protein_g": 5, "carbs_g": 40, "fat_g": 8}
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        {},
+        LABEL,
+        {"piece_g": 50},
+        {**LABEL, "piece_g": 50},
+        # The bounds are inclusive: a pure-fat food, and the calorie ceiling.
+        {**LABEL, "kcal": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 60},
+        {**LABEL, "kcal": 10000},
+    ],
+)
+def test_food_nutrition_is_all_or_nothing_and_piece_weight_is_free(
+    session: Session, user: UUID, values: dict[str, Any]
+) -> None:
+    food = insert(session, "foods", user_id=user, name="Granola", **values)
+
+    stored = session.execute(
+        text(f"SELECT {', '.join(COLUMNS)} FROM foods WHERE id = :id"), {"id": food}
+    ).one()
+    assert tuple(stored) == tuple(values.get(column) for column in COLUMNS)
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        {"kcal": 250},
+        {key: value for key, value in LABEL.items() if key != "fat_g"},
+        {key: value for key, value in LABEL.items() if key != "basis_g"},
+    ],
+)
+def test_partial_food_nutrition_is_rejected(
+    session: Session, user: UUID, values: dict[str, Any]
+) -> None:
+    with pytest.raises(IntegrityError) as caught:
+        insert(session, "foods", user_id=user, name="Granola", **values)
+
+    assert_rejected(caught, CHECK_VIOLATION, "foods_nutrition_all_or_nothing")
+
+
+OUT_OF_BOUNDS = [
+    ({"basis_g": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0}, "basis_g_positive"),
+    ({"kcal": -1}, "kcal_range"),
+    ({"kcal": 10001}, "kcal_range"),
+    ({"protein_g": -1}, "protein_g_range"),
+    ({"protein_g": 61}, "protein_g_range"),
+    ({"carbs_g": 60.5}, "carbs_g_range"),
+    ({"fat_g": -0.1}, "fat_g_range"),
+    ({"piece_g": 0}, "piece_g_positive"),
+]
+
+
+@pytest.mark.parametrize(("values", "constraint"), OUT_OF_BOUNDS)
+def test_food_nutrition_bounds(
+    session: Session, user: UUID, values: dict[str, Any], constraint: str
+) -> None:
+    with pytest.raises(IntegrityError) as caught:
+        insert(session, "foods", user_id=user, name="Granola", **{**LABEL, **values})
+
+    assert_rejected(caught, CHECK_VIOLATION, f"foods_{constraint}")
+
+
+def test_numeric_keeps_label_values_exact(session: Session, user: UUID) -> None:
+    """With float8 this sum is 0.30000000000000004 g; numeric stores the decimals as typed."""
+    insert(
+        session,
+        "foods",
+        user_id=user,
+        name="Broth",
+        **{**LABEL, "protein_g": 0.1, "carbs_g": 0.2},
+    )
+
+    assert session.scalar(text("SELECT protein_g + carbs_g FROM foods")) == Decimal("0.3")
+
+
+def test_restaurant_day_kcal_defaults_to_5000(session: Session, user: UUID) -> None:
+    kcal = session.scalar(
+        text("SELECT restaurant_day_kcal FROM users WHERE id = :id"), {"id": user}
+    )
+
+    assert kcal == 5000
+
+
+@pytest.mark.parametrize("kcal", [-1, 10001])
+def test_restaurant_day_kcal_bounds(session: Session, user: UUID, kcal: int) -> None:
+    with pytest.raises(IntegrityError) as caught:
+        session.execute(
+            text("UPDATE users SET restaurant_day_kcal = :kcal WHERE id = :id"),
+            {"kcal": kcal, "id": user},
+        )
+
+    assert_rejected(caught, CHECK_VIOLATION, "users_restaurant_day_kcal_range")
+
+
+def reference_food(session: Session, **values: Any) -> UUID:
+    return insert(session, "reference_foods", id=uuid4(), name="Oats", **{**LABEL, **values})
+
+
+def test_owner_can_load_a_reference_food(owner_session: Session) -> None:
+    reference_food(owner_session, piece_g=None)
+
+    assert owner_session.scalar(text("SELECT count(*) FROM reference_foods")) == 1
+
+
+@pytest.mark.parametrize("column", ["basis_g", "kcal", "protein_g", "carbs_g", "fat_g"])
+def test_reference_food_requires_nutrition(owner_session: Session, column: str) -> None:
+    with pytest.raises(IntegrityError) as caught:
+        reference_food(owner_session, **{column: None})
+
+    error: Any = caught.value.orig
+    assert (error.sqlstate, error.diag.column_name) == (NOT_NULL_VIOLATION, column)
+
+
+@pytest.mark.parametrize(("values", "constraint"), OUT_OF_BOUNDS)
+def test_reference_food_nutrition_bounds(
+    owner_session: Session, values: dict[str, Any], constraint: str
+) -> None:
+    with pytest.raises(IntegrityError) as caught:
+        reference_food(owner_session, **values)
+
+    assert_rejected(caught, CHECK_VIOLATION, f"reference_foods_{constraint}")
+
+
+def test_api_rw_can_read_reference_foods(session: Session) -> None:
+    assert session.scalar(text("SELECT count(*) FROM reference_foods")) == 0
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "INSERT INTO reference_foods (id, name, basis_g, kcal, protein_g, carbs_g, fat_g) "
+        "VALUES (uuidv7(), 'Oats', 100, 380, 13, 60, 7)",
+        "UPDATE reference_foods SET kcal = 0",
+        "DELETE FROM reference_foods",
+        "TRUNCATE reference_foods",
+    ],
+)
+def test_api_rw_cannot_write_reference_foods(api_rw_engine: Engine, statement: str) -> None:
+    """Checked before any row is touched, so an empty table still proves it."""
+    with api_rw_engine.connect() as connection, pytest.raises(ProgrammingError) as caught:
+        connection.execute(text(statement))
+
+    assert getattr(caught.value.orig, "sqlstate", None) == INSUFFICIENT_PRIVILEGE
