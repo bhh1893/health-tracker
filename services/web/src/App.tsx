@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { lazy, Suspense, useSyncExternalStore } from "react";
 import { Link, Navigate, Route, Routes } from "react-router";
 
 import { getAuthState, subscribe } from "./auth/token";
@@ -7,6 +7,10 @@ import { EnterSecret } from "./screens/EnterSecret";
 import { MealsWindow } from "./meals/MealsWindow";
 import { SearchScreen } from "./search/SearchScreen";
 import { WindowLayout } from "./screens/WindowLayout";
+
+// Loaded on first visit, not with the app: the chart library is larger than the rest
+// of the bundle, and the daily logging screens never need it (ADR 0024).
+const DashboardsScreen = lazy(() => import("./dashboards/DashboardsScreen"));
 
 function NotFound() {
   return (
@@ -36,6 +40,20 @@ export function App() {
         <Route path="/meals" element={<MealsWindow />} />
       </Route>
       <Route path="/search" element={<SearchScreen />} />
+      <Route
+        path="/dashboards"
+        element={
+          <Suspense
+            fallback={
+              <p role="status" className="p-4 text-gray-500">
+                Loading...
+              </p>
+            }
+          >
+            <DashboardsScreen />
+          </Suspense>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

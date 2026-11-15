@@ -10,6 +10,7 @@ import { Link, useLocation, useSearchParams } from "react-router";
 import { CatalogComboBox } from "../catalog/CatalogComboBox";
 import { exerciseCatalog, foodCatalog } from "../catalog/catalogs";
 import { fieldClass, labelClass } from "../components/formStyles";
+import { backTarget } from "../lib/backTarget";
 import { useToday } from "../lib/useToday";
 import { DayResults } from "./DayResults";
 import { LastSessions } from "./LastSessions";
@@ -44,19 +45,6 @@ const VIEWS = [
 ] as const satisfies readonly { id: View; label: string }[];
 
 const stepClass = "px-4 text-2xl text-teal-700 data-disabled:text-gray-300";
-
-// The window the user came from, passed by the search icon's link.
-function backTarget(state: unknown) {
-  if (
-    typeof state === "object" &&
-    state !== null &&
-    "back" in state &&
-    typeof state.back === "string"
-  ) {
-    return state.back;
-  }
-  return "/exercise";
-}
 
 interface DayFieldProps {
   label: string;
