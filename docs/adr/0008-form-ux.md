@@ -6,6 +6,8 @@ status: accepted
 
 `web` (ADR 0007) has two windows, **Exercise** and **Meals**, each a feed of the Day's Sessions or Meals; every add or edit opens a bottom sheet over the feed. It is styled with Tailwind CSS and built on React Aria Components, which supply the accessible combobox, dialogs and keyboard behaviour while we own the look. Chosen from four clickable variants on a phone ([Form UX prototype](https://github.com/bhh1893/health-tracker/issues/14), branch `prototype/form-ux`, Variant D). The feed won because the most common action, logging the next Set, is one tap from what is already on screen.
 
+**Amended by ADR 0023:** a new Food sheet (Nutrition, Piece Weight, fill from Reference Foods), opened from a Food Entry in the Meal sheet or the Incomplete badge, and a Day total in the Meals window header.
+
 ## Shape
 
 - **Windows:** a segmented control switches Exercise and Meals. Both show the Day being viewed (today in v1). Restaurant is a mode inside the Meal sheet, not a third window: a Restaurant Meal is still a Meal.

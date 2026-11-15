@@ -56,6 +56,36 @@ _Avoid_: Place, venue
 A Catalog item hidden from suggestions because the user no longer wants it offered, while past Entries that refer to it keep showing it.
 _Avoid_: Deleted, removed
 
+## Nutrition
+
+**Nutrition**:
+A Food's calories, protein, carbs and fat for its Basis. Optional, but all four or none.
+_Avoid_: Macros (excludes calories), nutrition facts
+
+**Basis**:
+The amount in grams that a Food's Nutrition describes, as printed on its label (often 100 g or one serving).
+_Avoid_: Serving size, portion
+
+**Piece Weight**:
+The grams in one item of a Food, which turns a count into grams.
+_Avoid_: Unit weight, serving
+
+**Reference Food**:
+A Food-like item in a list the owner curates, used only to copy Nutrition and Piece Weight into a User's own Food. Never logged directly, never owned by a User.
+_Avoid_: Shared Food, public Food, template
+
+**Day Total**:
+The calories and macros of a Day, summed from its Food Entries using each Food's current Nutrition. Never stored.
+_Avoid_: Daily intake, summary
+
+**Restaurant Day**:
+A Day with at least one Restaurant Meal. Its calories are the User's flat Restaurant Day value whatever else was logged, and its macros are unknown.
+_Avoid_: Cheat day, off-plan day
+
+**Incomplete Day**:
+A Day whose total leaves out some Food Entries, because their Food has no Nutrition or a counted Food has no Piece Weight. A Restaurant Day is never incomplete.
+_Avoid_: Partial day, missing day
+
 ## People
 
 **User**:

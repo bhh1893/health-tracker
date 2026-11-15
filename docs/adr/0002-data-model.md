@@ -6,6 +6,8 @@ status: accepted
 
 Postgres holds one row per fact, owned by a user, with the database (not only the API) rejecting cross-user links and malformed Meals. Anything derivable (Meal number, Set number, Session, a Food's default unit) is computed at read time, never stored. v1 has one user, but adding a `user_id` and same-owner constraints later would mean backfilling every table and auditing every query, so we pay for it now.
 
+**Amended by ADR 0023:** `foods` gains optional Nutrition columns and `piece_g`; `users` gains `restaurant_day_kcal`; `reference_foods` is the one table with no `user_id` (read-only to `api`, never referenced by a foreign key).
+
 ## Shape
 
 - Tables: `users`; one table per Catalog (`foods`, `exercises`, `restaurants`); `meals`; `food_entries`; `exercise_entries`. No `sessions` table.
