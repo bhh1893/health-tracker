@@ -191,6 +191,29 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "nutrition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Nutrition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "piece_g": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1000000.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Piece G"
           }
         },
         "required": [
@@ -301,6 +324,19 @@
         "title": "HealthStatus",
         "type": "object"
       },
+      "Me": {
+        "properties": {
+          "restaurant_day_kcal": {
+            "title": "Restaurant Day Kcal",
+            "type": "number"
+          }
+        },
+        "required": [
+          "restaurant_day_kcal"
+        ],
+        "title": "Me",
+        "type": "object"
+      },
       "MealPage": {
         "properties": {
           "items": {
@@ -343,6 +379,107 @@
         "title": "MealPage",
         "type": "object"
       },
+      "Nutrition": {
+        "additionalProperties": false,
+        "description": "What a label prints: calories and macros for a Basis amount in grams (ADR 0023).\n\nOne object, not five fields on the Food: the five are all set or all absent, and a\nnullable object says that in the schema itself. A partial one fails as a missing field.",
+        "properties": {
+          "basis_g": {
+            "maximum": 1000000.0,
+            "minimum": 0.001,
+            "title": "Basis G",
+            "type": "number"
+          },
+          "carbs_g": {
+            "minimum": 0.0,
+            "title": "Carbs G",
+            "type": "number"
+          },
+          "fat_g": {
+            "minimum": 0.0,
+            "title": "Fat G",
+            "type": "number"
+          },
+          "kcal": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Kcal",
+            "type": "number"
+          },
+          "protein_g": {
+            "minimum": 0.0,
+            "title": "Protein G",
+            "type": "number"
+          }
+        },
+        "required": [
+          "basis_g",
+          "kcal",
+          "protein_g",
+          "carbs_g",
+          "fat_g"
+        ],
+        "title": "Nutrition",
+        "type": "object"
+      },
+      "PatchFood": {
+        "additionalProperties": false,
+        "properties": {
+          "allow_similar": {
+            "default": false,
+            "title": "Allow Similar",
+            "type": "boolean"
+          },
+          "archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "nutrition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Nutrition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "piece_g": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1000000.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Piece G"
+          }
+        },
+        "title": "PatchFood",
+        "type": "object"
+      },
       "PatchItem": {
         "additionalProperties": false,
         "properties": {
@@ -377,6 +514,26 @@
           }
         },
         "title": "PatchItem",
+        "type": "object"
+      },
+      "PatchMe": {
+        "additionalProperties": false,
+        "properties": {
+          "restaurant_day_kcal": {
+            "anyOf": [
+              {
+                "maximum": 10000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restaurant Day Kcal"
+          }
+        },
+        "title": "PatchMe",
         "type": "object"
       },
       "Problem": {
@@ -495,6 +652,50 @@
           "reps"
         ],
         "title": "PutExerciseEntry",
+        "type": "object"
+      },
+      "PutFood": {
+        "additionalProperties": false,
+        "properties": {
+          "allow_similar": {
+            "default": false,
+            "title": "Allow Similar",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "nutrition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Nutrition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "piece_g": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 1000000.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Piece G"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PutFood",
         "type": "object"
       },
       "PutFoodEntry": {
@@ -738,6 +939,98 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/me": {
+      "get": {
+        "description": "Read the calling User's settings.",
+        "operationId": "get_me",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The database is unavailable. Safe to retry."
+          }
+        },
+        "summary": "Get Me",
+        "tags": [
+          "me"
+        ]
+      },
+      "patch": {
+        "description": "Change the calling User's settings, such as the Restaurant Day calories.",
+        "operationId": "patch_me",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchMe"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The body could not be read as JSON text."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The database is unavailable. Safe to retry."
+          }
+        },
+        "summary": "Patch Me",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/api/v1/exercise-entries": {
       "get": {
         "description": "List Exercise Entries newest first, by Day range and Exercise, paged.",
@@ -1429,7 +1722,7 @@
             "description": "The database is unavailable. Safe to retry."
           }
         },
-        "summary": "Patch Item",
+        "summary": "Patch",
         "tags": [
           "exercises"
         ]
@@ -1531,7 +1824,7 @@
             "description": "The database is unavailable. Safe to retry."
           }
         },
-        "summary": "Put Item",
+        "summary": "Put",
         "tags": [
           "exercises"
         ]
@@ -1738,7 +2031,7 @@
         ]
       },
       "patch": {
-        "description": "Rename, archive or unarchive a Food.",
+        "description": "Rename, archive or unarchive a Food, or set its Nutrition and Piece Weight.",
         "operationId": "patch_food",
         "parameters": [
           {
@@ -1756,7 +2049,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchItem"
+                "$ref": "#/components/schemas/PatchFood"
               }
             }
           },
@@ -1824,13 +2117,13 @@
             "description": "The database is unavailable. Safe to retry."
           }
         },
-        "summary": "Patch Item",
+        "summary": "Patch",
         "tags": [
           "foods"
         ]
       },
       "put": {
-        "description": "Create a Food at a client-generated UUIDv7, or replace its name.",
+        "description": "Create a Food at a client-generated UUIDv7, or replace the whole Food.",
         "operationId": "put_food",
         "parameters": [
           {
@@ -1848,7 +2141,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PutItem"
+                "$ref": "#/components/schemas/PutFood"
               }
             }
           },
@@ -1926,7 +2219,7 @@
             "description": "The database is unavailable. Safe to retry."
           }
         },
-        "summary": "Put Item",
+        "summary": "Put",
         "tags": [
           "foods"
         ]
@@ -2613,7 +2906,7 @@
             "description": "The database is unavailable. Safe to retry."
           }
         },
-        "summary": "Patch Item",
+        "summary": "Patch",
         "tags": [
           "restaurants"
         ]
@@ -2715,7 +3008,7 @@
             "description": "The database is unavailable. Safe to retry."
           }
         },
-        "summary": "Put Item",
+        "summary": "Put",
         "tags": [
           "restaurants"
         ]

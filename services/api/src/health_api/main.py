@@ -8,6 +8,7 @@ from health_api.catalogs import CATALOGS, catalog_router
 from health_api.db import create_db_engine
 from health_api.exercise_entries import exercise_entries_router
 from health_api.logs import configure_logging
+from health_api.me import me_router
 from health_api.meals import meals_router
 from health_api.migrations import image_revisions
 from health_api.problems import (
@@ -37,5 +38,6 @@ def create_app() -> FastAPI:
         app.include_router(catalog_router(catalog), responses=DATABASE_UNAVAILABLE)
     app.include_router(meals_router(), responses=DATABASE_UNAVAILABLE)
     app.include_router(exercise_entries_router(), responses=DATABASE_UNAVAILABLE)
+    app.include_router(me_router(), responses=DATABASE_UNAVAILABLE)
     document_problem_media_type(app)
     return app
