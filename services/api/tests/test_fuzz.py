@@ -30,6 +30,7 @@ RESTAURANT = "019a0000-0000-7000-8000-0000000000f3"
 FOODS_MEAL = "019a0000-0000-7000-8000-0000000000f4"
 RESTAURANT_MEAL = "019a0000-0000-7000-8000-0000000000f5"
 EXERCISE_ENTRY = "019a0000-0000-7000-8000-0000000000f6"
+NUTRITION = {"basis_g": 100, "kcal": 150, "protein_g": 10, "carbs_g": 20, "fat_g": 5}
 OCCURRED = {"occurred_at": "2026-01-01T12:00:00Z", "occurred_tz": "UTC"}
 
 REFERENCES = {"food_id": FOOD, "exercise_id": EXERCISE, "restaurant_id": RESTAURANT}
@@ -53,6 +54,20 @@ schemathesis.openapi.format(
 )
 
 
+def cap_macros(nutrition: Any) -> None:
+    """A macro above the Basis is refused, and random numbers are nearly always above it.
+
+    Capping them lets generated Nutrition reach the database.
+    """
+    basis = nutrition.get("basis_g") if isinstance(nutrition, dict) else None
+    if not isinstance(basis, int | float):
+        return
+    for macro in ("protein_g", "carbs_g", "fat_g"):
+        value = nutrition.get(macro)
+        if isinstance(value, int | float):
+            nutrition[macro] = min(value, basis)
+
+
 def make_realistic(value: Any, timezone: str) -> None:
     """Rewrite, in place and at any depth, the body fields only the server can validate."""
     if isinstance(value, list):
@@ -64,6 +79,8 @@ def make_realistic(value: Any, timezone: str) -> None:
                 value[key] = REFERENCES[key]
             elif key == "occurred_tz":
                 value[key] = timezone
+            elif key == "nutrition":
+                cap_macros(field)
             elif key == "occurred_at":
                 # Years run to 9999, and the future is refused. Early years stay: they are
                 # where timezone math overflows.
@@ -95,7 +112,7 @@ def flatmap_case(_: HookContext, case: Case[Any]) -> Any:
 def api_schema(committing_client: TestClient) -> BaseSchema:
     """The contract the running app serves, with one of everything already in the database."""
     for path, row_id, body in (
-        ("foods", FOOD, {"name": "Fuzz food"}),
+        ("foods", FOOD, {"name": "Fuzz food", "nutrition": NUTRITION, "piece_g": 50}),
         ("exercises", EXERCISE, {"name": "Fuzz exercise"}),
         ("restaurants", RESTAURANT, {"name": "Fuzz restaurant"}),
         (

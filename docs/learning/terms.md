@@ -507,3 +507,17 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **CHECK and NULL**: a CHECK rejects a row only when it evaluates to false; null counts as a pass, so `kcal BETWEEN 0 AND 10000` allows a missing `kcal`.
 - **`REVOKE`**: removes a privilege granted earlier; here it narrows the default privileges for one table, so `api_rw` can read `reference_foods` but not write it.
 - **Fast default**: since Postgres 11, `ADD COLUMN ... DEFAULT <constant>` stores the default once in the catalog instead of rewriting every row, so it stays fast on a large table.
+- **Additive API change**: adding an optional field, parameter or endpoint without changing what exists, so clients written for the old contract keep working with no new version.
+- **All-or-nothing group as a nullable object**: fields that must be all set or all absent are modelled as one object that is either present or `null`, so the schema itself rules out a half-filled group.
+- **Idempotent load**: a data load that can run any number of times and leaves the same rows as running it once, which makes it safe to run on every deploy.
+- **Upsert**: one statement that inserts a row or, if its key already exists, updates it (`INSERT ... ON CONFLICT ... DO UPDATE` in Postgres).
+- **`IS DISTINCT FROM`**: a comparison that treats null as an ordinary value, so `null IS DISTINCT FROM null` is false where `null <> null` is unknown; used to skip an update that would change nothing.
+- **`xmin`**: a hidden Postgres column holding the id of the transaction that last wrote the row; unchanged across a load proves the row was not rewritten.
+- **`GROUP BY`**: collapses rows that share a value (here a Day) into one row, with aggregates such as `sum()` computed over each group.
+- **`FILTER (WHERE ...)`**: restricts one aggregate to some of a group's rows, e.g. counting only the Entries that could not be counted, without a second query.
+- **Query plan (`EXPLAIN`)**: Postgres's chosen steps for running a query (which indexes, which joins); `EXPLAIN ANALYZE` also runs it and reports real row counts and times.
+- **Hash join**: joining two tables by building an in-memory lookup table from one and probing it with each row of the other; fast when one side is read whole anyway.
+- **Code splitting / lazy route**: shipping part of a web app as a separate file fetched only when its screen is first opened, so rarely used code does not slow the first load.
+- **Keyset walking by range**: reading a long history in pages by asking for "the rows before the oldest one I have", instead of an offset that shifts when rows are added.
+- **Zero baseline**: whether a chart's y axis starts at 0; right for amounts compared by size, wrong for measures read by their change, which it flattens.
+- **Secondary encoding**: showing a category by shape or label as well as color, so a chart still reads for colorblind readers and in grayscale.

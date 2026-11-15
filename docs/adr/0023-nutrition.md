@@ -12,7 +12,7 @@ A Food gains optional Nutrition: calories, protein, carbs and fat for a Basis am
 
 - New nullable columns on `foods`: `basis_g`, `kcal`, `protein_g`, `carbs_g`, `fat_g` (all `numeric`), and `piece_g`.
 - **All or nothing.** A CHECK requires the five Nutrition columns to be all null or all set. Piece Weight is independent.
-- **Bounds:** `basis_g > 0`; each macro between 0 and `basis_g`; `kcal` between 0 and 10,000; `piece_g > 0`.
+- **Bounds:** `basis_g > 0`; each macro between 0 and `basis_g`; `kcal` between 0 and 10,000; `piece_g > 0`. _Amended during the build ([#157](https://github.com/bhh1893/health-tracker/issues/157)): the API also asks for `basis_g >= 0.001` and caps `basis_g` and `piece_g` at 1,000,000. A total divides by the Basis, so a Basis near zero could exceed what a JSON number holds. The CHECKs are unchanged._
 - **Calories are stored, not derived** from 4/4/9 kcal per gram: labels do not follow that formula exactly (fibre, alcohol, rounding).
 - **Stored as typed.** A label reading "per 60 g serving: 250 kcal" is saved as `basis_g = 60, kcal = 250`, so reopening the Food shows the label's numbers. A Food Entry of `q` grams contributes `q / basis_g × value`. A count Entry first becomes `q × piece_g` grams.
 - **No backfill.** Existing Foods start without Nutrition. Creating a Food from the combobox stays one tap and sets none.
@@ -40,7 +40,8 @@ A Food gains optional Nutrition: calories, protein, carbs and fat for a Basis am
 - `GET /reference-foods?q=&limit=10` (`suggest_reference_foods`): read-only typeahead, same ranking and debounce as Catalog suggestions.
 - `GET /days?from=&to=` (`list_days`): one row per Day in the range that has a Meal, newest first, `{day, kcal, protein_g, carbs_g, fat_g, restaurant_day, incomplete}`. `from`/`to` are inclusive Days, at most 366 apart; no pagination. This is the server summary ADR 0013 named as the additive fix, and Dashboards ([#129](https://github.com/bhh1893/health-tracker/issues/129)) and the future MCP wrapper reuse it. Days without Meals are omitted.
 - `GET`/`PATCH /api/me` gains `restaurant_day_kcal`.
-- Per-Meal totals on Meal reads are out of the first cut; a computed field later is additive.
+- Per-Meal totals on Meal reads are out of the first cut; a computed field later is additive. _Amended by ADR 0024: a foods Meal now carries `total`, for Search._
+- _Added during the build ([#157](https://github.com/bhh1893/health-tracker/issues/157)): `/api/me` did not exist yet (it is ADR 0021's, built in [#151](https://github.com/bhh1893/health-tracker/issues/151)). It ships here with `restaurant_day_kcal` only, at `/api/me` as written, outside `/api/v1`. `role` and `name` are additive when #151 lands._
 
 ### UI (amends ADR 0008)
 

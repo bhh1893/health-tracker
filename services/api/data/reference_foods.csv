@@ -1,0 +1,32 @@
+id,name,basis_g,kcal,protein_g,carbs_g,fat_g,piece_g
+4821b524-38a1-469b-8a14-62ec7bd982b0,"Egg, whole, raw",100,143,12.6,0.7,9.5,50
+19063840-347a-488f-82f4-882d3eb0545a,"Egg white, raw",100,52,10.9,0.7,0.2,33
+614e7cac-4de5-4756-b5b0-56cc14e3da94,"Chicken breast, skinless, raw",100,120,22.5,0,2.6,
+a0305edb-8b7a-476f-a040-5373321613df,"Chicken breast, skinless, cooked",100,165,31,0,3.6,
+f4b1a86d-5251-4aab-9648-277dc91b8ccf,"Chicken thigh, skinless, raw",100,121,19.7,0,4.1,
+780e7f93-e993-466b-9b70-2289db48b1ab,"Ground beef, 90% lean, raw",100,176,20,0,10,
+39c40b30-dbbe-405d-beac-4efcb725e5a8,"Ground beef, 80% lean, raw",100,254,17.2,0,20,
+cebb2bef-bd29-4a0e-8d21-a7a76aea588e,"Beef sirloin steak, raw",100,201,20.3,0,12.7,
+8d042d6b-72d1-4c40-a6f3-dcf2e21333dd,"Salmon, Atlantic, raw",100,208,20.4,0,13.4,
+f74cdf46-ce20-46d2-8622-70ad7e4f310f,"Tuna, canned in water, drained",100,116,25.5,0,0.8,
+2d688311-4309-4b7e-a940-864fb87c6770,"White rice, cooked",100,130,2.7,28.2,0.3,
+e07477d6-9be6-433b-82b7-3da291d623b3,"White rice, uncooked",100,365,7.1,80,0.7,
+ecebedb3-ff08-4b05-8f5f-061e16b4748d,"Brown rice, cooked",100,123,2.7,25.6,1,
+fb6aa35f-9d45-41a2-9e7b-84ad26195c7b,"Oats, rolled, dry",100,379,13.2,67.7,6.5,
+1119010f-e1e5-4620-bd75-7ceccacbe0f4,"Pasta, dry",100,371,13,74.7,1.5,
+53a0bc92-1f99-480d-8131-43b0d663420a,"Bread, whole wheat",100,252,12.5,42.7,3.5,32
+eb39da69-64a1-40ab-bad4-fdbe03b844f6,"Potato, raw",100,77,2,17.5,0.1,
+f85581f4-9dcc-45a7-b250-52fba40185ca,"Sweet potato, raw",100,86,1.6,20.1,0.1,
+4a7384bc-a132-425d-aeaf-0873921fda47,Banana,100,89,1.1,22.8,0.3,118
+75a58722-32e4-44ff-aacd-e83fb14cd1dd,Apple,100,52,0.3,13.8,0.2,182
+87e7ff28-15c0-4d82-8c84-5894c3ef91ce,"Broccoli, raw",100,34,2.8,6.6,0.4,
+2bb53635-f213-47d1-b796-fc3ccc8cd2cd,"Spinach, raw",100,23,2.9,3.6,0.4,
+e60d0acd-212f-457a-8890-ed2629d97290,Avocado,100,160,2,8.5,14.7,150
+d2ef45f0-43aa-4342-aefb-2ea8978807a3,"Milk, whole",100,61,3.2,4.8,3.3,
+4d885559-cbbd-414c-8d39-b03c631c8e26,"Greek yogurt, plain, nonfat",100,59,10.2,3.6,0.4,
+9018dc25-f86a-412e-9785-84970cf1bcf8,Cheddar cheese,100,403,22.9,3.4,33.3,
+ceae0478-438c-4028-826a-8460ff06565b,Butter,100,717,0.9,0.1,81.1,
+607e3c63-8906-49c7-be8f-91232a48fd52,Olive oil,100,884,0,0,100,
+8f208c0f-a37b-4ef4-9ce3-bdb182fe0353,Peanut butter,100,598,22.2,22.3,51.4,
+5acd2b48-be98-40fe-ae10-d48ff3e98a15,Almonds,100,579,21.2,21.6,49.9,
+91f2409f-90cc-4265-b16c-a6af89f778e4,"Black beans, cooked",100,132,8.9,23.7,0.5,

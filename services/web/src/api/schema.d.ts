@@ -4,6 +4,50 @@
  */
 
 export interface paths {
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Me
+         * @description Read the calling User's settings.
+         */
+        get: operations["get_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Me
+         * @description Change the calling User's settings, such as the Restaurant Day calories.
+         */
+        patch: operations["patch_me"];
+        trace?: never;
+    };
+    "/api/v1/days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Days
+         * @description List calories and macros per Day with a Meal, newest first, for a Day range.
+         */
+        get: operations["list_days"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/exercise-entries": {
         parameters: {
             query?: never;
@@ -81,7 +125,7 @@ export interface paths {
         };
         /**
          * Get Exercise Sessions
-         * @description List an Exercise's last N Sessions, newest first, with numbered Sets.
+         * @description List an Exercise's last N Sessions in a Day range, newest first, with numbered Sets.
          */
         get: operations["get_exercise_sessions"];
         put?: never;
@@ -105,7 +149,7 @@ export interface paths {
          */
         get: operations["get_exercise"];
         /**
-         * Put Item
+         * Put
          * @description Create a Exercise at a client-generated UUIDv7, or replace its name.
          */
         put: operations["put_exercise"];
@@ -118,7 +162,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Patch Item
+         * Patch
          * @description Rename, archive or unarchive a Exercise.
          */
         patch: operations["patch_exercise"];
@@ -157,8 +201,8 @@ export interface paths {
          */
         get: operations["get_food"];
         /**
-         * Put Item
-         * @description Create a Food at a client-generated UUIDv7, or replace its name.
+         * Put
+         * @description Create a Food at a client-generated UUIDv7, or replace the whole Food.
          */
         put: operations["put_food"];
         post?: never;
@@ -170,8 +214,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Patch Item
-         * @description Rename, archive or unarchive a Food.
+         * Patch
+         * @description Rename, archive or unarchive a Food, or set its Nutrition and Piece Weight.
          */
         patch: operations["patch_food"];
         trace?: never;
@@ -224,6 +268,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reference-foods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggest Reference Foods
+         * @description Suggest Reference Foods matching q, to copy Nutrition into a Food.
+         */
+        get: operations["suggest_reference_foods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/restaurants": {
         parameters: {
             query?: never;
@@ -257,7 +321,7 @@ export interface paths {
          */
         get: operations["get_restaurant"];
         /**
-         * Put Item
+         * Put
          * @description Create a Restaurant at a client-generated UUIDv7, or replace its name.
          */
         put: operations["put_restaurant"];
@@ -270,7 +334,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Patch Item
+         * Patch
          * @description Rename, archive or unarchive a Restaurant.
          */
         patch: operations["patch_restaurant"];
@@ -334,6 +398,26 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** DayTotal */
+        DayTotal: {
+            /** Carbs G */
+            carbs_g: number | null;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Fat G */
+            fat_g: number | null;
+            /** Incomplete */
+            incomplete: boolean;
+            /** Kcal */
+            kcal: number;
+            /** Protein G */
+            protein_g: number | null;
+            /** Restaurant Day */
+            restaurant_day: boolean;
         };
         /** ExerciseEntry */
         ExerciseEntry: {
@@ -401,6 +485,9 @@ export interface components {
             last_unit?: ("g" | "count") | null;
             /** Name */
             name: string;
+            nutrition?: components["schemas"]["Nutrition"] | null;
+            /** Piece G */
+            piece_g?: number | null;
         };
         /** FoodEntry */
         FoodEntry: {
@@ -443,6 +530,7 @@ export interface components {
             occurred_at: string;
             /** Occurred Tz */
             occurred_tz: string;
+            total: components["schemas"]["MealTotal"];
         };
         /** HealthStatus */
         HealthStatus: {
@@ -453,12 +541,70 @@ export interface components {
              */
             status: "ok";
         };
+        /** Me */
+        Me: {
+            /** Restaurant Day Kcal */
+            restaurant_day_kcal: number;
+        };
         /** MealPage */
         MealPage: {
             /** Items */
             items: (components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"])[];
             /** Next Cursor */
             next_cursor: string | null;
+        };
+        /**
+         * MealTotal
+         * @description A foods Meal's calories and macros, by the same rules as a Day Total (ADR 0023).
+         *
+         *     A Restaurant Meal has none: its Day counts as the User's flat value, and no part of that
+         *     belongs to one Meal.
+         */
+        MealTotal: {
+            /** Carbs G */
+            carbs_g: number;
+            /** Fat G */
+            fat_g: number;
+            /** Incomplete */
+            incomplete: boolean;
+            /** Kcal */
+            kcal: number;
+            /** Protein G */
+            protein_g: number;
+        };
+        /**
+         * Nutrition
+         * @description What a label prints: calories and macros for a Basis amount in grams (ADR 0023).
+         *
+         *     One object, not five fields on the Food: the five are all set or all absent, and a
+         *     nullable object says that in the schema itself. A partial one fails as a missing field.
+         */
+        Nutrition: {
+            /** Basis G */
+            basis_g: number;
+            /** Carbs G */
+            carbs_g: number;
+            /** Fat G */
+            fat_g: number;
+            /** Kcal */
+            kcal: number;
+            /** Protein G */
+            protein_g: number;
+        };
+        /** PatchFood */
+        PatchFood: {
+            /**
+             * Allow Similar
+             * @default false
+             */
+            allow_similar: boolean;
+            /** Archived */
+            archived?: boolean | null;
+            /** Name */
+            name?: string | null;
+            nutrition?: components["schemas"]["Nutrition"] | null;
+            /** Piece G */
+            piece_g?: number | null;
         };
         /** PatchItem */
         PatchItem: {
@@ -471,6 +617,11 @@ export interface components {
             archived?: boolean | null;
             /** Name */
             name?: string | null;
+        };
+        /** PatchMe */
+        PatchMe: {
+            /** Restaurant Day Kcal */
+            restaurant_day_kcal?: number | null;
         };
         /** Problem */
         Problem: {
@@ -509,6 +660,19 @@ export interface components {
             reps: number;
             /** Weight Lb */
             weight_lb?: number | null;
+        };
+        /** PutFood */
+        PutFood: {
+            /**
+             * Allow Similar
+             * @default false
+             */
+            allow_similar: boolean;
+            /** Name */
+            name: string;
+            nutrition?: components["schemas"]["Nutrition"] | null;
+            /** Piece G */
+            piece_g?: number | null;
         };
         /** PutFoodEntry */
         PutFoodEntry: {
@@ -576,6 +740,22 @@ export interface components {
              */
             restaurant_id: string;
         };
+        /**
+         * ReferenceFood
+         * @description Shaped like a Food's own fields, so "Fill from reference" copies them straight across.
+         */
+        ReferenceFood: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            nutrition: components["schemas"]["Nutrition"];
+            /** Piece G */
+            piece_g?: number | null;
+        };
         /** RestaurantMeal */
         RestaurantMeal: {
             /**
@@ -624,6 +804,127 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    patch_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchMe"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description The body could not be read as JSON text. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_days: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayTotal"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     list_exercise_entries: {
         parameters: {
             query?: {
@@ -872,6 +1173,8 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                from?: string | null;
+                to?: string | null;
             };
             header?: never;
             path: {
@@ -1268,7 +1571,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PutItem"];
+                "application/json": components["schemas"]["PutFood"];
             };
         };
         responses: {
@@ -1395,7 +1698,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PatchItem"];
+                "application/json": components["schemas"]["PatchFood"];
             };
         };
         responses: {
@@ -1645,6 +1948,47 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    suggest_reference_foods: {
+        parameters: {
+            query?: {
+                q?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceFood"][];
+                };
             };
             /** @description Validation Error */
             422: {

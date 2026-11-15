@@ -650,3 +650,196 @@ def test_flags_must_be_real_booleans(client: TestClient, value: Any) -> None:
     patch = client.patch(url("foods", item), json={"archived": value})
 
     assert (put.status_code, patch.status_code) == (422, 422)
+
+
+# Nutrition and Piece Weight on a Food (ADR 0023).
+
+OATS = {"basis_g": 40, "kcal": 150, "protein_g": 5, "carbs_g": 27, "fat_g": 3}
+
+
+def food_url(food: UUID) -> str:
+    return url("foods", food)
+
+
+def test_a_new_food_has_no_nutrition(client: TestClient) -> None:
+    food = create(client, "foods", "Oats")
+
+    body = client.get(food_url(food)).json()
+
+    assert body["nutrition"] is None
+    assert body["piece_g"] is None
+
+
+def test_nutrition_round_trips_through_put_and_get(client: TestClient) -> None:
+    food = uuid7()
+
+    created = client.put(food_url(food), json={"name": "Oats", "nutrition": OATS, "piece_g": 40})
+
+    assert created.status_code == 201, created.text
+    assert created.json()["nutrition"] == OATS
+    assert created.json()["piece_g"] == 40
+    assert client.get(food_url(food)).json()["nutrition"] == OATS
+
+
+def test_nutrition_is_stored_as_typed(client: TestClient) -> None:
+    """Not converted to per 100 g: reopening the Food shows the label's own numbers."""
+    label = {"basis_g": 62.5, "kcal": 250.1, "protein_g": 0.1, "carbs_g": 0.2, "fat_g": 0.3}
+    food = create(client, "foods", "Granola", nutrition=label)
+
+    assert client.get(food_url(food)).json()["nutrition"] == label
+
+
+def test_put_replaces_the_whole_food(client: TestClient) -> None:
+    food = create(client, "foods", "Oats", nutrition=OATS, piece_g=40)
+
+    replaced = client.put(food_url(food), json={"name": "Oats"})
+
+    assert replaced.status_code == 200, replaced.text
+    assert replaced.json()["nutrition"] is None
+    assert replaced.json()["piece_g"] is None
+
+
+def test_a_retried_put_with_nutrition_is_harmless(client: TestClient) -> None:
+    food = uuid7()
+    body = {"name": "Oats", "nutrition": OATS}
+
+    first = client.put(food_url(food), json=body)
+    second = client.put(food_url(food), json=body)
+
+    assert (first.status_code, second.status_code) == (201, 200)
+    assert second.json()["nutrition"] == OATS
+
+
+def test_patch_sets_nutrition_and_keeps_the_rest(client: TestClient) -> None:
+    food = create(client, "foods", "Oats", piece_g=40)
+
+    patched = client.patch(food_url(food), json={"nutrition": OATS})
+
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["nutrition"] == OATS
+    assert patched.json()["piece_g"] == 40
+    assert patched.json()["name"] == "Oats"
+
+
+def test_patch_leaves_out_what_it_does_not_send(client: TestClient) -> None:
+    food = create(client, "foods", "Oats", nutrition=OATS, piece_g=40)
+
+    patched = client.patch(food_url(food), json={"name": "Rolled oats"})
+
+    assert patched.json()["nutrition"] == OATS
+    assert patched.json()["piece_g"] == 40
+
+
+def test_patch_null_clears(client: TestClient) -> None:
+    food = create(client, "foods", "Oats", nutrition=OATS, piece_g=40)
+
+    patched = client.patch(food_url(food), json={"nutrition": None})
+
+    assert patched.json()["nutrition"] is None
+    assert patched.json()["piece_g"] == 40
+    assert client.patch(food_url(food), json={"piece_g": None}).json()["piece_g"] is None
+
+
+def test_piece_weight_does_not_need_nutrition(client: TestClient) -> None:
+    food = create(client, "foods", "Egg")
+
+    patched = client.patch(food_url(food), json={"piece_g": 50})
+
+    assert patched.json()["piece_g"] == 50
+    assert patched.json()["nutrition"] is None
+
+
+@pytest.mark.parametrize("missing", ["basis_g", "kcal", "protein_g", "carbs_g", "fat_g"])
+@pytest.mark.parametrize("method", ["put", "patch"])
+def test_partial_nutrition_is_invalid(client: TestClient, method: str, missing: str) -> None:
+    food = create(client, "foods", "Oats")
+    partial = {key: value for key, value in OATS.items() if key != missing}
+
+    response = client.request(method, food_url(food), json={"name": "Oats", "nutrition": partial})
+
+    assert response.status_code == 422
+    assert [error["field"] for error in response.json()["errors"]] == [f"body.nutrition.{missing}"]
+    assert client.get(food_url(food)).json()["nutrition"] is None
+
+
+@pytest.mark.parametrize(
+    ("change", "field"),
+    [
+        ({"basis_g": 0}, "body.nutrition.basis_g"),
+        ({"basis_g": -1}, "body.nutrition.basis_g"),
+        ({"kcal": -1}, "body.nutrition.kcal"),
+        ({"kcal": 10_001}, "body.nutrition.kcal"),
+        ({"protein_g": -1}, "body.nutrition.protein_g"),
+        ({"protein_g": 41}, "body.nutrition"),
+        ({"carbs_g": 41}, "body.nutrition"),
+        ({"fat_g": 41}, "body.nutrition"),
+        ({"kcal": "150"}, "body.nutrition.kcal"),
+        ({"sugar_g": 1}, "body.nutrition.sugar_g"),
+    ],
+)
+def test_out_of_bound_nutrition_is_invalid(
+    client: TestClient, change: dict[str, Any], field: str
+) -> None:
+    food = create(client, "foods", "Oats")
+
+    response = client.patch(food_url(food), json={"nutrition": {**OATS, **change}})
+
+    assert response.status_code == 422, response.text
+    assert [error["field"] for error in response.json()["errors"]] == [field]
+
+
+@pytest.mark.parametrize("piece_g", [0, -1, "50"])
+def test_piece_weight_must_be_a_positive_number(client: TestClient, piece_g: Any) -> None:
+    food = create(client, "foods", "Egg")
+
+    response = client.patch(food_url(food), json={"piece_g": piece_g})
+
+    assert response.status_code == 422
+    assert [error["field"] for error in response.json()["errors"]] == ["body.piece_g"]
+
+
+def test_a_macro_may_equal_the_basis(client: TestClient) -> None:
+    oil = {"basis_g": 14, "kcal": 120, "protein_g": 0, "carbs_g": 0, "fat_g": 14}
+
+    food = create(client, "foods", "Olive oil", nutrition=oil)
+
+    assert client.get(food_url(food)).json()["nutrition"] == oil
+
+
+def test_suggestions_carry_nutrition(client: TestClient) -> None:
+    create(client, "foods", "Oats", nutrition=OATS, piece_g=40)
+
+    [item] = client.get(url("foods"), params={"q": "oats"}).json()
+
+    assert item["nutrition"] == OATS
+    assert item["piece_g"] == 40
+
+
+@pytest.mark.parametrize("table", ["exercises", "restaurants"])
+def test_only_foods_take_nutrition(client: TestClient, table: str) -> None:
+    response = client.put(url(table, uuid7()), json={"name": "Squat", "nutrition": OATS})
+
+    assert response.status_code == 422
+
+
+def test_nutrition_writes_commit(committing_client: TestClient) -> None:
+    food = uuid7()
+    committing_client.put(food_url(food), json={"name": "Oats"}).raise_for_status()
+
+    committing_client.patch(food_url(food), json={"nutrition": OATS}).raise_for_status()
+
+    assert committing_client.get(food_url(food)).json()["nutrition"] == OATS
+
+
+def test_another_users_food_cannot_be_given_nutrition(client: TestClient, session: Session) -> None:
+    other = session.execute(text("INSERT INTO users DEFAULT VALUES RETURNING id")).scalar_one()
+    food = session.execute(
+        text("INSERT INTO foods (user_id, name) VALUES (:user, 'Theirs') RETURNING id"),
+        {"user": other},
+    ).scalar_one()
+
+    put = client.put(food_url(food), json={"name": "Theirs", "nutrition": OATS})
+    patch = client.patch(food_url(food), json={"nutrition": OATS})
+
+    assert (put.status_code, patch.status_code) == (404, 404)
+    assert session.scalar(text("SELECT kcal FROM foods WHERE id = :id"), {"id": food}) is None

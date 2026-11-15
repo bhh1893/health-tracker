@@ -5,6 +5,7 @@ replaces the whole Meal in one transaction, which is what lets the API keep the 
 database cannot: a Foods Meal has at least one Food Entry.
 """
 
+from decimal import Decimal
 from typing import Annotated, Any, Literal
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -16,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from health_api.catalogs import CatalogName, problems
+from health_api.days import ENTRY_UNCOUNTED, entry_amount
 from health_api.db import DbSession, violated_constraint
 from health_api.entries import (
     DEFAULT_PAGE_SIZE,
@@ -88,9 +90,25 @@ class MealFields(Occurrence):
     label: str | None
 
 
+class MealTotal(BaseModel):
+    """A foods Meal's calories and macros, by the same rules as a Day Total (ADR 0023).
+
+    A Restaurant Meal has none: its Day counts as the User's flat value, and no part of that
+    belongs to one Meal.
+    """
+
+    kcal: float
+    protein_g: float
+    carbs_g: float
+    fat_g: float
+    # Some Food Entry could not be counted, so the values above under-report.
+    incomplete: bool
+
+
 class FoodsMeal(MealFields):
     kind: Literal["foods"] = "foods"
     food_entries: list[FoodEntry]
+    total: MealTotal
 
 
 class RestaurantMeal(MealFields):
@@ -106,15 +124,24 @@ class MealPage(BaseModel):
     next_cursor: str | None
 
 
+MACROS = ("kcal", "protein_g", "carbs_g", "fat_g")
+
+
 def load_food_entries(
     session: Session, user: UUID, meal_ids: list[UUID]
-) -> dict[UUID, list[FoodEntry]]:
-    """All the Meals' Food Entries in one query, not one query per Meal."""
+) -> tuple[dict[UUID, list[FoodEntry]], dict[UUID, MealTotal]]:
+    """All the Meals' Food Entries and totals in one query, not one query per Meal.
+
+    The database works out each Entry's share with the same SQL as GET /days, so the two
+    cannot disagree. Only the adding up happens here.
+    """
+    shares = ", ".join(f"{entry_amount(column)} AS {column}" for column in MACROS)
     rows = session.execute(
         text(
-            """
+            f"""
             SELECT e.meal_id, e.quantity, e.unit, f.id, f.name,
-                   f.archived_at IS NOT NULL AS archived
+                   f.archived_at IS NOT NULL AS archived,
+                   {shares}, {ENTRY_UNCOUNTED} AS uncounted
             FROM food_entries e
             JOIN foods f ON f.id = e.food_id
             WHERE e.user_id = :user AND e.meal_id = ANY(:meal_ids)
@@ -124,12 +151,25 @@ def load_food_entries(
         {"user": user, "meal_ids": meal_ids},
     ).mappings()
     entries: dict[UUID, list[FoodEntry]] = {meal_id: [] for meal_id in meal_ids}
+    sums = {meal_id: dict.fromkeys(MACROS, Decimal(0)) for meal_id in meal_ids}
+    incomplete = dict.fromkeys(meal_ids, False)
     for row in rows:
+        meal_id = row["meal_id"]
         food = CatalogRef(id=row["id"], name=row["name"], archived=row["archived"])
-        entries[row["meal_id"]].append(
-            FoodEntry(food=food, quantity=row["quantity"], unit=row["unit"])
+        entries[meal_id].append(FoodEntry(food=food, quantity=row["quantity"], unit=row["unit"]))
+        if row["uncounted"]:
+            incomplete[meal_id] = True
+            continue
+        for column in MACROS:
+            sums[meal_id][column] += row[column]
+    totals = {
+        meal_id: MealTotal(
+            **{column: float(value) for column, value in sums[meal_id].items()},
+            incomplete=incomplete[meal_id],
         )
-    return entries
+        for meal_id in meal_ids
+    }
+    return entries, totals
 
 
 def select_meals(
@@ -164,7 +204,9 @@ def select_meals(
         ),
         {"user": user, "limit": limit, **params},
     ).all()
-    food_entries = load_food_entries(session, user, [row.id for row in rows if row.kind == "foods"])
+    food_entries, totals = load_food_entries(
+        session, user, [row.id for row in rows if row.kind == "foods"]
+    )
 
     meals: list[FoodsMeal | RestaurantMeal] = []
     for row in rows:
@@ -178,7 +220,9 @@ def select_meals(
             "number": row.number,
         }
         if row.kind == "foods":
-            meals.append(FoodsMeal(**fields, food_entries=food_entries[row.id]))
+            meals.append(
+                FoodsMeal(**fields, food_entries=food_entries[row.id], total=totals[row.id])
+            )
         else:
             restaurant = CatalogRef(
                 id=row.restaurant_id, name=row.restaurant_name, archived=row.restaurant_archived

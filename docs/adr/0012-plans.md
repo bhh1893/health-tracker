@@ -856,6 +856,80 @@ Planning Time: 0.153 ms
 Execution Time: 0.080 ms
 ```
 
+## Day totals for a year
+
+Added 2026-11-15 with `GET /days` (ADR 0023), same seed and machine. The range is the widest the endpoint takes, 367 Days.
+
+```sql
+SELECT d.day, d.restaurant_day,
+       CASE WHEN d.restaurant_day THEN u.restaurant_day_kcal ELSE d.kcal END AS kcal,
+       CASE WHEN NOT d.restaurant_day THEN d.protein_g END AS protein_g,
+       CASE WHEN NOT d.restaurant_day THEN d.carbs_g END AS carbs_g,
+       CASE WHEN NOT d.restaurant_day THEN d.fat_g END AS fat_g,
+       NOT d.restaurant_day AND d.uncounted > 0 AS incomplete
+FROM (
+    SELECT m.day,
+           bool_or(m.kind = 'restaurant') AS restaurant_day,
+           coalesce(sum(CASE e.unit WHEN 'g' THEN e.quantity ELSE e.quantity * f.piece_g END / f.basis_g * f.kcal), 0) AS kcal,
+           coalesce(sum(CASE e.unit WHEN 'g' THEN e.quantity ELSE e.quantity * f.piece_g END / f.basis_g * f.protein_g), 0) AS protein_g,
+           coalesce(sum(CASE e.unit WHEN 'g' THEN e.quantity ELSE e.quantity * f.piece_g END / f.basis_g * f.carbs_g), 0) AS carbs_g,
+           coalesce(sum(CASE e.unit WHEN 'g' THEN e.quantity ELSE e.quantity * f.piece_g END / f.basis_g * f.fat_g), 0) AS fat_g,
+           count(*) FILTER (WHERE e.id IS NOT NULL AND (f.basis_g IS NULL OR (e.unit = 'count' AND f.piece_g IS NULL)))
+               AS uncounted
+    FROM meals m
+    LEFT JOIN food_entries e ON e.meal_id = m.id
+    LEFT JOIN foods f ON f.id = e.food_id
+    WHERE m.user_id = %(user)s AND m.day >= %(from_day)s AND m.day <= %(to_day)s
+    GROUP BY m.day
+) d
+JOIN users u ON u.id = %(user)s
+ORDER BY d.day DESC
+
+```
+
+```
+Sort  (cost=12081.59..12083.32 rows=691 width=134) (actual time=15.086..15.101 rows=367.00 loops=1)
+  Sort Key: m.day DESC
+  Sort Method: quicksort  Memory: 38kB
+  Buffers: shared hit=4972
+  ->  Nested Loop  (cost=12024.29..12049.00 rows=691 width=134) (actual time=14.885..15.000 rows=367.00 loops=1)
+        Buffers: shared hit=4972
+        ->  Seq Scan on users u  (cost=0.00..2.25 rows=1 width=5) (actual time=0.005..0.010 rows=1.00 loops=1)
+              Filter: (id = '019a0000-0000-7000-8000-000000000001'::uuid)
+              Rows Removed by Filter: 99
+              Buffers: shared hit=1
+        ->  HashAggregate  (cost=12024.29..12038.11 rows=691 width=141) (actual time=14.877..14.952 rows=367.00 loops=1)
+              Group Key: m.day
+              Batches: 1  Memory Usage: 609kB
+              Buffers: shared hit=4971
+              ->  Hash Left Join  (cost=776.76..11809.92 rows=3430 width=227) (actual time=6.144..12.737 rows=3598.00 loops=1)
+                    Hash Cond: (e.food_id = f.id)
+                    Buffers: shared hit=4971
+                    ->  Nested Loop Left Join  (cost=78.76..11102.91 rows=3430 width=51) (actual time=0.118..5.889 rows=3598.00 loops=1)
+                          Buffers: shared hit=4723
+                          ->  Bitmap Heap Scan on meals m  (cost=78.33..2731.20 rows=1091 width=26) (actual time=0.106..0.733 rows=1101.00 loops=1)
+                                Recheck Cond: ((user_id = '019a0000-0000-7000-8000-000000000001'::uuid) AND (day >= '2024-12-28'::date) AND (day <= '2025-12-29'::date))
+                                Heap Blocks: exact=374
+                                Buffers: shared hit=386
+                                ->  Bitmap Index Scan on meals_user_day  (cost=0.00..78.06 rows=1091 width=0) (actual time=0.077..0.077 rows=1101.00 loops=1)
+                                      Index Cond: ((user_id = '019a0000-0000-7000-8000-000000000001'::uuid) AND (day >= '2024-12-28'::date) AND (day <= '2025-12-29'::date))
+                                      Index Searches: 1
+                                      Buffers: shared hit=12
+                          ->  Index Scan using food_entries_meal on food_entries e  (cost=0.42..7.63 rows=4 width=57) (actual time=0.003..0.004 rows=3.17 loops=1101)
+                                Index Cond: (meal_id = m.id)
+                                Index Searches: 1101
+                                Buffers: shared hit=4337
+                    ->  Hash  (cost=448.00..448.00 rows=20000 width=208) (actual time=5.930..5.930 rows=20000.00 loops=1)
+                          Buckets: 32768  Batches: 1  Memory Usage: 1194kB
+                          Buffers: shared hit=248
+                          ->  Seq Scan on foods f  (cost=0.00..448.00 rows=20000 width=208) (actual time=0.004..2.089 rows=20000.00 loops=1)
+                                Buffers: shared hit=248
+Planning:
+  Buffers: shared hit=28
+Planning Time: 0.603 ms
+Execution Time: 15.166 ms
+```
+
 ## Recent Foods
 
 ```sql

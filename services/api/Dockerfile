@@ -15,7 +15,7 @@ RUN uv sync --locked --no-dev --no-install-project
 COPY src ./src
 RUN uv sync --locked --no-dev
 
-# Final stage: Python, the venv, the code and the migrations, and no build tools.
+# Final stage: Python, the venv, the code, the migrations and the data, and no build tools.
 FROM python:3.14.10-slim-trixie
 WORKDIR /app
 # Same /app path as the build stage: the venv's editable install points at /app/src,
@@ -24,11 +24,13 @@ COPY --from=build /app/.venv ./.venv
 COPY pyproject.toml ./
 COPY src ./src
 COPY migrations ./migrations
+# Reference Foods ship with the code that loads them (ADR 0023).
+COPY data ./data
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Numeric so Kubernetes runAsNonRoot can verify it without reading /etc/passwd.
 USER 10001
 EXPOSE 8000
-# The migration Job reuses this image with the command `alembic upgrade head` (ADR 0016).
+# The migration Job reuses this image with its own command (ADR 0016).
 # 127.0.0.1: only the auth sidecar in the same pod can reach this port (ADR 0010).
 CMD ["uvicorn", "--factory", "health_api.main:create_app", "--host", "127.0.0.1", "--port", "8000"]

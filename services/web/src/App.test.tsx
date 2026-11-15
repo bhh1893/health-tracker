@@ -134,6 +134,21 @@ describe("the shell", () => {
     ).toBeInTheDocument();
   });
 
+  it("reaches Dashboards from the header icon, and comes back to the same Day", async () => {
+    renderAt("/meals?day=2026-11-02");
+
+    await userEvent.click(screen.getByRole("link", { name: "Dashboards" }));
+
+    // The screen is its own chunk, loaded on this first visit.
+    expect(
+      await screen.findByRole("heading", { name: "Dashboards" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute(
+      "href",
+      "/meals?day=2026-11-02",
+    );
+  });
+
   it("shows Problem Details when the API refuses a call", async () => {
     server.use(
       http.get("*/api/v1/exercises", () =>

@@ -41,7 +41,7 @@ def test_every_api_route_documents_the_outage_status() -> None:
     missing = [
         name
         for name, operation in operations()
-        if " /api/v1/" in name and "503" not in operation["responses"]
+        if " /api/" in name and "503" not in operation["responses"]
     ]
 
     assert not missing, "include the router with responses=DATABASE_UNAVAILABLE"

@@ -8,6 +8,8 @@ The v1 API is a JSON REST API under `/api/v1`, described by the generated OpenAP
 
 **Amended by ADR 0021:** `401` comes from oauth2-proxy as a plain response, not a Problem; Pending Users get `403` (`pending-approval`) on everything but `GET /api/me`; identity comes from proxy headers, not the seeded User.
 
+**Amended by ADR 0024:** `GET /exercises/{id}/sessions` gains `from` and `to`; a foods Meal gains a computed `total`.
+
 **Amended by ADR 0023:** `/foods` gains `nutrition` and `piece_g`; new `GET /reference-foods` and `GET /days` (a per-Day summary, unlike the rejected `/days/{day}` aggregate read); `/api/me` gains `restaurant_day_kcal`.
 
 ## Shape

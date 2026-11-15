@@ -165,6 +165,15 @@ const ref = ({ id, name, archived }: CatalogRef): CatalogRef => ({
   archived,
 });
 
+// A Meal none of whose Foods has Nutrition yet, which is how every Meal starts.
+const noTotal = {
+  kcal: 0,
+  protein_g: 0,
+  carbs_g: 0,
+  fat_g: 0,
+  incomplete: true,
+};
+
 export function aMeal(fields: Partial<Meal> = {}): Meal {
   return {
     id: "0190a000-0000-7000-8000-0000000000c1",
@@ -175,6 +184,7 @@ export function aMeal(fields: Partial<Meal> = {}): Meal {
     occurred_tz: "Pacific/Auckland",
     kind: "foods",
     food_entries: [{ food: ref(oats), quantity: 80, unit: "g" }],
+    total: noTotal,
     ...fields,
   } as Meal;
 }
@@ -250,6 +260,7 @@ export function fakeMealApi(
                   quantity: entry.quantity,
                   unit: entry.unit,
                 })),
+                total: noTotal,
               };
         meals.set(id, meal);
         return HttpResponse.json(meal, { status: existing ? 200 : 201 });

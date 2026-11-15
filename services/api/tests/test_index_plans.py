@@ -70,6 +70,11 @@ CASES = (
         "/exercises/{exercise}/sessions",
         ("exercise_entries_user_exercise_day",),
     ),
+    Case(
+        "Day totals for a year",
+        "/days?from={year_before}&to={day}",
+        ("meals_user_day", "food_entries_meal"),
+    ),
     Case("Recent Foods", "/foods", ("food_entries_user_food",)),
     Case("Recent Exercises", "/exercises", ("exercise_entries_user_exercise_day",)),
     Case("Recent Restaurants", "/restaurants", ("meals_user_day",)),
@@ -156,6 +161,8 @@ def targets(api: TestClient, engine: Engine) -> dict[str, str]:
 
     return {
         "day": one("SELECT max(day) FROM exercise_entries WHERE user_id = :user"),
+        # The widest range GET /days takes.
+        "year_before": one("SELECT max(day) - 366 FROM exercise_entries WHERE user_id = :user"),
         "meal": one("SELECT max(id::text) FROM meals WHERE user_id = :user AND kind = 'foods'"),
         "common_food": used("food_entries", "food_id", "DESC"),
         "rare_food": used("food_entries", "food_id", "ASC"),

@@ -7,6 +7,7 @@ import type { components } from "../api/schema";
 import type { ExerciseEntry } from "../exercise/sessions";
 import { addDays, formatDay, toDay } from "../lib/day";
 import type { Meal } from "../meals/meals";
+import type { DayTotal } from "../nutrition/totals";
 import { aMeal, aSet, banana, bench, oats } from "../test-handlers";
 import { renderAt } from "../test-render";
 import { server } from "../test-server";
@@ -60,6 +61,7 @@ function fakeSearchApi({
   entries = [] as ExerciseEntry[],
   meals = [] as Meal[],
   sessions = [] as ExerciseSession[],
+  totals = [] as DayTotal[],
 }) {
   const requests: URL[] = [];
   function page<T extends { day: string; occurred_at: string; id: string }>(
@@ -112,6 +114,15 @@ function fakeSearchApi({
         ),
       ),
     ),
+    http.get("*/api/v1/days", ({ request }) => {
+      const url = new URL(request.url);
+      requests.push(url);
+      const from = url.searchParams.get("from") ?? "";
+      const to = url.searchParams.get("to") ?? "~";
+      return HttpResponse.json(
+        totals.filter(({ day }) => day >= from && day <= to),
+      );
+    }),
     http.get("*/api/v1/exercises/:id/sessions", ({ request }) => {
       requests.push(new URL(request.url));
       const limit = Number(new URL(request.url).searchParams.get("limit"));
@@ -367,6 +378,151 @@ describe("Everything, a screen at a time", () => {
     expect(
       await screen.findByText("Nothing logged in this range."),
     ).toBeInTheDocument();
+  });
+});
+
+describe("calories and macros", () => {
+  const dayTotal = (day: string, fields: Partial<DayTotal> = {}): DayTotal => ({
+    day,
+    kcal: 2130.4,
+    protein_g: 150.2,
+    carbs_g: 200,
+    fat_g: 70.6,
+    restaurant_day: false,
+    incomplete: false,
+    ...fields,
+  });
+  const counted = { kcal: 304, protein_g: 10.4, carbs_g: 54, fat_g: 6 };
+
+  it("shows each Meal's total and the Day's total", async () => {
+    const day = daysAgo(1);
+    fakeSearchApi({
+      meals: [
+        {
+          ...mealOn(day, [oats]),
+          total: { ...counted, incomplete: false },
+        } as Meal,
+      ],
+      totals: [dayTotal(day)],
+    });
+    renderAt("/search", <SearchScreen />);
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: `${formatDay(day)}, 1 meal, 2,130 kcal`,
+      }),
+    );
+
+    const meal = screen.getByRole("article", { name: "Meal 1" });
+    expect(
+      within(meal).getByText("304 kcal · P 10 g · C 54 g · F 6 g"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Day total: 2,130 kcal", { exact: false }),
+    ).toHaveTextContent("Day total: 2,130 kcal · P 150 g · C 200 g · F 71 g");
+  });
+
+  it("marks an Incomplete Day and a Meal with nothing counted", async () => {
+    const day = daysAgo(1);
+    fakeSearchApi({
+      meals: [
+        mealOn(day, [banana], 1),
+        {
+          ...mealOn(day, [oats, banana], 2),
+          total: { ...counted, incomplete: true },
+        } as Meal,
+      ],
+      totals: [dayTotal(day, { kcal: 304, incomplete: true })],
+    });
+    renderAt("/search", <SearchScreen />);
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: `${formatDay(day)}, 2 meals, 304 kcal, incomplete`,
+      }),
+    );
+
+    expect(
+      within(screen.getByRole("article", { name: "Meal 1" })).getByText(
+        "No Nutrition yet",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("article", { name: "Meal 2" })).getByText(
+        "304 kcal · P 10 g · C 54 g · F 6 g · incomplete",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/^Incomplete: some Foods/)).toBeInTheDocument();
+  });
+
+  it("shows a Restaurant Day at the flat value, with no macros", async () => {
+    const day = daysAgo(1);
+    fakeSearchApi({
+      meals: [
+        aMeal({
+          id: "meal-out",
+          day,
+          kind: "restaurant",
+          restaurant: { id: "r1", name: "Corner Cafe", archived: false },
+        }),
+      ],
+      totals: [
+        dayTotal(day, {
+          kcal: 5000,
+          protein_g: null,
+          carbs_g: null,
+          fat_g: null,
+          restaurant_day: true,
+        }),
+      ],
+    });
+    renderAt("/search", <SearchScreen />);
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: `${formatDay(day)}, 1 meal, Restaurant Day, 5,000 kcal`,
+      }),
+    );
+
+    expect(screen.getByText("Day total: 5,000 kcal")).toBeInTheDocument();
+    expect(screen.getByText(/^Restaurant Day: counted/)).toBeInTheDocument();
+    expect(screen.queryByText(/P \d/)).not.toBeInTheDocument();
+  });
+
+  it("asks for totals over the question's range, and not for an Exercise", async () => {
+    const api = fakeSearchApi({ entries: [setOn(daysAgo(1), 1)] });
+    renderAt("/search?range=7d", <SearchScreen />);
+    await waitFor(() => {
+      expect(dayRows()).toHaveLength(1);
+    });
+
+    const [request] = api.calls("/api/v1/days");
+    expect(request?.searchParams.get("from")).toBe(daysAgo(6));
+    expect(request?.searchParams.get("to")).toBe(today);
+
+    const exercise = fakeSearchApi({ entries: [setOn(daysAgo(1), 1)] });
+    await userEvent.click(screen.getByRole("radio", { name: "Exercise" }));
+    await pick("Exercise", "ben", "Bench Press");
+    await waitFor(() => {
+      expect(dayRows()).toHaveLength(1);
+    });
+    expect(exercise.calls("/api/v1/days")).toHaveLength(0);
+  });
+
+  it("keeps the results when the totals fail to load", async () => {
+    fakeSearchApi({ meals: [mealOn(daysAgo(1), [oats])] });
+    server.use(
+      http.get("*/api/v1/days", () =>
+        HttpResponse.json(
+          { title: "Unprocessable Content", status: 422 },
+          { status: 422 },
+        ),
+      ),
+    );
+    renderAt("/search", <SearchScreen />);
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(dayRows()).toHaveLength(1);
   });
 });
 

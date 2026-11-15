@@ -7,6 +7,7 @@ import {
 
 import { api, unwrap } from "../api/client";
 import { foodCatalog, restaurantCatalog } from "../catalog/catalogs";
+import { DAY_TOTALS_KEY } from "../nutrition/queries";
 import { toPutMeal, type Meal, type MealPage } from "./meals";
 
 const MAX_PAGE_SIZE = 200;
@@ -67,6 +68,8 @@ function refreshWhenIdle(queryClient: QueryClient, day: string) {
     // last quantity and unit (ADR 0008).
     void queryClient.invalidateQueries({ queryKey: [foodCatalog.key] });
     void queryClient.invalidateQueries({ queryKey: [restaurantCatalog.key] });
+    // And what the Day adds up to, for Search and Dashboards (ADR 0023).
+    void queryClient.invalidateQueries({ queryKey: [DAY_TOTALS_KEY] });
   }
 }
 
