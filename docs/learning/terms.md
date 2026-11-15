@@ -435,6 +435,17 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Minimum recovery point**: the WAL position a replica must replay to before its data is consistent; until then it refuses connections.
 - **Checkpoint**: Postgres writing every changed page to disk and recording a WAL marker, so crash recovery can start from there.
 - **Tailscale / tailnet**: a WireGuard-based private network that joins your devices wherever they are; your tailnet is the set of devices allowed in, so nothing outside it can even connect.
+- **Admin console (Tailscale)**: Tailscale's hosted website (`login.tailscale.com/admin`) for managing a tailnet: devices, users, access rules, settings and API credentials.
+- **Tailnet policy file**: one HuJSON document holding every access rule of a tailnet; once it exists, anything it does not allow is denied.
+- **HuJSON**: JSON that also allows comments and trailing commas, so a config file can explain itself.
+- **Policy as code**: keeping access rules in a reviewed, versioned file that a pipeline applies, instead of clicking them into a console; git becomes the history and the undo.
+- **Tag (Tailscale)**: an identity for a machine (`tag:k8s`) in place of a person's; a tagged device belongs to no user and keeps working if the person who added it leaves.
+- **`tagOwners`**: the policy section listing who may give a device each tag.
+- **Grant (Tailscale)**: one allow rule: these sources (`src`) may reach these destinations (`dst`) on these ports (`ip`). There are no deny rules, only the absence of a grant.
+- **Autogroup**: a built-in Tailscale group filled in by role, such as `autogroup:owner` or `autogroup:member` (every person on the tailnet), so a policy needs no email addresses.
+- **`autoApprovers`**: the policy section that approves ahead of time what a device may announce, such as hosting a Tailscale Service, so no one has to click approve.
+- **Device approval**: a tailnet setting that holds every new device in a waiting state until an admin approves it; signing in is not enough to get on the network.
+- **OAuth client (Tailscale)**: a non-person credential for Tailscale's API, limited to chosen scopes (ours: `policy_file`), unlike a personal API key that can do everything its owner can and dies after 90 days; created on the admin console's Trust credentials page.
 - **Defense in depth**: several independent layers of protection, so one failing (a device admitted by mistake) does not expose everything (a Pending User still sees no data).
 - **OIDC (OpenID Connect)**: a standard login protocol on top of OAuth 2.0; an identity provider signs a token saying who the person is, and the app trusts that signature instead of storing passwords.
 - **OAuth client ID**: identifies an application registered with an identity provider (our `web` app), never a person.
