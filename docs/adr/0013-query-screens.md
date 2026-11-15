@@ -6,6 +6,8 @@ status: accepted
 
 Browsing the past has two jobs, and v1 gives each its own surface. The two logging windows of ADR 0008 (Exercise, Meals) gain a **Day pager** for "I'm on a Day" (look, add a forgotten Set, fix an Entry). A separate **Search screen** answers "I'm asking a question" (a range, one Food or Exercise, progress over time). Chosen from three clickable variants on a phone ([Query screens](https://github.com/bhh1893/health-tracker/issues/32), branch `prototype/query-screens`, variants A and C; B, a History tab, was dropped as a subset of C once C's Days collapsed). No API change: everything is served by ADR 0006 as written.
 
+**Amended by ADR 0024:** a Dashboards screen joins Search in the header; Search results show each Meal's total and each Day's Day Total (ADR 0023).
+
 ## Day pager (in the Exercise and Meals windows)
 
 - **Header:** `‹ Day ›`. ‹ steps back one Day, › steps forward and is disabled on Today. Tapping the date opens the phone's native date picker (`max` = today; no future Days). A banner, "Viewing a past Day, tap to jump to Today", shows whenever the viewed Day is not Today.
