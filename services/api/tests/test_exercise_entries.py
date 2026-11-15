@@ -630,6 +630,47 @@ def test_sessions_default_to_the_last_five(client: TestClient, squat: UUID) -> N
     assert len(sessions(client, squat)) == DEFAULT_SESSIONS
 
 
+def test_sessions_filter_by_inclusive_day_range(client: TestClient, squat: UUID) -> None:
+    for day in ("2026-10-31", "2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04"):
+        put(client, body(squat, at=f"{day}T12:00:00Z"))
+
+    found = sessions(client, squat, **{"from": "2026-11-01", "to": "2026-11-03"})
+
+    assert [session["day"] for session in found] == ["2026-11-03", "2026-11-02", "2026-11-01"]
+
+
+def test_sessions_page_back_through_history_with_to(client: TestClient, squat: UUID) -> None:
+    """How a caller reads past `limit`: ask again, ending the Day before the oldest it has."""
+    for day in range(1, 8):
+        put(client, body(squat, at=f"2026-11-{day:02}T12:00:00Z"))
+        put(client, body(squat, at=f"2026-11-{day:02}T12:10:00Z"))
+
+    first = sessions(client, squat, limit=3)
+    second = sessions(client, squat, limit=3, to="2026-11-04")
+    third = sessions(client, squat, limit=3, to="2026-11-01")
+
+    days = [[session["day"] for session in page] for page in (first, second, third)]
+    assert days == [
+        ["2026-11-07", "2026-11-06", "2026-11-05"],
+        ["2026-11-04", "2026-11-03", "2026-11-02"],
+        ["2026-11-01"],
+    ]
+    assert all(len(session["sets"]) == 2 for page in (first, second, third) for session in page)
+
+
+def test_a_range_with_no_sessions_is_empty(client: TestClient, squat: UUID) -> None:
+    put(client, body(squat, at="2026-11-03T12:00:00Z"))
+
+    assert sessions(client, squat, **{"from": "2026-11-04"}) == []
+
+
+@pytest.mark.parametrize("name", ["from", "to"])
+def test_session_range_days_must_be_iso_dates(client: TestClient, squat: UUID, name: str) -> None:
+    response = client.get(sessions_url(squat), params={name: "1700000000"})
+
+    assert error_fields(response) == [f"query.{name}"]
+
+
 def test_sessions_hold_only_this_exercise(client: TestClient, squat: UUID) -> None:
     bench = create_exercise(client, "Bench Press")
     put(client, body(squat, reps=5))

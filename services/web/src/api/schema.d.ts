@@ -125,7 +125,7 @@ export interface paths {
         };
         /**
          * Get Exercise Sessions
-         * @description List an Exercise's last N Sessions, newest first, with numbered Sets.
+         * @description List an Exercise's last N Sessions in a Day range, newest first, with numbered Sets.
          */
         get: operations["get_exercise_sessions"];
         put?: never;
@@ -530,6 +530,7 @@ export interface components {
             occurred_at: string;
             /** Occurred Tz */
             occurred_tz: string;
+            total: components["schemas"]["MealTotal"];
         };
         /** HealthStatus */
         HealthStatus: {
@@ -551,6 +552,25 @@ export interface components {
             items: (components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"])[];
             /** Next Cursor */
             next_cursor: string | null;
+        };
+        /**
+         * MealTotal
+         * @description A foods Meal's calories and macros, by the same rules as a Day Total (ADR 0023).
+         *
+         *     A Restaurant Meal has none: its Day counts as the User's flat value, and no part of that
+         *     belongs to one Meal.
+         */
+        MealTotal: {
+            /** Carbs G */
+            carbs_g: number;
+            /** Fat G */
+            fat_g: number;
+            /** Incomplete */
+            incomplete: boolean;
+            /** Kcal */
+            kcal: number;
+            /** Protein G */
+            protein_g: number;
         };
         /**
          * Nutrition
@@ -1153,6 +1173,8 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                from?: string | null;
+                to?: string | null;
             };
             header?: never;
             path: {

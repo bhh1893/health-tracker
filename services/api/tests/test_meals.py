@@ -109,6 +109,7 @@ def test_foods_meal_round_trip(client: TestClient, food: UUID) -> None:
                 "unit": "g",
             }
         ],
+        "total": {"kcal": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0, "incomplete": True},
     }
 
 
@@ -118,6 +119,8 @@ def test_restaurant_meal_round_trip(client: TestClient, restaurant: UUID) -> Non
     assert meal["kind"] == "restaurant"
     assert meal["restaurant"] == {"id": str(restaurant), "name": "Chipotle", "archived": False}
     assert "food_entries" not in meal
+    # Its Day counts as the User's flat value (ADR 0023), which no single Meal owns.
+    assert "total" not in meal
 
 
 def test_day_is_the_date_where_the_user_was(client: TestClient, food: UUID) -> None:
@@ -583,3 +586,99 @@ def test_the_largest_quantity_reads_back_unchanged(client: TestClient, food: UUI
     meal = put(client, foods_body(food, food_entries=[entry]))
 
     assert meal["food_entries"][0]["quantity"] == MAX_AMOUNT
+
+
+# A Meal's total: the same rules as a Day Total (ADR 0023), for one Meal.
+
+RICE = {"basis_g": 100, "kcal": 130, "protein_g": 2.7, "carbs_g": 28.2, "fat_g": 0.3}
+EGG = {"basis_g": 100, "kcal": 140, "protein_g": 12, "carbs_g": 1, "fat_g": 10}
+
+
+def food_with(client: TestClient, name: str, **fields: Any) -> UUID:
+    item = catalog_item(client, "foods", name)
+    client.patch(f"/api/v1/foods/{item}", json=fields).raise_for_status()
+    return item
+
+
+def entries_body(*entries: tuple[UUID, float, str], at: str = "2026-11-03T12:00:00+00:00") -> Any:
+    return {
+        "kind": "foods",
+        "occurred_at": at,
+        "occurred_tz": "UTC",
+        "food_entries": [
+            {"food_id": str(food), "quantity": quantity, "unit": unit}
+            for food, quantity, unit in entries
+        ],
+    }
+
+
+def test_a_meal_totals_its_food_entries(client: TestClient) -> None:
+    rice = food_with(client, "Rice", nutrition=RICE)
+    egg = food_with(client, "Egg", nutrition=EGG, piece_g=50)
+
+    meal = put(client, entries_body((rice, 250, "g"), (egg, 2, "count")))
+
+    assert meal["total"] == {
+        "kcal": pytest.approx(325 + 140),
+        "protein_g": pytest.approx(6.75 + 12),
+        "carbs_g": pytest.approx(70.5 + 1),
+        "fat_g": pytest.approx(0.75 + 10),
+        "incomplete": False,
+    }
+
+
+def test_a_meal_total_leaves_out_what_it_cannot_count(client: TestClient) -> None:
+    rice = food_with(client, "Rice", nutrition=RICE)
+    egg = food_with(client, "Egg", nutrition=EGG)
+    stew = catalog_item(client, "foods", "Mystery stew")
+
+    meal = put(client, entries_body((rice, 100, "g"), (egg, 2, "count"), (stew, 300, "g")))
+
+    assert meal["total"] == {
+        "kcal": pytest.approx(130),
+        "protein_g": pytest.approx(2.7),
+        "carbs_g": pytest.approx(28.2),
+        "fat_g": pytest.approx(0.3),
+        "incomplete": True,
+    }
+
+
+def test_meal_totals_in_a_list_belong_to_their_own_meal(client: TestClient) -> None:
+    rice = food_with(client, "Rice", nutrition=RICE)
+    stew = catalog_item(client, "foods", "Mystery stew")
+    put(client, entries_body((rice, 100, "g"), at="2026-11-03T08:00:00+00:00"))
+    put(client, entries_body((stew, 100, "g"), at="2026-11-03T12:00:00+00:00"))
+    put(client, entries_body((rice, 200, "g"), at="2026-11-03T18:00:00+00:00"))
+
+    listed = client.get("/api/v1/meals").json()["items"]
+
+    assert [(meal["total"]["kcal"], meal["total"]["incomplete"]) for meal in listed] == [
+        (260, False),
+        (0, True),
+        (130, False),
+    ]
+
+
+def test_the_meals_of_a_day_add_up_to_its_day_total(client: TestClient) -> None:
+    """Both read the same SQL for an Entry's share, so they cannot drift apart."""
+    rice = food_with(client, "Rice", nutrition=RICE)
+    egg = food_with(client, "Egg", nutrition=EGG, piece_g=50)
+    put(client, entries_body((rice, 180, "g"), at="2026-11-03T08:00:00+00:00"))
+    put(client, entries_body((egg, 3, "count"), (rice, 75, "g"), at="2026-11-03T18:00:00+00:00"))
+
+    meals = client.get("/api/v1/meals").json()["items"]
+    [day] = client.get("/api/v1/days", params={"from": "2026-11-03", "to": "2026-11-03"}).json()
+
+    for value in ("kcal", "protein_g", "carbs_g", "fat_g"):
+        assert sum(meal["total"][value] for meal in meals) == pytest.approx(day[value])
+
+
+def test_correcting_a_food_corrects_a_meal_total(client: TestClient) -> None:
+    rice = catalog_item(client, "foods", "Rice")
+    meal = put(client, entries_body((rice, 100, "g")))
+    assert meal["total"]["incomplete"] is True
+
+    client.patch(f"/api/v1/foods/{rice}", json={"nutrition": RICE}).raise_for_status()
+
+    total = client.get(meal_url(UUID(meal["id"]))).json()["total"]
+    assert (total["kcal"], total["incomplete"]) == (130, False)

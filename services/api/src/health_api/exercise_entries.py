@@ -133,20 +133,28 @@ def load_entry(session: Session, user: UUID, entry_id: UUID) -> ExerciseEntry:
 
 
 def select_sessions(
-    session: Session, user: UUID, exercise_id: UUID, limit: int
+    session: Session,
+    user: UUID,
+    exercise_id: UUID,
+    limit: int,
+    from_day: date | None = None,
+    to_day: date | None = None,
 ) -> list[ExerciseSession]:
-    """The last `limit` Sessions, newest first, each with its Sets in order.
+    """The last `limit` Sessions in the Day range, newest first, each with its Sets in order.
 
     Two steps, as ADR 0012 planned: `recent` walks the Exercise index backwards and stops
     after `limit` distinct Days, then only those Days' Sets are read. Every Session arrives
     whole, so row_number() can number its Sets; the feed's pages cannot rely on that.
     """
+    # The range narrows which Days `recent` picks. No cursor: the pages are whole Sessions,
+    # so a caller reads further back by asking again with `to` before the oldest Day it has.
+    where, params = range_filters("exercise_entries", from_day, to_day, None)
     rows = session.execute(
         text(
-            """
+            f"""
             WITH recent AS (
                 SELECT DISTINCT day FROM exercise_entries
-                WHERE user_id = :user AND exercise_id = :exercise
+                WHERE user_id = :user AND exercise_id = :exercise AND {" AND ".join(where)}
                 ORDER BY day DESC
                 LIMIT :limit
             )
@@ -158,7 +166,7 @@ def select_sessions(
             ORDER BY e.day DESC, number
             """
         ),
-        {"user": user, "exercise": exercise_id, "limit": limit},
+        {"user": user, "exercise": exercise_id, "limit": limit, **params},
     ).all()
     sessions: dict[date, list[SessionSet]] = {}
     for row in rows:
@@ -288,7 +296,9 @@ def exercise_entries_router() -> APIRouter:
         "/exercises/{exercise_id}/sessions",
         operation_id="get_exercise_sessions",
         response_model=list[ExerciseSession],
-        description="List an Exercise's last N Sessions, newest first, with numbered Sets.",
+        description=(
+            "List an Exercise's last N Sessions in a Day range, newest first, with numbered Sets."
+        ),
         responses=problems(404),
     )
     def get_exercise_sessions(
@@ -296,6 +306,8 @@ def exercise_entries_router() -> APIRouter:
         user: CurrentUser,
         session: DbSession,
         limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_SESSIONS,
+        from_day: Annotated[Day | None, Query(alias="from")] = None,
+        to_day: Annotated[Day | None, Query(alias="to")] = None,
     ) -> list[ExerciseSession]:
         # An Exercise never used has no Sessions, which is an empty list, not a 404.
         mine = session.execute(
@@ -304,6 +316,6 @@ def exercise_entries_router() -> APIRouter:
         ).first()
         if mine is None:
             raise HTTPException(404, "Exercise not found.")
-        return select_sessions(session, user, exercise_id, limit)
+        return select_sessions(session, user, exercise_id, limit, from_day, to_day)
 
     return router

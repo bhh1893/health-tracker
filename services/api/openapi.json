@@ -363,6 +363,9 @@
           "occurred_tz": {
             "title": "Occurred Tz",
             "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/MealTotal"
           }
         },
         "required": [
@@ -372,7 +375,8 @@
           "day",
           "number",
           "label",
-          "food_entries"
+          "food_entries",
+          "total"
         ],
         "title": "FoodsMeal",
         "type": "object"
@@ -442,6 +446,40 @@
           "next_cursor"
         ],
         "title": "MealPage",
+        "type": "object"
+      },
+      "MealTotal": {
+        "description": "A foods Meal's calories and macros, by the same rules as a Day Total (ADR 0023).\n\nA Restaurant Meal has none: its Day counts as the User's flat value, and no part of that\nbelongs to one Meal.",
+        "properties": {
+          "carbs_g": {
+            "title": "Carbs G",
+            "type": "number"
+          },
+          "fat_g": {
+            "title": "Fat G",
+            "type": "number"
+          },
+          "incomplete": {
+            "title": "Incomplete",
+            "type": "boolean"
+          },
+          "kcal": {
+            "title": "Kcal",
+            "type": "number"
+          },
+          "protein_g": {
+            "title": "Protein G",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kcal",
+          "protein_g",
+          "carbs_g",
+          "fat_g",
+          "incomplete"
+        ],
+        "title": "MealTotal",
         "type": "object"
       },
       "Nutrition": {
@@ -1610,7 +1648,7 @@
     },
     "/api/v1/exercises/{exercise_id}/sessions": {
       "get": {
-        "description": "List an Exercise's last N Sessions, newest first, with numbered Sets.",
+        "description": "List an Exercise's last N Sessions in a Day range, newest first, with numbered Sets.",
         "operationId": "get_exercise_sessions",
         "parameters": [
           {
@@ -1633,6 +1671,40 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
             }
           }
         ],
