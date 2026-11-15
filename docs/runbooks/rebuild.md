@@ -72,4 +72,17 @@ A rebuild is a restore drill and a deploy drill in one, but it only proves what 
 
 ## Results
 
-None yet.
+Both run on 2026-11-15 from `origin/main` at `bdb4e80`, with no manual step between the command and `REBUILD OK`. In both, the second playbook run reported `changed=0` on every host.
+
+| Run | Time | Proof |
+| --- | --- | --- |
+| `rebuild-cluster.ps1` | 19m37s | Restored from `pg-20261109T065551Z`. Row counts in all six data tables matched the counts taken before the rebuild, Alembic at `0002`, `api-smoke` succeeded, `backup-status` OK on the new generation. |
+| `rebuild-cluster.ps1 -Fresh` | 19m04s | Bucket emptied first (160 objects, 4 generations). The `api-migrate` log shows `-> 0001` then `0001 -> 0002` on an empty database. One seeded user, every other table empty, `api-smoke` succeeded, `backup-status` OK with 0 archive failures. |
+
+So recovery time (RTO) for losing all three nodes is about 20 minutes, nearly all of it creating the VMs and the two playbook runs. The amount of data makes no visible difference yet.
+
+Notes from the runs:
+
+- Nothing in the repo empties the bucket, and the dev VM has no S3 client. It was done with a throwaway script that lists every key and sends an S3 `DELETE` for each, signed by `curl --aws-sigv4` the way `restore-data` signs its listing.
+- The old `pg` keeps archiving WAL until its node is destroyed, so start the `-Fresh` rebuild right after emptying. WAL without a base backup does not trip the `-Fresh` guard.
+- Start it with `powershell.exe -NoProfile -File <full path with forward slashes>` when not already in a PowerShell prompt at the repo root.
