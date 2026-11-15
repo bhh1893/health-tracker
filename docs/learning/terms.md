@@ -487,3 +487,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **EndpointSlice**: the list Kubernetes keeps of a Service's ready pod IPs; a pod failing readiness drops out of it.
 - **TLS termination**: the point where encrypted traffic is decrypted; past it, a proxy can read paths and headers.
 - **OAuth `state` parameter**: a random value the client stores in a cookie and sends to the IdP; the callback must return it unchanged, proving the sign-in was started here.
+- **Per-tenant vs shared reference data**: per-tenant rows belong to one User and only they see them; shared reference data is one read-only copy every User reads, like a country list.
+- **Copy-on-pick**: picking a shared item copies its values into the User's own row, so later edits on either side never affect the other.
+- **Snapshot vs computed value**: a snapshot copies a value onto the row when it is written and never changes; a computed value is worked out from current data on every read, so corrections flow into history.
+- **`numeric`**: Postgres's exact decimal type; unlike `float`, `0.1 + 0.2` is exactly `0.3`, so sums of nutrition values do not drift.
