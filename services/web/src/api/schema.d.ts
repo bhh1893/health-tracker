@@ -28,6 +28,26 @@ export interface paths {
         patch: operations["patch_me"];
         trace?: never;
     };
+    "/api/v1/days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Days
+         * @description List calories and macros per Day with a Meal, newest first, for a Day range.
+         */
+        get: operations["list_days"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/exercise-entries": {
         parameters: {
             query?: never;
@@ -378,6 +398,26 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** DayTotal */
+        DayTotal: {
+            /** Carbs G */
+            carbs_g: number | null;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Fat G */
+            fat_g: number | null;
+            /** Incomplete */
+            incomplete: boolean;
+            /** Kcal */
+            kcal: number;
+            /** Protein G */
+            protein_g: number | null;
+            /** Restaurant Day */
+            restaurant_day: boolean;
         };
         /** ExerciseEntry */
         ExerciseEntry: {
@@ -802,6 +842,47 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_days: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayTotal"][];
                 };
             };
             /** @description Validation Error */

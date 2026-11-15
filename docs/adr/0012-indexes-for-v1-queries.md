@@ -51,6 +51,7 @@ The [first GitHub run of the weekly check](https://github.com/bhh1893/health-tra
 | Sets next page | `exercise_entries_user_day` | 1.1 ms |
 | Sets of an Exercise | `exercise_entries_user_exercise_day` | 3.9 ms |
 | Last N Sessions | `exercise_entries_user_exercise_day` | 0.10 ms |
+| Day totals for a year (`GET /days`, added 2026-11-15, ADR 0023) | `meals_user_day`, `food_entries_meal` | 15 ms |
 | Recent Foods | `food_entries_user_food` | 51 ms |
 | Recent Exercises | `exercise_entries_user_exercise_day` | 0.48 ms |
 | Recent Restaurants | `meals_user_day` | 43 ms |
@@ -65,6 +66,7 @@ No query reads an entry table sequentially. Plans held across 12 fresh `ANALYZE`
 
 - **Recency needs nothing more yet.** Recent Foods and Restaurants are the slowest queries, at about 50 ms, because they read each item's whole history. That runs when a ComboBox opens, not per keystroke, and is small next to a phone's network time. It grows with history, about 17 ms a year. Add the missing index or a bounded lookup if it reaches a few hundred ms.
 - **Only Foods uses a trigram index.** `exercises_name_trgm` and `restaurants_name_trgm` are unused: `user_id` already narrows those Catalogs to 30 to 60 rows, and the GIN index cannot see `user_id`. More users will not change that, since each user's Catalog stays small while the trigram matches grow. The two indexes stay for now because they cost almost nothing at this write rate.
+- **Day totals need no summary table yet.** A 367-Day range reads about 1,100 Meals through `meals_user_day` and their 3,600 Food Entries through `food_entries_meal`, in 15 ms. It joins `foods` by hashing the whole table (20,000 rows across all users), which is the part that grows with the number of users, not with one user's history. Revisit if that scan shows up in a measured plan.
 
 ## Considered Options
 
