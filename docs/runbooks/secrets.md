@@ -10,7 +10,12 @@ Every secret value lives in `~/.config/health-tracker/` on the dev VM, and `iac/
 | `backup.env` | `backup-key` | `health-tracker` | CNPG Barman Cloud plugin |
 | `argocd-deploy-key` | `repo-health-tracker` | `argocd` | Argo CD |
 
-`TAG_BUMP_DEPLOY_KEY` is the exception: it lives only in GitHub Actions secrets and has no file here (ADR 0018).
+Two credentials are the exception: they live only in GitHub Actions secrets and have no file here.
+
+| GitHub Actions secret | What it is | Used by | Set up in |
+| --- | --- | --- | --- |
+| `TAG_BUMP_DEPLOY_KEY` | Deploy key with write access (ADR 0018) | `bump-tags` job | "CI tag bump key" below |
+| `TS_OAUTH_ID`, `TS_OAUTH_SECRET`, `TS_TAILNET` | Tailscale OAuth client with the `policy_file` scope, and the tailnet's name (ADR 0020) | `tailnet-policy-test`, `tailnet-policy-apply` jobs | `docs/runbooks/tailnet.md` |
 
 ## First install
 
@@ -75,6 +80,7 @@ Then finish for the secret you rotated:
 - **`db-api.env`:** `kubectl -n health-tracker rollout restart deployment/api`. CNPG changes the role's password by itself, through the `cnpg.io/reload` label. `api` fails to connect until the restart finishes.
 - **`db-owner.env`:** nothing to restart; the next migration Job reads the new value.
 - **`backup.env`:** this file is a copy of the key held by Garage, so delete the key too, before the steps above: `sudo garage key delete --yes cnpg-backup`. Then confirm backups still work with `backup-status`.
+- **`TS_OAUTH_SECRET`:** revoke the OAuth client in the Tailscale admin console and create a new one (`docs/runbooks/tailnet.md`, "CI credential"). Nothing to restart.
 - **`argocd-deploy-key`:** delete `argocd-deploy-key.pub` as well. Register the new key as in first install step 2, then delete the old one from Windows with `gh repo deploy-key list` and `gh repo deploy-key delete <id>`.
 
 ## Claude guardrail
