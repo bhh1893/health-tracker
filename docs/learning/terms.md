@@ -250,7 +250,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **apt version pin (`pkg=version`)**: installs that exact package version, so a rebuild does not silently pick up a newer one.
 - **`docker` group**: members can use the Docker socket without sudo, which is effectively root on the machine; group changes apply at the next login.
 - **Checksum pin**: a committed sha256 of a download, so a changed or tampered file fails the install.
-- **Terraform**: a tool that creates cloud resources (VMs, networks) from committed text files; it replaces Vagrant here when the project moves to a cloud.
+- **Terraform**: a tool that makes a provider's API (cloud VMs, Cloudflare settings) match committed `.tf` files; `plan` shows the changes, `apply` makes them. First used for Cloudflare (ADR 0029); replaces Vagrant when the project moves to a cloud.
 - **Multi-machine Vagrantfile**: one file defining several VMs with `config.vm.define`; settings outside the `define` block apply to all of them.
 - **`private_network` / `public_network`**: Vagrant's names for a VirtualBox host-only NIC and a bridged NIC.
 - **Default route**: where a machine sends traffic for any address it has no more specific route to; normally there should be exactly one.
@@ -524,3 +524,11 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Kill switch (runtime flag)**: a setting that turns a feature off while the system runs, with no deploy; kept in the database here so GitOps self-heal cannot revert it.
 - **Social engineering**: getting access by fooling a person rather than breaking a system, e.g. a Google account named like an invitee waiting to be approved by mistake.
 - **Out-of-band verification**: confirming a claim through a separate channel (a text, a call) the attacker does not control.
+- **Remotely vs locally managed tunnel**: a Cloudflare Tunnel's routes are held either by Cloudflare (set by dashboard, API or Terraform; `cloudflared` needs only a token) or in a `config.yml` next to `cloudflared` (plus a credentials file).
+- **Terraform provider**: the plugin that teaches Terraform one API, e.g. `cloudflare/cloudflare`; pinned in `.terraform.lock.hcl`.
+- **Terraform state**: Terraform's record of which real objects it manages and their last known settings; it can hold secrets, so where it lives matters.
+- **Remote backend**: storing Terraform state in a shared service (S3-style bucket, HCP Terraform) with locking, so several people or CI can apply safely.
+- **Drift**: the real system no longer matching the code, usually from a manual change; `terraform plan` reveals it.
+- **`terraform import`**: adopting an object that already exists into state, so Terraform manages it without recreating it.
+- **`toFQDNs`**: a Cilium egress rule naming DNS names instead of IPs; Cilium watches the pod's DNS answers and allows the IPs they return.
+- **PodDisruptionBudget (PDB)**: a limit on how many of an app's pods voluntary disruptions (a node drain) may take down at once.

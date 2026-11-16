@@ -57,6 +57,12 @@ Added 2026-11-13, after ADR 0021 put oauth2-proxy in front of `api` and retired 
 - **Amends ADR 0016:** the smoke Job mounts no Secret.
 - **Amends ADR 0015:** retiring `api-token` waits on nothing.
 
+## Amendment: Terraform checks
+
+Added by ADR 0029 ([Tunnel config, credential and rebuild](https://github.com/bhh1893/health-tracker/issues/180)).
+
+- **`terraform fmt -check` and `terraform validate` join `ci-gate`,** path-filtered to `iac/cloudflare/**`, after `terraform init -backend=false`. No credentials and no `plan` in CI: the owner runs `plan` and `apply` from the dev VM.
+
 ## Considered Options
 
 - **Mocked repositories under a classic test pyramid.** Rejected: fast, but proves nothing about the SQL, constraints or trigram behavior where the bugs would be.

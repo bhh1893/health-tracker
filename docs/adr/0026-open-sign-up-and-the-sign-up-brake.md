@@ -22,7 +22,7 @@ Any Google account can sign up and become a Pending User; nothing limits that be
 - **Command (amends ADR 0022):** `iac/scripts/users signup close | open | status`, same `kubectl exec` path as the other subcommands. `close` and `open` print before and after and ask `y/N`. `users list` prints the brake's state in its header, because the state is not visible in git.
 - **Runbook:** `docs/runbooks/signup-brake.md`, two levels, each with exact steps, a check and an undo:
   1. **Too many Sign-ups** (Pending rows piling up): `users signup close`; reopen with `users signup open`.
-  2. **Too much traffic** (load on the home connection): also a Cloudflare custom rule blocking `/oauth2/start`. It stops requests at the edge, before the tunnel, but also blocks existing Users from signing in again until it is removed.
+  2. **Too much traffic** (load on the home connection): also a Cloudflare custom rule blocking `/oauth2/start`, kept in Terraform and switched on with `signup_brake_edge = true` plus `terraform apply` (amended by ADR 0029). It stops requests at the edge, before the tunnel, but also blocks existing Users from signing in again until it is removed.
 
 ## Considered Options
 

@@ -55,6 +55,12 @@ Every secret value is generated once on the dev VM into files outside the repo, 
 - **Verify at build:** a Google web client can have two secrets enabled at once; Google shows a new client secret only once; oauth2-proxy accepts the `dev.yml` cookie secret.
 - **Considered:** keeping the client ID in the secrets file (rejected: nobody can review it, and it treats a public value as a secret); two Secrets (rejected: both sidecars need both values); a copy of the client secret in a password manager (rejected: a second place to keep in sync, to save two minutes after a rare loss).
 
+## Cloudflare tokens (amended by ADR 0029)
+
+- **`cloudflare-tunnel-token`:** copied from the dashboard with the hidden-prompt command; `apply-secrets` loads it into Secret `cloudflared` / `token` in `edge`. A cluster rebuild reuses it; a dev VM rebuild copies it again from the dashboard.
+- **`cloudflare-terraform-token`:** made in the dashboard, scoped to the tunnel and the one zone, read into `CLOUDFLARE_API_TOKEN` at apply time. It never enters the cluster or CI.
+- Terraform state sits in `~/.config/health-tracker/terraform/` and holds no secret. Details and rotation in ADR 0029.
+
 ## Considered Options
 
 - **SOPS + age (encrypted values in git).** The closest alternative and common on real teams. Rejected for v1: the age key must still be stored somewhere, Argo CD would need a plugin to decrypt, and the dev VM stays the single point of failure.

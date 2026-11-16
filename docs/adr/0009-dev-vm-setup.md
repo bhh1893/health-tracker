@@ -18,7 +18,7 @@ The Ubuntu dev VM (ADR 0004) is the daily workstation. Claude Code, the repo che
   - kubectl 1.36 from `pkgs.k8s.io` (same pin as the nodes), `helm`, `gh`, `git`.
   - Cilium CLI from its GitHub release, checksum pinned like `uv`.
   - Claude Code from Anthropic's native installer, auto-updating, not pinned: a workstation tool, never in images or CI, and independent of the project's Node version.
-  - Argo CD CLI and Terraform are added when their tickets decide them.
+  - Argo CD CLI and Terraform are added when their tickets decide them. (Amended by ADR 0029: Terraform, pinned with a checksum, for `iac/cloudflare/`; its state lives in `~/.config/health-tracker/terraform/`.)
 - **Personal setup stays out of this repo.** `dev.yml` takes an optional `dotfiles_repo` variable; when set it clones that repo and runs its `install.sh`, which owns shell, editor, prompt, Claude global config and agent skills. The `install.sh` contract `dev.yml` relies on:
   - non-interactive, runs as the target user with passwordless sudo, exits non-zero on failure;
   - idempotent; prints `DOTFILES_CHANGED` only when it changed something (the task's `changed_when`);
