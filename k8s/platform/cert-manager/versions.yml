@@ -1,4 +1,5 @@
-# Loaded by the Ansible platform role. Here only because the Barman Cloud plugin
-# needs it for its mTLS certificates (ADR 0011). Read the release notes before bumping.
+# Loaded by the Ansible platform role. Issues the Barman Cloud plugin's mTLS
+# certificates (ADR 0011) and the edge Gateway's public certificate (ADR 0025).
+# Read the release notes before bumping.
 cert_manager_chart_repo: https://charts.jetstack.io
 cert_manager_chart_version: v1.21.3

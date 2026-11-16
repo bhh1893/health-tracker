@@ -573,6 +573,17 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`terraform import`**: adopting an object that already exists into state, so Terraform manages it without recreating it.
 - **`toFQDNs`**: a Cilium egress rule naming DNS names instead of IPs; Cilium watches the pod's DNS answers and allows the IPs they return.
 - **PodDisruptionBudget (PDB)**: a limit on how many of an app's pods voluntary disruptions (a node drain) may take down at once.
+- **TTL (DNS)**: how many seconds a resolver may cache an answer before asking again; it bounds how long a DNS change takes to be seen everywhere.
+- **Recursive resolver**: the server your device asks (home router, `1.1.1.1`); it walks root, then TLD registry, then the domain's nameservers, and caches each answer.
+- **DNSSEC**: signatures on DNS answers so a resolver can detect forged ones; the parent zone vouches for the child's key with a DS record.
+- **DS record**: a hash of a zone's signing key, held by the parent (the `.xyz` registry, set through the registrar); it must match the key the nameservers sign with, or the name stops resolving.
+- **Hidden prompt (`read -rs`)**: reading a value from the keyboard without echoing it or putting it on a command line, so it stays out of the screen, shell history and `ps`.
+- **ClusterIssuer**: a cert-manager object naming a certificate authority and how to prove control to it; cluster-wide, and it reads its Secrets only from cert-manager's own namespace.
+- **ACME account**: a key pair cert-manager registers with Let's Encrypt and signs every order with; it is not tied to any certificate, so a rebuild can register a new one freely.
+- **Let's Encrypt staging**: a test copy of Let's Encrypt with much higher rate limits whose certificates no browser trusts; used to prove the setup before asking production.
+- **gateway-shim**: the cert-manager controller that reads the `cert-manager.io/cluster-issuer` annotation on a Gateway and creates a `Certificate` for each HTTPS listener's hostname.
+- **Optimistic locking (Kubernetes)**: every object carries a `resourceVersion`; an update based on a stale version is refused, and the controller re-reads and retries instead of overwriting someone else's change.
+- **Certificate -> CertificateRequest -> Order -> Challenge**: cert-manager's chain for one issuance: what you want, one attempt to get it, the ACME order for it, and one proof per name (here a DNS-01 TXT record); read them in that order when issuance stalls.
 - **STRIDE**: a threat checklist (Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege) used to check a threat model has no blind spot.
 - **Repudiation**: being unable to prove who did an action after the fact; countered by logs that tie each request to an identity.
 - **Path-owning account**: an outside account (DNS, registrar, identity provider, code host) whose takeover hands over the app without touching the servers.

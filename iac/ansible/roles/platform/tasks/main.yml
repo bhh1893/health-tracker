@@ -54,6 +54,21 @@
     wait: true
     timeout: 5m0s
 
+# Goes through cert-manager's admission webhook, which can refuse for a few seconds
+# after the install reports ready, so retry instead of failing the run.
+- name: Apply the Let's Encrypt ClusterIssuers
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - apply
+      - --filename
+      - "{{ platform_dir }}/cert-manager/cluster-issuers.yaml"
+  register: platform_issuers_apply
+  until: platform_issuers_apply.rc == 0
+  retries: 6
+  delay: 10
+  changed_when: platform_issuers_apply.stdout_lines | reject('search', ' unchanged$') | list | length > 0
+
 # Must share the operator's namespace, which is how CNPG discovers it.
 - name: Install the Barman Cloud plugin
   kubernetes.core.helm:
@@ -79,6 +94,16 @@
       - "{{ platform_dir }}/argocd/values.yaml"
     wait: true
     timeout: 10m0s
+
+# Before the Gateway: its cert-manager annotation starts an issuance as soon as it
+# exists, unless the saved certificate is already in place (ADR 0025). The same
+# script restore-data runs, so there is still one way secrets enter the cluster.
+- name: Copy the secrets into the cluster
+  ansible.builtin.command:
+    argv:
+      - "{{ playbook_dir }}/../scripts/apply-secrets"
+  register: platform_apply_secrets
+  changed_when: platform_apply_secrets.stdout_lines | reject('search', ' unchanged$') | list | length > 0
 
 # The Gateway is platform, not app, so Argo CD does not own it (ADR 0016).
 - name: Apply the edge Gateway

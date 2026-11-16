@@ -2,13 +2,29 @@
 
 Every secret value lives in `~/.config/health-tracker/` on the dev VM, and `iac/scripts/apply-secrets` copies them into the cluster (ADR 0015). Git holds names, never values. Run commands on the VM unless a step says Windows.
 
-| File | Kubernetes Secret | Namespace | Used by |
-| --- | --- | --- | --- |
-| `api-token` | `api-token` (key `token`) | `health-tracker` | nginx sidecar |
-| `db-owner.env` | `db-owner` | `health-tracker` | Migration Job, CNPG role `app` |
-| `db-api.env` | `db-api` | `health-tracker` | `api`, CNPG role `api_rw` |
-| `backup.env` | `backup-key` | `health-tracker` | CNPG Barman Cloud plugin |
-| `argocd-deploy-key` | `repo-health-tracker` | `argocd` | Argo CD |
+| File | Made by | Kubernetes Secret | Namespace | Used by |
+| --- | --- | --- | --- | --- |
+| `api-token` | `dev.yml` | `api-token` (key `token`) | `health-tracker` | nginx sidecar |
+| `db-owner.env` | `dev.yml` | `db-owner` | `health-tracker` | Migration Job, CNPG role `app` |
+| `db-api.env` | `dev.yml` | `db-api` | `health-tracker` | `api`, CNPG role `api_rw` |
+| `backup.env` | `dev.yml` | `backup-key` | `health-tracker` | CNPG Barman Cloud plugin |
+| `argocd-deploy-key` | `dev.yml` | `repo-health-tracker` | `argocd` | Argo CD |
+| `cloudflare-dns01-token` | Cloudflare dashboard, then `enter-secret` (`cloudflare.md`) | `cloudflare-dns01-token` (key `api-token`) | `cert-manager` | Let's Encrypt ClusterIssuers (DNS-01) |
+| `health-tls.json` (optional) | cert-manager, then `save-tls` | `health-tls` | `edge` | Gateway `https` listener |
+
+A value made by hand in a web console goes in with `iac/scripts/enter-secret <file>`, run yourself in a terminal: it reads the value at a hidden prompt, so it never reaches the screen, shell history, `ps` or Claude. `apply-secrets` stops if any file above is missing, except `health-tls.json`.
+
+## Gateway certificate
+
+cert-manager issues the Gateway's certificate itself (ADR 0025). The copy on the dev VM exists only so a rebuild restores it instead of asking Let's Encrypt again, which allows 5 certificates per name per 7 days. `apply-secrets` creates the Secret only if it is missing; it never replaces a live one, because after a renewal the cluster's copy is the newer one.
+
+Save it after the first issuance and after each renewal (about every 60 days; `kubectl -n edge get certificate health-tls -o jsonpath='{.status.renewalTime}'` says when). Run it yourself: it reads the private key.
+
+```
+iac/scripts/save-tls
+```
+
+It prints the certificate's subject, issuer and end date. A stale copy is not dangerous: after a rebuild, cert-manager sees it is past its renewal time (or expired) and issues a new one, which costs one certificate from the weekly limit and, if expired, a couple of minutes of `:443` refusing handshakes.
 
 Two credentials are the exception: they live only in GitHub Actions secrets and have no file here.
 
@@ -79,6 +95,7 @@ Then finish for the secret you rotated:
 - **`api-token`:** `kubectl -n health-tracker rollout restart deployment/api`, then `show-token` and re-paste on the phone.
 - **`db-api.env`:** `kubectl -n health-tracker rollout restart deployment/api`. CNPG changes the role's password by itself, through the `cnpg.io/reload` label. `api` fails to connect until the restart finishes.
 - **`db-owner.env`:** nothing to restart; the next migration Job reads the new value.
+- **`cloudflare-dns01-token`:** not generated, so skip the `dev.yml` step: roll the token in Cloudflare and enter it again (`cloudflare.md`, "Rotate"), then `apply-secrets`. Nothing to restart.
 - **`backup.env`:** this file is a copy of the key held by Garage, so delete the key too, before the steps above: `sudo garage key delete --yes cnpg-backup`. Then confirm backups still work with `backup-status`.
 - **`TS_OAUTH_SECRET`:** revoke the OAuth client in the Tailscale admin console and create a new one (`docs/runbooks/tailnet.md`, "CI credential"). Nothing to restart.
 - **`argocd-deploy-key`:** delete `argocd-deploy-key.pub` as well. Register the new key as in first install step 2, then delete the old one from Windows with `gh repo deploy-key list` and `gh repo deploy-key delete <id>`.

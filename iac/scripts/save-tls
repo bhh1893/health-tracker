@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Saves the Gateway's certificate Secret to ~/.config/health-tracker/health-tls.json,
+# so apply-secrets can put it back after a rebuild instead of cert-manager issuing a
+# new one (ADR 0025; Let's Encrypt allows 5 per name per 7 days).
+#
+# Run it yourself after the first issuance and after each renewal (about every 60
+# days): it reads a private key, which Claude does not do (ADR 0015). It prints only
+# the certificate's dates, never the key.
+set -euo pipefail
+
+secrets_dir="$HOME/.config/health-tracker"
+namespace=edge
+secret=health-tls
+out="$secrets_dir/$secret.json"
+
+# Keep what cert-manager needs to recognise its own Secret: the data, the type, and
+# its labels and annotations (issuer name, certificate name). Drop what the API
+# server owns (uid, resourceVersion, managedFields, timestamps), which a create on a
+# new cluster would refuse or ignore, and kubectl's last-applied copy, which holds
+# the key a second time.
+clean='
+import json, sys
+s = json.load(sys.stdin)
+m = s["metadata"]
+ann = {k: v for k, v in m.get("annotations", {}).items()
+       if k != "kubectl.kubernetes.io/last-applied-configuration"}
+json.dump({
+    "apiVersion": "v1",
+    "kind": "Secret",
+    "type": s["type"],
+    "metadata": {
+        "name": m["name"],
+        "namespace": m["namespace"],
+        "labels": m.get("labels", {}),
+        "annotations": ann,
+    },
+    "data": s["data"],
+}, sys.stdout, indent=2)
+'
+
+umask 077
+mkdir -p "$secrets_dir"
+kubectl get secret "$secret" --namespace "$namespace" -o json |
+  python3 -I -c "$clean" >"$out.tmp"
+mv "$out.tmp" "$out"
+
+echo "Saved $namespace/$secret to $out:"
+python3 -I -c 'import json, sys, base64; sys.stdout.buffer.write(base64.b64decode(json.load(open(sys.argv[1]))["data"]["tls.crt"]))' "$out" |
+  openssl x509 -noout -subject -issuer -enddate
