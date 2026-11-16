@@ -573,9 +573,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`terraform import`**: adopting an object that already exists into state, so Terraform manages it without recreating it.
 - **`toFQDNs`**: a Cilium egress rule naming DNS names instead of IPs; Cilium watches the pod's DNS answers and allows the IPs they return.
 - **PodDisruptionBudget (PDB)**: a limit on how many of an app's pods voluntary disruptions (a node drain) may take down at once.
-- **Natural vs surrogate key**: a natural key is a value from the real world that already identifies a thing (OIDC `issuer` + `subject`); a surrogate key is an id the database makes up (`users.id`). Other tables point at the surrogate, so the natural one can change without touching them.
-- **Postgres `ENUM`**: a custom column type limited to a fixed list of labels; a value can be added but never removed, which is why Role is checked `text` instead.
-- **`REVOKE`**: takes back a privilege granted earlier; here it removes `UPDATE` and `DELETE` on `role_changes` from `api_rw`, so "append-only" is enforced by the database, not by convention.
-- **Accessible description**: extra text a screen reader reads after a control's name, linked with `aria-describedby`; hints and errors belong here, not inside the `<label>`, which would fold them into the name.
-- **Portal**: React rendering a component's DOM somewhere else (a modal into `document.body`); the DOM moves, but React events still bubble along the component tree, so a portaled form's submit reaches a parent component's form handler.
-- **Mirrored validation**: the client re-checks the server's rules so the user sees errors before a round trip, in the form's own words; the server stays the authority, and a test pins the client's numbers to it.
+- **STRIDE**: a threat checklist (Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege) used to check a threat model has no blind spot.
+- **Repudiation**: being unable to prove who did an action after the fact; countered by logs that tie each request to an identity.
+- **Path-owning account**: an outside account (DNS, registrar, identity provider, code host) whose takeover hands over the app without touching the servers.
+- **Loki**: Grafana's log store; it indexes only labels (pod, namespace) rather than full text, which keeps it cheap to run.
