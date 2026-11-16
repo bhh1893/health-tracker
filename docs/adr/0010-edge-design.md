@@ -10,6 +10,8 @@ The phone reaches one Cilium Gateway (Gateway API, ADR 0001) on a LoadBalancer I
 
 **Amended by ADR 0021:** oauth2-proxy sidecars in the `api` and `web` pods replace the nginx sidecar and its token; nothing, not even the `web` bundle, is served without a session.
 
+**Amended by ADR 0025:** the way in is now a Cloudflare Tunnel, and ADR 0020 is superseded. The Gateway has one HTTPS listener on `:443` and no address outside the cluster; `:80` is gone (Cloudflare redirects to HTTPS at its edge). HSTS is on at Cloudflare, because browsers only ever see Cloudflare's certificate, which rebuilds never touch.
+
 ## Shape (v1)
 
 - **Gateway:** one `Gateway` in namespace `edge`, owned by `k8s/platform` (ADR 0003), listening on `:80`. The Service Cilium creates for it takes `192.168.0.250` from the pool (`.251` spare). It admits `HTTPRoute`s from the app namespace only. The routes themselves ship with each service's Kustomize base: `/api/*` to the `api` pod's sidecar port, `/` to `web`. `/healthz` and `/readyz` are not routed (ADR 0006).
