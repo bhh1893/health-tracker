@@ -97,7 +97,7 @@ What a User may do. Every User has exactly one: Admin, Member or Pending.
 _Avoid_: Permission, access level, access row
 
 **Sign-up**:
-A person's first sign-in, which creates their User as Pending.
+A person's first sign-in, which creates their User as Pending. Open to anyone with a Google account unless the Admin has closed it; while closed, no new User is created and existing Users are unaffected.
 _Avoid_: Registration, account creation
 
 **Approval**:

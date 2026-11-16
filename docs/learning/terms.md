@@ -521,3 +521,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Keyset walking by range**: reading a long history in pages by asking for "the rows before the oldest one I have", instead of an offset that shifts when rows are added.
 - **Zero baseline**: whether a chart's y axis starts at 0; right for amounts compared by size, wrong for measures read by their change, which it flattens.
 - **Secondary encoding**: showing a category by shape or label as well as color, so a chart still reads for colorblind readers and in grayscale.
+- **Kill switch (runtime flag)**: a setting that turns a feature off while the system runs, with no deploy; kept in the database here so GitOps self-heal cannot revert it.
+- **Social engineering**: getting access by fooling a person rather than breaking a system, e.g. a Google account named like an invitee waiting to be approved by mistake.
+- **Out-of-band verification**: confirming a claim through a separate channel (a text, a call) the attacker does not control.
