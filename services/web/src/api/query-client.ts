@@ -22,7 +22,8 @@ export function createQueryClient() {
         // so a screen revisited within 30 s can skip the refetch.
         staleTime: 30_000,
       },
-      // Safe only because every write is an idempotent PUT or DELETE (ADR 0007).
+      // Safe only because every write is idempotent (ADR 0007): a PUT or DELETE, or
+      // a PATCH that sets values outright and never adds to them.
       mutations: { retry: shouldRetry },
     },
   });
