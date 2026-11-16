@@ -57,6 +57,17 @@ Added 2026-11-13, after ADR 0021 put oauth2-proxy in front of `api` and retired 
 - **Amends ADR 0016:** the smoke Job mounts no Secret.
 - **Amends ADR 0015:** retiring `api-token` waits on nothing.
 
+## Amendment: authorization as the only wall
+
+Added 2026-11-15, after ADR 0025 made the app public. With no tailnet in front, authorization is the only thing between the internet and the data, so it is proven by tests that fail when a route is added or changed carelessly, not by review alone. Decided in [Authorization as the only wall](https://github.com/bhh1893/health-tracker/issues/175).
+
+- **Route-walk test, fail closed.** One pytest walks `app.routes`, so a new route is covered without anyone remembering to add it. Every route must give `401` with no identity headers and `403` `pending-approval` for a Pending User. Exemptions sit in one explicit allowlist in the test: `/healthz` and `/readyz` are public, and `GET /api/me` is open to Pending. Exempting a route means editing that list, which shows up in review.
+- **`current_user` as a router dependency.** Every data router declares `current_user` as a dependency, so no endpoint can forget it. Endpoints still take `CurrentUser` where they need the id. The dependency prevents the mistake; the route walk proves it and also catches a route registered outside those routers.
+- **Two-Member isolation test.** For every route that takes an id, Member A creates the resource and Member B gets `404` on `GET`, `PUT`, `PATCH` and `DELETE`. It is `404`, not `403`, so B cannot learn the id exists. B's list, Day and search endpoints never return A's rows. Reference Foods are shared by design and are the one listed exemption.
+- **Forged identity headers with a session stay manual**, as above, but run at build **and after every oauth2-proxy version bump**: a proxy that stopped overwriting client-sent headers would let anyone act as any User. The trigger is a step in `docs/runbooks/patching.md` (ADR 0028).
+- **Smoke Job adds one check:** `web`'s `/readyz` body is a bare status and nothing more, since it is publicly reachable (ADR 0025).
+- **No automated probe of the public hostname.** Cloudflare's Bot Fight Mode challenges automated traffic for the whole zone and cannot be skipped on the free plan, so a scheduled probe would mostly test the challenge. The public path is checked by hand at build (ADR 0025).
+
 ## Amendment: Terraform checks
 
 Added by ADR 0029 ([Tunnel config, credential and rebuild](https://github.com/bhh1893/health-tracker/issues/180)).

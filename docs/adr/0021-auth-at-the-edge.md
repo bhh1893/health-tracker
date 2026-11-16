@@ -6,6 +6,8 @@ status: accepted
 
 Nothing is served without a session, not even the `web` bundle. oauth2-proxy replaces the nginx sidecar from ADR 0010 and is added to the `web` pod as well. Both copies share one session cookie and run the server-side OIDC code flow with Google. `api` and `web`'s nginx still listen only on `127.0.0.1`, so the proxy is the only way in. `api` learns who is calling from headers the proxy sets, and Pending is turned into `403` inside `api`. Decided in [Identity provider and sign-in flow](https://github.com/bhh1893/health-tracker/issues/123) (the flow) and [Auth enforcement at the edge](https://github.com/bhh1893/health-tracker/issues/124) (the enforcement). This amends ADR 0006, ADR 0010 and ADR 0015.
 
+**Corrected 2026-11-15:** the rejected "Gateway external auth" option first said Cilium did not implement it. Cilium 1.20.4 does; the option now gives the real reasons it stays rejected. The decision is unchanged. Checked in [Revisit auth placement: sidecars vs Gateway ExternalAuth](https://github.com/bhh1893/health-tracker/issues/181).
+
 ## Shape
 
 ### The sign-in flow
@@ -53,7 +55,11 @@ Nothing is served without a session, not even the `web` bundle. oauth2-proxy rep
 
 - **One central `auth-proxy` Deployment that the Gateway sends everything to.** The more common setup, with one proxy instead of two. Rejected: `api` would have to listen on its pod IP, so the trust boundary would be either a NetworkPolicy (fails open on a mistake, as ADR 0010 found) or `api` verifying the token itself.
 - **`api` verifies the ID token (JWT against Google's JWKS).** Rejected: it defends against a misconfigured proxy, but it adds auth code, key fetching and token-refresh concerns to `api`. Localhost binding already gives that protection.
-- **Gateway external auth (Gateway API `ExternalAuth` filter, Envoy `ext_authz`).** What a larger company would use. Rejected: not implemented by Cilium's Gateway API support as far as we know, and the hand-written `CiliumEnvoyConfig` route was rejected in ADR 0010.
+- **Gateway external auth (Gateway API `ExternalAuth` filter, Envoy `ext_authz`).** What a larger company would use: one proxy, with auth managed in one place for many services. Rejected for three reasons:
+  - **Experimental only:** Cilium 1.20.4 implements it, but Gateway API v1.6.3 ships the filter only in the experimental CRDs, and the cluster installs the standard ones.
+  - **Open bug [cilium#49132](https://github.com/cilium/cilium/issues/49132):** deleting a route that has the filter makes other routes on the Gateway answer `403` on existing connections for up to 600 s.
+  - **Weaker trust boundary:** `api` would listen on its pod IP and take identity headers from the Gateway, so only a NetworkPolicy would stop forged headers. That policy fails open on a mistake, the same objection as the central `auth-proxy` Deployment above. With the app public (ADR 0025), that matters more.
+  - **Revisit** if the filter reaches the standard channel and cilium#49132 is fixed, or if a third service needs auth.
 - **oauth2-proxy's `google` provider.** Rejected: Workspace group features we don't use, and it ties the config to Google.
 - **Redis session store.** Rejected: allows revoking one session on the server, but adds a stateful service. Removing a person's Role in `api` already stops them reaching data.
 - **Problem Details body on the proxy's `401`.** Rejected: needs a custom error template scoped to the API route, and clients branch on the status code anyway (ADR 0006).

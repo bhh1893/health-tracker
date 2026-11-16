@@ -6,6 +6,8 @@ status: accepted
 
 CI pushes the tag bump to `main` with a write deploy key held in a GitHub Actions secret, and deploy keys are the ruleset's bypass actor. ADR 0016 planned to bypass with the GitHub Actions app, but GitHub refuses it on a repo owned by a personal account: `Actor GitHub Actions integration must be part of the ruleset source or owner organization` ([ticket #56](https://github.com/bhh1893/health-tracker/issues/56)).
 
+**Amended by ADR 0028:** the key is a secret of a GitHub Environment that only `main` may use, not a repository secret, so a workflow run on a PR branch cannot read it.
+
 ## Decision
 
 - **Credential:** one ed25519 deploy key with write access, titled "health-tracker tag bump", stored as the Actions secret `TAG_BUMP_DEPLOY_KEY`. The private key is deleted after upload. Steps are in `docs/runbooks/secrets.md`.
