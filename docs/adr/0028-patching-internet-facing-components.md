@@ -20,7 +20,7 @@ Going public changes who can exploit a known bug, not the software. Behind the t
 - **Dependabot security updates on:** when an alert has a fixed version, Dependabot opens the PR itself.
 - **Dependabot version updates** in `.github/dependabot.yml` for `pip`, `npm`, `github-actions` and `docker` (Dockerfiles): **monthly**, one grouped PR per ecosystem.
 - **Release-watch** for what Dependabot cannot read (`versions.yml` pins, image pins in Kubernetes manifests): on GitHub, Watch -> Custom -> Releases and Security advisories on oauth2-proxy, Cilium and `cloudflared`. The runbook lists every watched repo.
-- **Monthly sweep**, on the same day as the Dependabot PRs: compare every pin Dependabot cannot read against its latest release, and bump what is behind.
+- **Monthly sweep**, on the same day as the Dependabot PRs: compare every pin Dependabot cannot read against its latest release, and bump what is behind. The same sweep checks the tunnel's connectors in the Cloudflare dashboard: exactly two, both from the home IP; anything else means rotating the tunnel token (ADR 0030).
 
 ### Pinning
 

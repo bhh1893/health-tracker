@@ -12,7 +12,7 @@ import { toPutMeal, type Meal, type MealPage } from "./meals";
 
 const MAX_PAGE_SIZE = 200;
 
-const MEAL_WRITES_KEY = ["meal-write"];
+export const MEAL_WRITES_KEY = ["meal-write"];
 const dayKey = (day: string) => ["meals", day];
 
 // Writes run one at a time, in order, as for Sets: a Delete Meal sent while its PUT

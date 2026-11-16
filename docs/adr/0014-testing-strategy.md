@@ -66,7 +66,15 @@ Added 2026-11-15, after ADR 0025 made the app public. With no tailnet in front, 
 - **Two-Member isolation test.** For every route that takes an id, Member A creates the resource and Member B gets `404` on `GET`, `PUT`, `PATCH` and `DELETE`. It is `404`, not `403`, so B cannot learn the id exists. B's list, Day and search endpoints never return A's rows. Reference Foods are shared by design and are the one listed exemption.
 - **Forged identity headers with a session stay manual**, as above, but run at build **and after every oauth2-proxy version bump**: a proxy that stopped overwriting client-sent headers would let anyone act as any User. The trigger is a step in `docs/runbooks/patching.md` (ADR 0028).
 - **Smoke Job adds one check:** `web`'s `/readyz` body is a bare status and nothing more, since it is publicly reachable (ADR 0025).
-- **No automated probe of the public hostname.** Cloudflare's Bot Fight Mode challenges automated traffic for the whole zone and cannot be skipped on the free plan, so a scheduled probe would mostly test the challenge. The public path is checked by hand at build (ADR 0025).
+- ~~**No automated probe of the public hostname.**~~ Superseded by the amendment below: ADR 0027 turned Bot Fight Mode off, so the reason no longer holds.
+
+## Amendment: public-surface probe
+
+Added by ADR 0030 ([Public threat model](https://github.com/bhh1893/health-tracker/issues/179)).
+
+- **A scheduled GitHub Actions workflow probes `https://health.nibblejiggle.xyz` daily,** and on manual dispatch, with no credentials. It asserts ADR 0025's unauthenticated surface: `/api/v1/meals` gives `401`; `/` serves the Sign-in page; `web`'s `/readyz` body is a bare status; an unknown path returns no data; responses carry HSTS.
+- **A failure emails the owner** through GitHub's failed-workflow notification. It catches a route made public by mistake after build, and doubles as uptime monitoring.
+- It is not part of `ci-gate`: it tests the live deployment, not a commit.
 
 ## Amendment: Terraform checks
 

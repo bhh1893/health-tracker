@@ -584,3 +584,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **gateway-shim**: the cert-manager controller that reads the `cert-manager.io/cluster-issuer` annotation on a Gateway and creates a `Certificate` for each HTTPS listener's hostname.
 - **Optimistic locking (Kubernetes)**: every object carries a `resourceVersion`; an update based on a stale version is refused, and the controller re-reads and retries instead of overwriting someone else's change.
 - **Certificate -> CertificateRequest -> Order -> Challenge**: cert-manager's chain for one issuance: what you want, one attempt to get it, the ACME order for it, and one proof per name (here a DNS-01 TXT record); read them in that order when issuance stalls.
+- **STRIDE**: a threat checklist (Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege) used to check a threat model has no blind spot.
+- **Repudiation**: being unable to prove who did an action after the fact; countered by logs that tie each request to an identity.
+- **Path-owning account**: an outside account (DNS, registrar, identity provider, code host) whose takeover hands over the app without touching the servers.
+- **Loki**: Grafana's log store; it indexes only labels (pod, namespace) rather than full text, which keeps it cheap to run.
