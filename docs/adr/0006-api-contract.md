@@ -12,6 +12,8 @@ The v1 API is a JSON REST API under `/api/v1`, described by the generated OpenAP
 
 **Amended by ADR 0023:** `/foods` gains `nutrition` and `piece_g`; new `GET /reference-foods` and `GET /days` (a per-Day summary, unlike the rejected `/days/{day}` aggregate read); `/api/me` gains `restaurant_day_kcal`.
 
+**Amended by ADR 0027:** every operation can return `429` (Problem type `urn:health-tracker:problem:rate-limited`, with `Retry-After`) when a User passes the per-User rate limit.
+
 ## Shape
 
 - **Resources:**

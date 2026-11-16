@@ -8,6 +8,8 @@ GitHub Actions builds an image per changed service and pushes it to a public GHC
 
 The constraint that shaped it: GitHub-hosted runners cannot reach `192.168.x.x`, so CI cannot deploy to the cluster, and a registry on the dev VM or in the cluster would be unreachable to CI. The cluster must pull.
 
+**Amended by ADR 0028:** base images and dependencies are noticed by Dependabot (alerts, security updates, monthly version updates) and by release-watch plus a monthly sweep for pins it cannot read, instead of manual bumps alone; internet-facing images are pinned by tag and digest; `TAG_BUMP_DEPLOY_KEY` moves into a `main`-only Environment.
+
 ## Shape
 
 - **Trigger:** every merge to `main` that passes `ci-gate` (ADR 0014) deploys. Path filters (ADR 0003) mean only a changed service is built. No release tags, no `latest`.
