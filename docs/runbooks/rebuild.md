@@ -72,12 +72,13 @@ A rebuild is a restore drill and a deploy drill in one, but it only proves what 
 
 ## Results
 
-Both run on 2026-11-15 from `origin/main` at `bdb4e80`, with no manual step between the command and `REBUILD OK`. In both, the second playbook run reported `changed=0` on every host.
+The first two ran on 2026-11-15 from `origin/main` at `bdb4e80`, the third on 2026-11-16 from `origin/gateway-certificate` at `e907895` (#146). None had a manual step between the command and `REBUILD OK`, which also means the second playbook run reported `changed=0` on every host.
 
 | Run | Time | Proof |
 | --- | --- | --- |
 | `rebuild-cluster.ps1` | 19m37s | Restored from `pg-20261109T065551Z`. Row counts in all six data tables matched the counts taken before the rebuild, Alembic at `0002`, `api-smoke` succeeded, `backup-status` OK on the new generation. |
 | `rebuild-cluster.ps1 -Fresh` | 19m04s | Bucket emptied first (160 objects, 4 generations). The `api-migrate` log shows `-> 0001` then `0001 -> 0002` on an empty database. One seeded user, every other table empty, `api-smoke` succeeded, `backup-status` OK with 0 archive failures. |
+| `rebuild-cluster.ps1` (Gateway certificate) | 18m39s | `apply-secrets` restored `edge/health-tls` before the Gateway: the served certificate kept its first issuance (`notBefore` 2026-11-16 08:29:54 UTC), the `Certificate` was Ready with no `Order` or `CertificateRequest`, and `curl --resolve` on `:443` returned `200` with no `-k`. Nothing was issued (ADR 0025). |
 
 So recovery time (RTO) for losing all three nodes is about 20 minutes, nearly all of it creating the VMs and the two playbook runs. The amount of data makes no visible difference yet.
 

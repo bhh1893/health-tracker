@@ -18,6 +18,8 @@ A value made by hand in a web console goes in with `iac/scripts/enter-secret <fi
 
 cert-manager issues the Gateway's certificate itself (ADR 0025). The copy on the dev VM exists only so a rebuild restores it instead of asking Let's Encrypt again, which allows 5 certificates per name per 7 days. `apply-secrets` creates the Secret only if it is missing; it never replaces a live one, because after a renewal the cluster's copy is the newer one.
 
+Nothing alerts if a renewal fails; that is v2 observability work ("Out of scope" on [Health Tracker v1](https://github.com/bhh1893/health-tracker/issues/2)). Until then, check by hand after each renewal date (below) that `kubectl -n edge get certificate health-tls` shows `READY True` with a later `notAfter`; otherwise a failed renewal shows up only as the certificate expiring 30 days later.
+
 Save it after the first issuance and after each renewal (about every 60 days; `kubectl -n edge get certificate health-tls -o jsonpath='{.status.renewalTime}'` says when). Run it yourself: it reads the private key.
 
 ```
