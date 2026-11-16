@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded by ADR-0025
 ---
 
 # Private access over Tailscale at `health.nibblejiggle.xyz`, HTTPS on the Gateway, no LAN path
+
+**Superseded by ADR 0025:** public access through Cloudflare Tunnel. Its domain, DNS hosting and certificate sections carry over there unchanged; whether Tailscale and the LAN path stay is decided by [Tailscale and the LAN path after going public](https://github.com/bhh1893/health-tracker/issues/177).
 
 The app is reachable only from devices on the owner's tailnet, at home and away, through one name: `https://health.nibblejiggle.xyz`. The Tailscale Kubernetes Operator publishes the Cilium Gateway as a Tailscale Service with a stable tailnet IP; public DNS on Cloudflare points the name at that IP; cert-manager gets the certificate by DNS-01. The home LAN path (`192.168.0.250`, bridged NIC, L2 announcement) is removed. This amends ADR 0010 (edge), ADR 0015 (secrets) and ADR 0019 (node firewall) ([Private access and domain design](https://github.com/bhh1893/health-tracker/issues/122)).
 

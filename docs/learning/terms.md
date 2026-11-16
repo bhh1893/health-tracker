@@ -521,3 +521,29 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Keyset walking by range**: reading a long history in pages by asking for "the rows before the oldest one I have", instead of an offset that shifts when rows are added.
 - **Zero baseline**: whether a chart's y axis starts at 0; right for amounts compared by size, wrong for measures read by their change, which it flattens.
 - **Secondary encoding**: showing a category by shape or label as well as color, so a chart still reads for colorblind readers and in grayscale.
+- **Network layers (TCP/IP model)**: networking split into stacked jobs: link (one hop on a wire or Wi-Fi), IP (addressing and routing across the internet), transport (TCP/UDP, ports and reliable delivery), application (HTTP, DNS); TLS sits between transport and application.
+- **IP address**: the number that identifies a machine on a network; public ones are reachable from the internet, private ones (`192.168.x.x`, `10.x.x.x`) only inside their own network.
+- **Packet**: one small chunk of data with a source and destination IP on the front; a request is split into many packets that routers forward hop by hop.
+- **Port**: a number (0-65535) that picks which program on a machine gets the traffic; HTTPS is 443 and HTTP is 80 by convention.
+- **TCP**: a transport protocol that turns unreliable packets into an ordered, reliable byte stream between two ports (a "connection"); UDP is the no-guarantees alternative.
+- **HTTP**: the application protocol of the web: a request (method, path, headers, body) and a response (status, headers, body), sent as plain text unless wrapped in TLS.
+- **TLS**: encryption wrapped around a TCP connection, so only the two ends can read it; the server proves its identity with a certificate. HTTPS is HTTP inside TLS.
+- **Certificate**: a file that says "this public key belongs to `health.nibblejiggle.xyz`", signed by a certificate authority (e.g. Let's Encrypt) that browsers trust.
+- **DNS**: the internet's phone book: turns a name like `health.nibblejiggle.xyz` into an IP address (A record) or into another name to look up (CNAME record).
+- **NAT / port-forwarding**: a home router shares one public IP across all home devices and drops unsolicited inbound traffic; port-forwarding is the router setting that sends inbound traffic on a port to one device.
+- **Reverse proxy**: a server that receives requests on behalf of other servers and forwards them; Cloudflare's edge, the Cilium Gateway and oauth2-proxy are all reverse proxies.
+- **Outbound tunnel**: a program inside a private network dials out to a provider and holds the connection open, so the provider can send requests back down it without any inbound port opened.
+- **Edge / CDN**: a provider's data centers spread worldwide; your visitors connect to the nearest one instead of to your server. Cloudflare's edge is where its features run.
+- **Proxied record (orange cloud)**: a Cloudflare DNS record that answers with Cloudflare's own IPs, so traffic goes through Cloudflare's edge first.
+- **WAF (Web Application Firewall)**: rules at a reverse proxy that inspect decrypted HTTP requests and block bad ones (known attack patterns, too many requests, bots).
+- **DDoS**: distributed denial of service: flooding a target with traffic from many machines so real users cannot get through.
+- **Certificate authority (CA)**: an organization whose signing key is pre-installed in browsers and phones; a certificate it signs is trusted everywhere. Let's Encrypt is a free one.
+- **ACME**: the protocol Let's Encrypt speaks: request a certificate, prove you control the name with a challenge, receive the signed certificate (valid 90 days).
+- **HTTP-01 challenge**: Let's Encrypt proves control of a name by fetching a token from `http://<name>/.well-known/acme-challenge/`; needs the server reachable from the internet on port 80.
+- **SNI (Server Name Indication)**: the hostname a client sends unencrypted at the very start of a TLS handshake, so a server holding several certificates knows which one to present.
+- **Apex domain**: the bare registered name (`nibblejiggle.xyz`) with no subdomain in front.
+- **CNAME flattening**: Cloudflare answering a CNAME at the apex with the target's IPs, because plain DNS forbids a CNAME next to the apex's other records.
+- **Universal SSL**: the free certificate Cloudflare issues and renews for a proxied zone, covering the apex and one level of subdomain; it is what browsers see on link A.
+- **ClusterIP vs LoadBalancer Service**: a ClusterIP Service has a virtual IP reachable only from inside the cluster; a LoadBalancer Service also gets an address outside it (here, once, a home LAN IP).
+- **Network policy**: firewall rules between workloads ("only pods labelled X may connect to Y on port Z"), enforced by the CNI; with none, every pod can reach every other pod.
+- **Cilium identity**: a number Cilium gives each group of pods with the same labels; policies match identities instead of IPs, and Gateway traffic carries the special `reserved:ingress` identity.
