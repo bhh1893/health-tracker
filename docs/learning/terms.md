@@ -573,3 +573,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`terraform import`**: adopting an object that already exists into state, so Terraform manages it without recreating it.
 - **`toFQDNs`**: a Cilium egress rule naming DNS names instead of IPs; Cilium watches the pod's DNS answers and allows the IPs they return.
 - **PodDisruptionBudget (PDB)**: a limit on how many of an app's pods voluntary disruptions (a node drain) may take down at once.
+- **Accessible description**: extra text a screen reader reads after a control's name, linked with `aria-describedby`; hints and errors belong here, not inside the `<label>`, which would fold them into the name.
+- **Portal**: React rendering a component's DOM somewhere else (a modal into `document.body`); the DOM moves, but React events still bubble along the component tree, so a portaled form's submit reaches a parent component's form handler.
+- **Mirrored validation**: the client re-checks the server's rules so the user sees errors before a round trip, in the form's own words; the server stays the authority, and a test pins the client's numbers to it.
