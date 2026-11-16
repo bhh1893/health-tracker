@@ -19,6 +19,7 @@ Two limits, each where the layer knows enough to apply it. Cloudflare sees the v
 ### `api`
 
 - **One limit for every Role: 300 requests per minute per User, per pod**, moving window, reads and writes alike. A busy session is about 60 a minute (a dashboard load fires about 10), so 300 leaves 5x headroom and cuts a runaway loop at 100 requests/s within about 3 s. Pending is still restricted to `GET /api/me` by authorization (ADR 0021); the limit applies on top.
+- **Writes also count against a separate limit: 60 per minute per User, per pod** (`POST`, `PUT`, `PATCH`, `DELETE`), configured as `WRITE_RATE_LIMIT=60/minute`. A real logging session is under 10 writes a minute. At 300 a minute across 2 pods a stolen session or bad Member could fill Postgres's 5Gi volume in days; at 60 it takes weeks, long enough to notice in daily use. Same `429` Problem as below. Added by ADR 0030 ([Public threat model](https://github.com/bhh1893/health-tracker/issues/179)).
 - **Keyed on the identity headers** oauth2-proxy sets and overwrites (`(issuer, sub)`), **checked before the database lookup**, so a throttled request never touches Postgres.
 - **slowapi**, counters in each pod's memory. With 2 replicas the real ceiling is up to 600 a minute. Accepted: the limit guards against runaways and a stolen session, not exact quotas.
 - **Configured by env var** (e.g. `RATE_LIMIT=300/minute`), so changing it is a manifest change, not a code change.
@@ -41,7 +42,7 @@ Two limits, each where the layer knows enough to apply it. Cloudflare sees the v
 - **Rate limiting at the Cilium Gateway.** Rejected: only through a hand-written `CiliumEnvoyConfig`, and Envoy's local limit counts per Envoy process, so per node.
 - **Shared counters in Redis.** Rejected: one more stateful service to run and back up to make a safety limit exact.
 - **Fixed window.** Rejected: it resets on the minute, so up to 2x can pass across the boundary. The moving window counts the last 60 s at every request.
-- **A stricter, separate write limit.** Rejected for now: one number is easier to reason about; [Public threat model](https://github.com/bhh1893/health-tracker/issues/179) can revisit a Member filling the database.
+- **A stricter, separate write limit.** First rejected as one more number to reason about; adopted by ADR 0030 once the threat model weighed a Member filling the database.
 - **Bot Fight Mode on.** Rejected, above.
 
 ## Consequences
@@ -50,4 +51,4 @@ Two limits, each where the layer knows enough to apply it. Cloudflare sees the v
 - With 2 `api` replicas the effective limit is up to twice the configured one; scaling replicas raises it further.
 - A User throttled by one pod may succeed on the other. Fine for a safety limit; wrong for anything billed or quota-like.
 - The edge rule uses the only rate limiting rule Free allows. Another per-IP limit at the edge means a paid plan or a custom rule (5 on Free).
-- **Verify at build:** which actions Free allows on the rate limiting rule; 21 requests to `/oauth2/start` from one IP within 10 s get a `429`; the SPA works with Bot Fight Mode off and the Free Managed Ruleset on; the 301st request in a minute from one User to one pod gets the `429` Problem with `Retry-After`, and Postgres sees no query for it; probes are never limited.
+- **Verify at build:** which actions Free allows on the rate limiting rule; 21 requests to `/oauth2/start` from one IP within 10 s get a `429`; the SPA works with Bot Fight Mode off and the Free Managed Ruleset on; the 301st request in a minute from one User to one pod gets the `429` Problem with `Retry-After`, and Postgres sees no query for it; the 61st write in a minute from one User to one pod gets the same `429`; probes are never limited.

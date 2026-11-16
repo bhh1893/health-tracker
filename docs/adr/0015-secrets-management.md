@@ -10,6 +10,8 @@ Every secret value is generated once on the dev VM into files outside the repo, 
 
 ## Threat model
 
+**Replaced by ADR 0030** (public threat model). The lines below were written for a private network and are kept for history; ADR 0030 walks each one and records which still hold.
+
 - **In scope:** a secret leaking through git (history is permanent, even in a private repo), through an image, CI log or app log, or into Claude's context on the dev VM.
 - **Out of scope:** someone with access to the Windows PC or the VM disks. They already own everything, backups included. Consistent with ADR 0010 accepting a cleartext token on home Wi-Fi.
 - **So:** no etcd encryption at rest in v1. Kubernetes Secrets are only base64-encoded in etcd, and reaching etcd takes the access ruled out above.

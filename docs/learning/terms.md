@@ -573,3 +573,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`terraform import`**: adopting an object that already exists into state, so Terraform manages it without recreating it.
 - **`toFQDNs`**: a Cilium egress rule naming DNS names instead of IPs; Cilium watches the pod's DNS answers and allows the IPs they return.
 - **PodDisruptionBudget (PDB)**: a limit on how many of an app's pods voluntary disruptions (a node drain) may take down at once.
+- **STRIDE**: a threat checklist (Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege) used to check a threat model has no blind spot.
+- **Repudiation**: being unable to prove who did an action after the fact; countered by logs that tie each request to an identity.
+- **Path-owning account**: an outside account (DNS, registrar, identity provider, code host) whose takeover hands over the app without touching the servers.
+- **Loki**: Grafana's log store; it indexes only labels (pod, namespace) rather than full text, which keeps it cheap to run.
