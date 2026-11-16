@@ -21,12 +21,12 @@ Exit code 0 and a last line of `REBUILD OK` mean everything below passed. Anythi
 
 1. **Checks** the dev VM has its tools and the ref exists. Nothing is destroyed until these pass.
 2. **Destroys and creates the nodes** (`vagrant destroy`, `vagrant up`) and waits for SSH.
-3. **Runs `site.yml` twice.** The second run must report `changed=0` everywhere: that is the proof each role is idempotent. It installs Kubernetes, Cilium, and the platform (CNPG, cert-manager, Barman plugin, Argo CD with its `Application`). Auto-sync is off.
+3. **Runs `site.yml` twice.** The second run must report `changed=0` everywhere: that is the proof each role is idempotent. It installs Kubernetes, Cilium, and the platform (CNPG, cert-manager and its Let's Encrypt issuers, Barman plugin, Argo CD with its `Application`, the edge Gateway). Auto-sync is off. The platform role runs `apply-secrets` just before the Gateway, so the saved certificate is back before cert-manager can see the Gateway and issue a new one (ADR 0025).
 4. **Waits** for all 3 nodes `Ready` and Cilium healthy.
 5. **`restore-data`** (`--fresh` with `-Fresh`). Runs `apply-secrets` first, then creates `pg` from the newest backup, checks both roles can log in, and takes a base backup. See `backup-restore.md` for each step.
 6. **`deploy-app`** turns Argo CD auto-sync on and waits for all of: `Synced`, `Healthy`, the sync operation `Succeeded`, and the `api-smoke` Job succeeded. Behind that sits the `PreSync` migration Job, the `api` and `web` rollout, and the `PostSync` smoke Job.
 
-The order is the point. Secrets before `pg`, `pg` before the app, and auto-sync last, so Argo CD never starts `api` against a database that does not exist yet.
+The order is the point. Secrets before the Gateway, secrets before `pg`, `pg` before the app, and auto-sync last, so Argo CD never starts `api` against a database that does not exist yet.
 
 ## Why `-Fresh` is a flag
 

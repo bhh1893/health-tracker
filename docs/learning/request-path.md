@@ -32,23 +32,30 @@ phone <──redirect──> accounts.google.com            proxy ──code for
 
 | Step | Today (home Wi-Fi only) | Target | Built by |
 | --- | --- | --- | --- |
-| 1 DNS | none: the phone uses the raw IP `192.168.0.250` | split DNS, Cloudflare A record to the TailVIP | #146 |
+| 1 DNS | none: the phone uses the raw IP `192.168.0.250` | Cloudflare hosts the zone (done, #146); `health` is a proxied CNAME to the tunnel, so it resolves to Cloudflare's edge | #146, #180 |
 | 2 Reach | home LAN, a worker answers ARP for `.250` | Tailscale WireGuard tunnel to `100.x` | #144, #145 |
 | 3 Into the cluster | the worker's bridged NIC | Tailscale ProxyGroup pod | #145, #147 removes the LAN |
-| 4 Gateway | Envoy, plain HTTP on `:80` | Envoy, HTTPS on `:443`, TLS ends here | #146 |
+| 4 Gateway | Envoy, HTTP on `:80` and HTTPS on `:443` with a Let's Encrypt certificate (#146) | HTTPS on `:443` only; TLS from `cloudflared` ends here, the browser's ended at Cloudflare | #146, #147 removes `:80` |
 | 5 Service | same | same | - |
 | 6 Sidecar | nginx checks a static Bearer token (`api` only) | oauth2-proxy checks a session cookie (`api` and `web`) | #150 |
 | 7 `api` | every caller is the seeded User | caller's User from proxy headers, Pending gets `403` | #151 |
 
 ## Every request
 
-### 1. DNS (built in #146)
+### 1. DNS (zone moved in #146; record in #180)
 
-- **What:** the phone turns `health.nibblejiggle.xyz` into an IP address.
-- **Decides:** which address the phone connects to. Here it is the TailVIP, a `100.x` address only tailnet devices can reach.
-- **How (target):** Tailscale split DNS sends `nibblejiggle.xyz` queries to `1.1.1.1` (home routers drop `100.64.0.0/10` answers as DNS rebinding). Cloudflare hosts the zone; `health` is a DNS-only A record to the TailVIP. Porkbun stays the registrar and only points at Cloudflare's nameservers.
-- **Watch:** fill in during #146.
-- **Fails:** fill in during #146.
+- **What:** the phone turns `health.nibblejiggle.xyz` into an IP address. Its resolver asks the root servers, then the `.xyz` registry (which says "ask `jamie` and `luke.ns.cloudflare.com`", the delegation Porkbun set), then Cloudflare's nameservers.
+- **Decides:** where the phone connects. With a proxied (orange cloud) record, Cloudflare answers with its own edge addresses, never the home's, so every request lands at Cloudflare first (ADR 0025).
+- **Built in #146:** Cloudflare hosts the zone; Porkbun stays the registrar. DNSSEC is on: the registry holds a DS record (key tag `2371`) vouching for the key Cloudflare signs answers with, so a forged answer fails validation. The zone has no `health` record yet; the tunnel ticket adds it with Terraform.
+- **Watch:**
+  - `dig +noall +authority NS nibblejiggle.xyz @x.nic.xyz` (the delegation at the registry)
+  - `delv @1.1.1.1 nibblejiggle.xyz SOA` (`; fully validated`: the DNSSEC chain holds)
+  - `dig +short health.nibblejiggle.xyz @1.1.1.1` (empty until #180; then Cloudflare addresses)
+  - `docs/runbooks/cloudflare.md` for how it was set up
+- **Fails:**
+  - No record: `NXDOMAIN`, the browser says the site cannot be found. True today, until #180.
+  - DS record not matching Cloudflare's key: `SERVFAIL` from validating resolvers such as `1.1.1.1` and `8.8.8.8`, so the name stops resolving for everyone using one, all at once. Fix by deleting the DS record at Porkbun first.
+  - Right after a nameserver change, resolvers can serve the old answer for up to the registry's TTL, 3600 s.
 
 ### 2. Reaching the tailnet (built in #144, #145)
 
@@ -68,16 +75,27 @@ phone <──redirect──> accounts.google.com            proxy ──code for
 
 **Today:** packets for `.250` arrive on the announcing worker's bridged NIC, and Cilium's eBPF on that node takes over.
 
-### 4. Gateway (exists; HTTPS added in #146)
+### 4. Gateway (HTTPS built in #146)
 
 - **What:** the Gateway `edge` (`k8s/platform/edge/gateway.yaml`). Cilium turns it into a LoadBalancer Service and runs Envoy to serve it. eBPF on the node hands packets for the Gateway's address to Envoy.
-- **Decides:** which backend gets the request, by path, using the `HTTPRoute`s that live with each service. Longest prefix wins: `/api` goes to the `api` Service (`services/api/k8s/httproute.yaml`), everything else to `web` (`services/web/k8s/httproute.yaml`).
-- **Target:** TLS ends here, with the certificate cert-manager got by DNS-01. Before this step everything is encrypted; after it, Envoy can read the path.
+- **Decides:** which backend gets the request, by path, using the `HTTPRoute`s that live with each service. Longest prefix wins: `/api` goes to the `api` Service (`services/api/k8s/httproute.yaml`), everything else to `web` (`services/web/k8s/httproute.yaml`). Routes name no hostname, so they attach to both listeners.
+- **TLS ends here (#146):** the `https` listener on `:443` holds a Let's Encrypt certificate for `health.nibblejiggle.xyz` in Secret `edge/health-tls`. A client must send that name as SNI, or Envoy has no certificate to offer. Before this step the request is encrypted; after it, Envoy can read the path.
+  - **Where the certificate comes from:** the Gateway's `cert-manager.io/cluster-issuer: letsencrypt-production` annotation makes cert-manager create a `Certificate`. It proves control with DNS-01: writes a `TXT` record at `_acme-challenge.health.nibblejiggle.xyz` through the Cloudflare API, Let's Encrypt looks it up, the record is deleted. The Gateway never needs to be reachable from the internet for this. Renewal is automatic at two thirds of the 90 days.
+  - **Rebuilds:** `save-tls` keeps a copy on the dev VM, and `apply-secrets` restores it before the Gateway exists, so a rebuild issues nothing (Let's Encrypt allows 5 per name per 7 days).
+  - **Target (ADR 0025):** TLS happens twice. The browser's TLS ends at Cloudflare's edge, with Cloudflare's certificate. `cloudflared` then opens a second TLS connection to this listener, sends `health.nibblejiggle.xyz` as SNI, and verifies this certificate. `:80` goes in #147.
 - **Watch:**
-  - `kubectl get gateway -n edge` (address, `PROGRAMMED`)
-  - `kubectl get svc -n edge` (the LoadBalancer Service Cilium made)
+  - `kubectl get gateway -n edge` (address, `PROGRAMMED`), and per listener: `kubectl get gateway edge -n edge -o jsonpath='{range .status.listeners[*]}{.name}{" "}{.conditions[?(@.type=="Programmed")].status}{"\n"}{end}'`
+  - `kubectl get svc -n edge` (the LoadBalancer Service Cilium made; ports `80` and `443`)
   - `kubectl get httproute -n health-tracker -o wide`
-- **Fails:** no route matches gives a `404` from Envoy; a route with no ready backend gives `503` (`no healthy upstream`).
+  - `kubectl get certificate,certificaterequest,order,challenge -n edge` (one issuance, in the order it happens)
+  - `curl --resolve health.nibblejiggle.xyz:443:192.168.0.250 https://health.nibblejiggle.xyz/` (a handshake that checks the certificate; no `-k`)
+  - `openssl s_client -connect 192.168.0.250:443 -servername health.nibblejiggle.xyz </dev/null | openssl x509 -noout -issuer -dates`
+- **Fails:**
+  - No route matches: `404` from Envoy. A route with no ready backend: `503` (`no healthy upstream`).
+  - Secret missing: the `https` listener shows `ResolvedRefs=False` (`InvalidCertificateRef`) and `:443` refuses the handshake; `:80` keeps working. Seen on 2026-11-16 for the 2 minutes before the first issuance.
+  - Issuance stuck: read `kubectl describe challenge -n edge`. `Waiting for DNS-01 challenge propagation` for a minute or two is normal; anything longer is usually the token (wrong scope, rolled) or the zone. A failed attempt backs off from 1 hour, doubling.
+  - Wrong SNI, such as `curl https://192.168.0.250`: no listener matches the name, so the handshake fails.
+  - Through the tunnel (#180), a broken certificate here shows as a Cloudflare `502`, not a browser warning: the browser only ever sees Cloudflare's certificate.
 
 ### 5. Service picks a pod (exists)
 

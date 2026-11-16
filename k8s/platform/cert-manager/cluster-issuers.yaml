@@ -1,0 +1,53 @@
+# Where the edge Gateway's certificate comes from (ADR 0025). Applied by the Ansible
+# platform role after cert-manager is installed.
+#
+# A ClusterIssuer (not an Issuer) because the Gateway lives in `edge` while the
+# token lives in `cert-manager`: a ClusterIssuer reads its Secrets from cert-manager's
+# own namespace, so the token never sits next to anything internet-facing.
+#
+# Staging first: its certificates are not trusted by browsers, but its rate limits
+# are high enough to make mistakes on. Production allows 5 certificates per name per
+# 7 days. The Gateway's annotation picks which one is used.
+#
+# No `email`: Let's Encrypt stopped sending expiry emails in 2025, and an address
+# here would be public in this repo.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    # The ACME account key. cert-manager generates it and registers a new account on
+    # first use; a rebuild just registers another, which costs nothing.
+    privateKeySecretRef:
+      name: letsencrypt-staging-account
+    solvers:
+      - selector:
+          dnsZones:
+            - nibblejiggle.xyz
+        dns01:
+          cloudflare:
+            # Written by `enter-secret`, copied in by `apply-secrets`.
+            apiTokenSecretRef:
+              name: cloudflare-dns01-token
+              key: api-token
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-production
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-production-account
+    solvers:
+      - selector:
+          dnsZones:
+            - nibblejiggle.xyz
+        dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-dns01-token
+              key: api-token

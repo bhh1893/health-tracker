@@ -2,3 +2,13 @@
 # and nothing works without them.
 crds:
   enabled: true
+
+# Lets cert-manager watch Gateways: the `cert-manager.io/cluster-issuer` annotation on
+# the edge Gateway then makes it request a certificate for each HTTPS listener's
+# hostname (ADR 0025). Needs the Gateway API CRDs installed first, which the cilium
+# role does before the platform role runs.
+config:
+  apiVersion: controller.config.cert-manager.io/v1alpha1
+  kind: ControllerConfiguration
+  gatewayAPI:
+    enabled: true
