@@ -130,6 +130,9 @@ export function fakeExerciseApi(
 }
 
 type Food = components["schemas"]["Food"];
+type PatchFood = components["schemas"]["PatchFood"];
+type ReferenceFood = components["schemas"]["ReferenceFood"];
+type Nutrition = components["schemas"]["Nutrition"];
 type Meal =
   components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"];
 type MealPage = components["schemas"]["MealPage"];
@@ -143,6 +146,19 @@ export const oats: Food = {
   archived: false,
   last_quantity: 80,
   last_unit: "g",
+};
+
+export const rolledOats: ReferenceFood = {
+  id: "0190a000-0000-7000-8000-000000000301",
+  name: "Rolled oats",
+  nutrition: {
+    basis_g: 100,
+    kcal: 379,
+    protein_g: 13,
+    carbs_g: 68,
+    fat_g: 6.5,
+  },
+  piece_g: null,
 };
 
 export const banana: Food = {
@@ -191,16 +207,21 @@ export function aMeal(fields: Partial<Meal> = {}): Meal {
 
 const LAST_FOOD_ENTRY = "urn:health-tracker:problem:last-food-entry";
 
-// Stands in for `api`'s Meal endpoints, keeping what it is sent. Like the real one, it
-// refuses to empty a saved Meal (ADR 0006), so a test proves the sheet never asks.
+// Stands in for `api`'s Meal and Food endpoints, keeping what it is sent. Like the real
+// one, it refuses to empty a saved Meal (ADR 0006), so a test proves the sheet never
+// asks, and refuses a partial Nutrition block (ADR 0023).
 export function fakeMealApi(
   seed: Meal[] = [],
-  foods: Food[] = [oats, banana],
+  seedFoods: Food[] = [oats, banana],
   restaurants: CatalogRef[] = [cafe],
+  references: ReferenceFood[] = [rolledOats],
 ) {
   const meals = new Map(seed.map((meal) => [meal.id, meal]));
+  const foodsById = new Map(seedFoods.map((food) => [food.id, food]));
+  const foods = () => [...foodsById.values()];
   const puts: { id: string; body: PutMeal }[] = [];
-  const search = <T extends CatalogRef>(items: T[], request: Request) => {
+  const patches: { id: string; body: PatchFood }[] = [];
+  const search = <T extends { name: string }>(items: T[], request: Request) => {
     const q = new URL(request.url).searchParams.get("q") ?? "";
     return items.filter(({ name }) =>
       name.toLowerCase().includes(q.toLowerCase()),
@@ -256,7 +277,7 @@ export function fakeMealApi(
                 ...shared,
                 kind: "foods",
                 food_entries: body.food_entries.map((entry) => ({
-                  food: find(foods, entry.food_id),
+                  food: find(foods(), entry.food_id),
                   quantity: entry.quantity,
                   unit: entry.unit,
                 })),
@@ -274,12 +295,66 @@ export function fakeMealApi(
       },
     ),
     http.get("*/api/v1/foods", ({ request }) =>
-      HttpResponse.json(search(foods, request)),
+      HttpResponse.json(search(foods(), request)),
+    ),
+    http.get<{ item_id: string }>("*/api/v1/foods/:item_id", ({ params }) => {
+      const food = foodsById.get(params.item_id);
+      return food
+        ? HttpResponse.json(food)
+        : HttpResponse.json(
+            { type: "about:blank", title: "Not Found", status: 404 },
+            { status: 404 },
+          );
+    }),
+    http.patch<{ item_id: string }, PatchFood, Food | Problem>(
+      "*/api/v1/foods/:item_id",
+      async ({ request, params }) => {
+        const body = await request.json();
+        const id = params.item_id;
+        patches.push({ id, body });
+        const current = foodsById.get(id);
+        if (current === undefined) {
+          throw new Error(`Unknown Food ${id}`);
+        }
+        const nutrition = body.nutrition as
+          Partial<Nutrition> | null | undefined;
+        if (nutrition && Object.keys(nutrition).length < 5) {
+          return HttpResponse.json(
+            {
+              type: "about:blank",
+              title: "Unprocessable Content",
+              status: 422,
+            },
+            { status: 422 },
+          );
+        }
+        const food: Food = {
+          ...current,
+          ...(body.name != null && { name: body.name }),
+          ...("nutrition" in body && { nutrition: body.nutrition ?? null }),
+          ...("piece_g" in body && { piece_g: body.piece_g ?? null }),
+        };
+        foodsById.set(id, food);
+        // A rename shows in every Meal that holds the Food, as the real join does.
+        for (const meal of meals.values()) {
+          if (meal.kind === "foods") {
+            for (const entry of meal.food_entries) {
+              if (entry.food.id === id) {
+                entry.food = ref(food);
+              }
+            }
+          }
+        }
+        return HttpResponse.json(food);
+      },
+    ),
+    http.get("*/api/v1/reference-foods", ({ request }) =>
+      HttpResponse.json(search(references, request)),
     ),
     http.get("*/api/v1/restaurants", ({ request }) =>
       HttpResponse.json(search(restaurants, request)),
     ),
   ];
 
-  return { handlers, meals, puts };
+  return { handlers, meals, foods: foodsById, puts, patches };
 }
