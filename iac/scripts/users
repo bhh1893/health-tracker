@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# The owner's command for Users and Roles (ADR 0022). Run on the dev VM.
+#
+#   users list                         every User, Pending first
+#   users approve <user-id>            Pending to Member
+#   users set-role <user-id> <role>    pending | member | admin; never removes the last Admin
+#   users claim-seeded <user-id>       move a Pending User's identity onto the seeded User
+#
+# The rules live in health_api.users, inside the api image, so this only gets there: it
+# runs the module in a live api pod, which connects with that pod's own DATABASE_URL
+# (api_rw). -i passes the terminal's input through, for the y/N prompt.
+set -euo pipefail
+
+exec kubectl -n health-tracker exec -i deploy/api -c api -- python -m health_api.users "$@"
