@@ -573,3 +573,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`terraform import`**: adopting an object that already exists into state, so Terraform manages it without recreating it.
 - **`toFQDNs`**: a Cilium egress rule naming DNS names instead of IPs; Cilium watches the pod's DNS answers and allows the IPs they return.
 - **PodDisruptionBudget (PDB)**: a limit on how many of an app's pods voluntary disruptions (a node drain) may take down at once.
+- **Natural vs surrogate key**: a natural key is a value from the real world that already identifies a thing (OIDC `issuer` + `subject`); a surrogate key is an id the database makes up (`users.id`). Other tables point at the surrogate, so the natural one can change without touching them.
+- **Postgres `ENUM`**: a custom column type limited to a fixed list of labels; a value can be added but never removed, which is why Role is checked `text` instead.
+- **`REVOKE`**: takes back a privilege granted earlier; here it removes `UPDATE` and `DELETE` on `role_changes` from `api_rw`, so "append-only" is enforced by the database, not by convention.
