@@ -4,6 +4,7 @@ import { ProblemAlert } from "../components/ProblemAlert";
 import { SignOutLink } from "./SignOutLink";
 
 interface PendingScreenProps {
+  email: string | null;
   checking: boolean;
   error: unknown;
   onCheckAgain: () => void;
@@ -13,6 +14,7 @@ interface PendingScreenProps {
 // GET /api/me, so this screen is all the app shows. No polling: approval is a person
 // running a command, so it can take days, and the person checks when they want to.
 export function PendingScreen({
+  email,
   checking,
   error,
   onCheckAgain,
@@ -20,6 +22,11 @@ export function PendingScreen({
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
       <h1 className="text-2xl font-semibold">Waiting for approval</h1>
+      {/* Which Google account was used, in case it was the wrong one. Left out when the
+          provider never sent an address. */}
+      {email !== null && (
+        <p className="text-base text-gray-600">Signed in as {email}</p>
+      )}
       <p className="text-base">
         You are signed in. The owner has to approve your account before you can
         use the app.

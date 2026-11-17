@@ -637,3 +637,4 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **RP-initiated logout**: an OIDC feature where the app (the relying party) sends the browser to the provider's `end_session_endpoint` to end the provider's session too; Google does not offer it.
 - **Client-side filtering**: the browser downloads a whole small list once and filters it in memory as the user types, with no request per keystroke; it trades a bigger first response and simpler matching for instant results.
 - **Bounded response**: an API answer whose size has a fixed ceiling (a maximum `limit`), so no caller, honest or not, can make the server build and send an arbitrarily large reply.
+- **Required but nullable (OpenAPI)**: the key is always present in the JSON (`required`) but its value may be `null`; clients never have to handle a missing key, only an empty value. Pydantic produces this for `str | None` with no default.

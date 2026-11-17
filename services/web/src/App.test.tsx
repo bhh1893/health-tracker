@@ -55,6 +55,23 @@ describe("a Pending User", () => {
     );
   });
 
+  it("shows which account is signed in", async () => {
+    renderAt("/exercise");
+    await pendingHeading();
+
+    expect(
+      screen.getByText("Signed in as owner@example.test"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows no account line when the email is unknown", async () => {
+    server.use(signedInAs("pending", null));
+    renderAt("/exercise");
+    await pendingHeading();
+
+    expect(screen.queryByText(/Signed in as/)).not.toBeInTheDocument();
+  });
+
   it("stays on the waiting screen when checking before approval", async () => {
     renderAt("/exercise");
     await userEvent.click(

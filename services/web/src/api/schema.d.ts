@@ -543,6 +543,8 @@ export interface components {
         };
         /** Me */
         Me: {
+            /** Email */
+            email: string | null;
             /** Name */
             name: string | null;
             /** Restaurant Day Kcal */
