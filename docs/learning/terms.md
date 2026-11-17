@@ -635,3 +635,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Expression injection (GitHub Actions)**: `${{ }}` is pasted into a `run:` script as text before the shell reads it, so user-controlled input there can run commands; passing it through `env:` keeps it a plain variable.
 - **App session vs provider session**: two separate sign-ins in two cookies; signing out of the app (`/oauth2/sign_out`) deletes the app's cookie only, while the identity provider's own cookie (Google's) keeps the browser signed in to Google.
 - **RP-initiated logout**: an OIDC feature where the app (the relying party) sends the browser to the provider's `end_session_endpoint` to end the provider's session too; Google does not offer it.
+- **Client-side filtering**: the browser downloads a whole small list once and filters it in memory as the user types, with no request per keystroke; it trades a bigger first response and simpler matching for instant results.
+- **Bounded response**: an API answer whose size has a fixed ceiling (a maximum `limit`), so no caller, honest or not, can make the server build and send an arbitrarily large reply.

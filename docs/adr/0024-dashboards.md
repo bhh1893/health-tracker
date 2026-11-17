@@ -10,6 +10,8 @@ Proposed, not accepted: it was written during the build, with the owner away, an
 
 **Amended by ADR 0031:** Dashboards becomes the History tab at `/history` (`/dashboards` redirects), with a search box above it that opens Search; it is no longer opened from a header icon.
 
+**Amended by ADR 0032:** the Restaurant Day calories field moves from the Meals tab to Profile's Settings.
+
 ## Shape
 
 ### The screen
