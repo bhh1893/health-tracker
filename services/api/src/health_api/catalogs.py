@@ -42,6 +42,9 @@ SIMILARITY_THRESHOLD = 0.5
 # Under three characters a word has too few trigrams to score, so typeahead is prefix only.
 MIN_FUZZY_QUERY_LENGTH = 3
 MAX_SIMILAR = 5
+# Profile loads a whole Catalog in one list call (ADR 0032). Still bounded: one response can
+# never be bigger than this, however many items a User adds.
+MAX_LIST_LIMIT = 1000
 # Bounds the unique btree on lower(name), which raises on rows over about 2,700 bytes.
 MAX_NAME_LENGTH = 200
 # Postgres text cannot hold NUL. Rejecting it here makes that a 422, not a driver error.
@@ -532,7 +535,7 @@ def catalog_router(catalog: Catalog) -> APIRouter:
         user: CurrentUser,
         session: DbSession,
         q: Annotated[str, Query(max_length=MAX_NAME_LENGTH, pattern=NO_NUL)] = "",
-        limit: Annotated[int, Query(ge=1, le=50)] = 10,
+        limit: Annotated[int, Query(ge=1, le=MAX_LIST_LIMIT)] = 10,
         include_archived: bool = False,
     ) -> list[CatalogRef]:
         return suggest_items(session, catalog, user, q, limit, include_archived)

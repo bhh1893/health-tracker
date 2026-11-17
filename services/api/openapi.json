@@ -1875,7 +1875,7 @@
             "required": false,
             "schema": {
               "default": 10,
-              "maximum": 50,
+              "maximum": 1000,
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
@@ -2612,7 +2612,7 @@
             "required": false,
             "schema": {
               "default": 10,
-              "maximum": 50,
+              "maximum": 1000,
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
@@ -3853,7 +3853,7 @@
             "required": false,
             "schema": {
               "default": 10,
-              "maximum": 50,
+              "maximum": 1000,
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
