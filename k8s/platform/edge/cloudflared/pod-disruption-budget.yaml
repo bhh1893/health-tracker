@@ -1,0 +1,13 @@
+# A voluntary eviction (draining a worker for maintenance) may take at most one
+# cloudflared at a time, so the tunnel keeps a connector. Crashes and power loss are
+# not voluntary; this does not cover them.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cloudflared
+  namespace: edge
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudflared

@@ -596,3 +596,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`prevent_destroy`**: a lifecycle flag that makes Terraform refuse any plan that would delete or replace the resource.
 - **Ruleset and phase (Cloudflare)**: a phase is a point in request handling (custom rules, rate limiting); each zone has one entry ruleset per phase, holding its rules in order.
 - **`umask`**: bits removed from a new file's permissions; `077` makes every file the process creates readable by its owner only.
+- **Cilium entity**: a built-in name for traffic that is not an ordinary pod (`host` for the node itself, `ingress` for Cilium's Gateway Envoy, `world` for outside the cluster), usable in a policy where a pod selector would match nothing.
+- **Cilium DNS proxy**: a resolver Cilium slips between a pod and kube-dns when a policy has a `dns` rule; it reads each answer so `toFQDNs` knows which IPs a name stands for.
+- **`maxSurge` / `maxUnavailable`**: how far a rolling update may go above or below the replica count while it swaps pods; `0` / `1` means "remove one, then add its replacement".
+- **`TUNNEL_TOKEN`**: the env var `cloudflared tunnel run` reads its token from, so the token stays off the command line that `ps` shows.

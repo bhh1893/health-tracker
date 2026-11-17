@@ -11,6 +11,9 @@ rules:
     check-keys: false
   line-length:
     max: 120
+    # A `key: value` line whose value has no space to break at, such as an image
+    # pinned by tag and digest (ADR 0028), may run long.
+    allow-non-breakable-inline-mappings: true
   document-start: disable
   # The rest are required by ansible-lint, which refuses a looser config.
   comments:

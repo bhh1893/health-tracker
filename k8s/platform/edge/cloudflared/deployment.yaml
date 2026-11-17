@@ -1,0 +1,94 @@
+# The connector (ADR 0029): dials out to Cloudflare and holds the tunnel open, then
+# forwards each request it receives to the Gateway. Remotely managed, so the token is
+# all it needs: routes come down the tunnel from Cloudflare (iac/cloudflare/tunnel.tf).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: edge
+  labels:
+    app.kubernetes.io/name: cloudflared
+spec:
+  # Two, for availability: Cloudflare sends each request to the nearest live one.
+  replicas: 2
+  # The default rollout adds a third pod before removing an old one. Anti-affinity
+  # below allows one pod per worker and there are two workers, so that pod would never
+  # be placed and the rollout would hang. Remove first, then add: one stays serving.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudflared
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cloudflared
+    spec:
+      # It never calls the Kubernetes API, so it gets no credentials for it.
+      automountServiceAccountToken: false
+      # Never two on one worker, so losing a worker leaves one connected. Required, not
+      # preferred: a second pod on the same worker adds nothing, so it may as well wait.
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: cloudflared
+      securityContext:
+        runAsNonRoot: true
+        # The image's own nonroot user (distroless). Spelled out because runAsNonRoot
+        # alone cannot check an image that names its user rather than a number.
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: cloudflared
+          # Edge set: pinned by tag and digest (ADR 0028). The digest is the multi-arch
+          # index, from `docker buildx imagetools inspect cloudflare/cloudflared:<tag>`.
+          image: cloudflare/cloudflared:2026.11.0@sha256:b94b96edf2c9c4360f8879c8580cfaa99077f19c849ec595ca2f711b27d4f344
+          # --no-autoupdate: the pin above decides the version, not cloudflared.
+          # --metrics: serves /ready and Prometheus metrics on every interface, so the
+          # kubelet can reach the probe. Nothing else can: no Service points here, and
+          # the network policy admits no ingress.
+          args:
+            - tunnel
+            - --no-autoupdate
+            - --metrics
+            - 0.0.0.0:2000
+            - run
+          env:
+            # Read by `tunnel run` in place of a --token flag, which would show in `ps`.
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflared
+                  key: token
+          ports:
+            - name: metrics
+              containerPort: 2000
+          # 200 only while at least one connection to Cloudflare is up. With the home
+          # internet down this restarts the pod in a loop, which costs nothing. No
+          # readiness probe: nothing connects to cloudflared, so readiness routes nothing.
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
