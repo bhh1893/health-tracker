@@ -68,6 +68,12 @@ Added 2026-11-15, after ADR 0025 made the app public. With no tailnet in front, 
 - **Smoke Job adds one check:** `web`'s `/readyz` body is a bare status and nothing more, since it is publicly reachable (ADR 0025).
 - ~~**No automated probe of the public hostname.**~~ Superseded by the amendment below: ADR 0027 turned Bot Fight Mode off, so the reason no longer holds.
 
+Settled while building it ([#190](https://github.com/bhh1893/health-tracker/issues/190)), 2026-11-17:
+
+- **`DELETE` on another Member's id gives `204`, not `404`.** ADR 0006 already answers `204` for a missing id, so a retried `DELETE` is harmless. A `204` for "not yours" is the same answer as for "not there", which hides existence just as `404` does. The test asserts `204` and that A's row is unchanged.
+- **FastAPI's `/docs`, `/redoc` and `/openapi.json` are off.** The allowlist stays exactly as above, and every route `api` serves is one the contract lists. The contract is the committed `openapi.json`; tests that need it call `app.openapi()`.
+- **The walk reads `fastapi.routing.iter_route_contexts`, not `app.routes` directly.** FastAPI 0.162 keeps an included router as one entry in `app.routes`; this is the function its own OpenAPI generator uses to see the routes inside.
+
 ## Amendment: public-surface probe
 
 Added by ADR 0030 ([Public threat model](https://github.com/bhh1893/health-tracker/issues/179)).
