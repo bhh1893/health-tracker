@@ -8,6 +8,8 @@ status: accepted
 
 **Amended by ADR 0023:** a new Food sheet (Nutrition, Piece Weight, fill from Reference Foods), opened from a Food Entry in the Meal sheet or the Incomplete badge, and a Day total in the Meals window header.
 
+**Amended by ADR 0031:** the window header loses its Search and Dashboards icons; Exercise | Meals becomes the Add tab of a bottom bar (History | Add | Profile).
+
 ## Shape
 
 - **Windows:** a segmented control switches Exercise and Meals. Both show the Day being viewed (today in v1). Restaurant is a mode inside the Meal sheet, not a third window: a Restaurant Meal is still a Meal.

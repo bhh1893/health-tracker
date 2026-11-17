@@ -8,6 +8,8 @@ Search answers "what happened?"; Dashboards answers "how is it trending?". It is
 
 Proposed, not accepted: it was written during the build, with the owner away, and is up for review with the code.
 
+**Amended by ADR 0031:** Dashboards becomes the History tab at `/history` (`/dashboards` redirects), with a search box above it that opens Search; it is no longer opened from a header icon.
+
 ## Shape
 
 ### The screen

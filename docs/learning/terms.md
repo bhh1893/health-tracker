@@ -626,3 +626,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`limits` (Python library)**: rate limiting algorithms (fixed and moving window) and counter storage (memory, Redis, ...), with no web framework attached; slowapi and Flask-Limiter are built on it.
 - **Existence leak**: a response that differs between "not yours" and "not there" (say `403` vs `404`), so an attacker can probe which ids are real; giving both the same answer closes it.
 - **Router-level dependency**: a FastAPI `Depends` attached when a router is included, so it runs before every endpoint in that router without each endpoint asking for it.
+- **Layout route**: a route with no page of its own that draws a shared frame (a header, a tab bar) and renders whichever child route matched inside it, through React Router's `<Outlet />`.
+- **Catch-all route**: a route with `path="*"` that matches any URL no other route claims; it renders the Not Found page.
+- **Redirect route**: a route whose only job is to send an old URL to its new one (`<Navigate replace />`), so links saved before a move keep working.
