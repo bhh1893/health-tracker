@@ -124,7 +124,8 @@ export function parseSearch(
   };
 }
 
-// Writes only what differs from the defaults, so the plain screen is just /search.
+// Writes only what differs from the defaults, so the plain screen is just
+// /history/search.
 export function toSearchParams(query: SearchQuery) {
   const params = new URLSearchParams();
   if (query.what !== DEFAULTS.what) {
