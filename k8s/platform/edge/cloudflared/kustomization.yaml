@@ -1,0 +1,8 @@
+# Pulled in by ../kustomization.yaml, so Ansible applies it with the Gateway it
+# fronts (ADR 0029). The Secret it reads comes from apply-secrets, which runs first.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - network-policy.yaml
+  - pod-disruption-budget.yaml
+  - deployment.yaml

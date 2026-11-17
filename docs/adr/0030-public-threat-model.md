@@ -53,6 +53,7 @@ Anyone holding the tunnel token can run their own connector, and Cloudflare send
 
 - The monthly sweep (ADR 0028) includes one look at the tunnel's connectors: exactly two, both from the home IP. Anything else triggers rotation.
 - **Verify at build:** after a rotation, a connector still running the old token is disconnected and cannot reconnect.
+- **Verified at build, 2026-11-17** ([#189](https://github.com/bhh1893/health-tracker/issues/189)): after rotating, a fresh `cloudflared` on the old token reaches Cloudflare's edge but every registration fails with `Unauthorized: Invalid tunnel secret`, so a stolen token is useless once rotated. Not tested: the `DELETE .../connections` step cutting off a connector already running on the old token. That rests on Cloudflare's documentation (ADR 0029); the first real rotation should watch for it.
 - No automated alert in v1.
 
 ### ADR 0015 and ADR 0010 risks, walked

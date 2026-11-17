@@ -1,0 +1,76 @@
+# cloudflared may reach DNS, Cloudflare's tunnel edge and the app behind the Gateway,
+# nothing else
+# (ADR 0025, ADR 0029). A tunnel route pointed at argocd-server or Postgres by
+# mistake then fails at this fence instead of publishing it.
+#
+# Once a policy selects a pod, Cilium drops every connection in that direction that
+# no rule here allows. This one has both an ingress and an egress section, so both
+# directions are closed by default. Replies to allowed connections always pass.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cloudflared
+  namespace: edge
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: cloudflared
+  ingress:
+    # The kubelet's liveness probe. It comes from the node itself, which Cilium names
+    # the `host` entity. No pod connects to cloudflared.
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "2000"
+              protocol: TCP
+  egress:
+    # Cluster DNS. The `dns` rule sends lookups through Cilium's DNS proxy, which is
+    # how the toFQDNs rule below learns which IPs the names resolve to. `*` lets any
+    # name be looked up: a lookup opens no connection, and narrowing it would refuse
+    # the search-domain lookups (`<name>.edge.svc.cluster.local`) every resolver tries.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+          rules:
+            dns:
+              - matchPattern: "*"
+    # Cloudflare's tunnel edge. QUIC on UDP first, HTTP/2 on TCP if UDP is blocked.
+    # By name, not by Cloudflare's published IP ranges: those can change without
+    # notice, and the names follow them (ADR 0029).
+    - toFQDNs:
+        - matchName: region1.v2.argotunnel.com
+        - matchName: region2.v2.argotunnel.com
+      toPorts:
+        - ports:
+            - port: "7844"
+              protocol: UDP
+            - port: "7844"
+              protocol: TCP
+    # The Gateway. cloudflared connects to its Service on 443, and eBPF hands the
+    # connection to Envoy, which Cilium runs on every node rather than as a pod. That
+    # first hop needs no rule here. What Cilium checks against this policy is Envoy's
+    # own connection to the backend an HTTPRoute picked, so every backend behind the
+    # Gateway is listed, or Envoy answers 403 "Access denied". Seen at build: a rule
+    # for the `ingress` entity alone gave 403; this one alone gives 200.
+    # `toEntities: cluster` would also work, but it would let cloudflared connect to
+    # any pod directly, Postgres and argocd-server included.
+    - toEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: In
+              values: [health-tracker]
+            - key: app.kubernetes.io/name
+              operator: In
+              values: [api, web]
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

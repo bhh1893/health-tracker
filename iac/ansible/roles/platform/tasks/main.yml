@@ -105,8 +105,24 @@
   register: platform_apply_secrets
   changed_when: platform_apply_secrets.stdout_lines | reject('search', ' unchanged$') | list | length > 0
 
-# The Gateway is platform, not app, so Argo CD does not own it (ADR 0016).
-- name: Apply the edge Gateway
+# The Gateway and cloudflared are platform, not app, so Argo CD does not own them
+# (ADR 0016, ADR 0029). `kubectl diff` decides "changed" here, not apply's output:
+# apply always resends a PodDisruptionBudget's selector, a field replaced whole
+# rather than merged, so it reports `configured` on every run even when nothing
+# differs. diff compares with the cluster through a server dry run. Exit 0 means no
+# difference, 1 means a difference, anything else is an error.
+- name: Compare the edge manifests with the cluster
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - diff
+      - --kustomize
+      - "{{ platform_dir }}/edge"
+  register: platform_edge_diff
+  changed_when: false
+  failed_when: platform_edge_diff.rc > 1
+
+- name: Apply the edge Gateway and cloudflared
   ansible.builtin.command:
     argv:
       - kubectl
@@ -114,7 +130,7 @@
       - --kustomize
       - "{{ platform_dir }}/edge"
   register: platform_edge_apply
-  changed_when: platform_edge_apply.stdout_lines | reject('search', ' unchanged$') | list | length > 0
+  changed_when: platform_edge_diff.rc == 1
 
 # Until apply-secrets runs, Argo CD cannot read the repo and shows a comparison error.
 # That is harmless: auto-sync is off, so it tries to change nothing.
