@@ -838,6 +838,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The caller is new and Sign-up is closed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -889,7 +898,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -948,7 +957,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1010,7 +1019,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1068,7 +1077,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1157,7 +1166,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1222,7 +1231,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1282,7 +1291,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1344,7 +1353,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1411,7 +1420,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1500,7 +1509,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1574,7 +1583,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1654,7 +1663,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1732,7 +1741,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1790,7 +1799,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1879,7 +1888,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1953,7 +1962,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2033,7 +2042,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2113,7 +2122,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2171,7 +2180,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2260,7 +2269,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2334,7 +2343,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2393,7 +2402,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2453,7 +2462,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2511,7 +2520,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2600,7 +2609,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2674,7 +2683,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2754,7 +2763,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The User is Pending until the Admin approves them. */
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
             403: {
                 headers: {
                     [name: string]: unknown;

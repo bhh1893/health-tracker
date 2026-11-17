@@ -13,7 +13,14 @@ from sqlalchemy.orm import Session
 
 from health_api.catalogs import MAX_KCAL
 from health_api.db import DbSession
-from health_api.identity import NOT_APPROVED, UNAUTHENTICATED, CurrentUser, Role, SignedInUser
+from health_api.identity import (
+    NOT_APPROVED,
+    SIGNUP_CLOSED_RESPONSE,
+    UNAUTHENTICATED,
+    CurrentUser,
+    Role,
+    SignedInUser,
+)
 
 
 class Me(BaseModel):
@@ -55,6 +62,7 @@ def me_router() -> APIRouter:
         "",
         operation_id="get_me",
         response_model=Me,
+        responses=SIGNUP_CLOSED_RESPONSE,
         description="Read the calling User's Role and settings. The one route open to Pending.",
     )
     def get_me(user: SignedInUser, session: DbSession) -> Me:

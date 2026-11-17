@@ -1,4 +1,4 @@
-"""The owner's command for Users and Roles (ADR 0022).
+"""The owner's command for Users, Roles and the Sign-up brake (ADR 0022, ADR 0026).
 
 Runs inside an `api` pod through `iac/scripts/users`, with the pod's own DATABASE_URL, so it
 connects as `api_rw` and can change rows but not the schema. Every Role change writes a
@@ -77,6 +77,50 @@ def list_users(session: Session) -> list[User]:
         text(f"SELECT {USER_COLUMNS} FROM users ORDER BY role <> 'pending', created_at, id")
     ).mappings()
     return [User(**row) for row in rows]
+
+
+@dataclass(frozen=True)
+class Brake:
+    open: bool
+    changed_at: datetime
+
+    @property
+    def state(self) -> str:
+        return "open" if self.open else "closed"
+
+    def describe(self) -> str:
+        return f"Sign-up {self.state} since {self.changed_at:%Y-%m-%d %H:%M %Z}"
+
+
+def load_brake(session: Session, lock: bool) -> Brake:
+    row = (
+        session.execute(text(f"SELECT open, changed_at FROM signup{' FOR UPDATE' if lock else ''}"))
+        .mappings()
+        .one()
+    )
+    return Brake(**row)
+
+
+def set_signup(session: Session, open: bool, confirm: Confirm) -> bool:
+    """`signup open` and `signup close`. True if the change was written.
+
+    Known Users never read the brake, so closing it stops only new identities (ADR 0026).
+    """
+    before = load_brake(session, lock=False)
+    if before.open == open:
+        raise Refused(f"Sign-up is already {before.state}")
+    session.commit()
+
+    print(f"before: {before.describe()}")
+    print(f"after:  Sign-up {'open' if open else 'closed'}")
+    if not confirm():
+        return False
+
+    if load_brake(session, lock=True) != before:
+        raise Refused("Sign-up changed since it was shown; run the command again")
+    session.execute(text("UPDATE signup SET open = :open, changed_at = now()"), {"open": open})
+    session.commit()
+    return True
 
 
 def check_role_change(
@@ -219,9 +263,11 @@ def ask() -> bool:
 
 
 def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(prog="users", description="Users and Roles (ADR 0022).")
+    root = argparse.ArgumentParser(
+        prog="users", description="Users, Roles and the Sign-up brake (ADR 0022, ADR 0026)."
+    )
     commands = root.add_subparsers(dest="command", required=True)
-    commands.add_parser("list", help="every User, Pending first")
+    commands.add_parser("list", help="the Sign-up brake, then every User, Pending first")
     approve = commands.add_parser("approve", help="Pending to Member")
     approve.add_argument("user_id", type=UUID)
     set_role = commands.add_parser("set-role", help="any Role change but removing the last Admin")
@@ -231,6 +277,8 @@ def parser() -> argparse.ArgumentParser:
         "claim-seeded", help="move a Pending User's identity onto the seeded User, as Admin"
     )
     claim.add_argument("user_id", type=UUID)
+    signup = commands.add_parser("signup", help="close, open or show the Sign-up brake")
+    signup.add_argument("action", choices=("close", "open", "status"))
     return root
 
 
@@ -238,6 +286,8 @@ def run(session: Session, args: argparse.Namespace, confirm: Confirm) -> int:
     try:
         match args.command:
             case "list":
+                # The brake's state is not in git, so the command most often run shows it.
+                print(load_brake(session, lock=False).describe())
                 for user in list_users(session):
                     print(user.describe())
                 return 0
@@ -245,8 +295,13 @@ def run(session: Session, args: argparse.Namespace, confirm: Confirm) -> int:
                 done = change_role(session, args.user_id, "member", "approve", confirm)
             case "set-role":
                 done = change_role(session, args.user_id, args.role, "set-role", confirm)
-            case _:
+            case "claim-seeded":
                 done = claim_seeded(session, args.user_id, confirm)
+            case _:
+                if args.action == "status":
+                    print(load_brake(session, lock=False).describe())
+                    return 0
+                done = set_signup(session, args.action == "open", confirm)
     except Refused as refusal:
         print(f"refused: {refusal}", file=sys.stderr)
         return 1

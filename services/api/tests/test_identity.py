@@ -26,7 +26,7 @@ from health_api.identity import (
     _sign_up,  # pyright: ignore[reportPrivateUsage]
 )
 from health_api.main import create_app
-from health_api.problems import PENDING_APPROVAL, PROBLEM_MEDIA_TYPE
+from health_api.problems import PENDING_APPROVAL, PROBLEM_MEDIA_TYPE, SIGNUP_CLOSED
 
 ME = "/api/me"
 FOODS = "/api/v1/foods"
@@ -176,6 +176,54 @@ def test_sign_up_survives_the_403(real_client: TestClient, api_rw_engine: Engine
         row = user_row(session, "committed")
     assert row is not None
     assert row["role"] == "pending"
+
+
+# The Sign-up brake (ADR 0026)
+
+
+@pytest.fixture
+def closed(session: Session) -> None:
+    session.execute(text("UPDATE signup SET open = false"))
+
+
+@pytest.mark.parametrize("path", [ME, FOODS])
+def test_a_closed_brake_turns_away_a_new_identity_and_writes_nothing(
+    anonymous_client: TestClient, session: Session, closed: None, path: str
+) -> None:
+    users_before = session.scalar(text("SELECT count(*) FROM users"))
+
+    response = anonymous_client.get(path, headers=headers("new", "New Person"))
+
+    assert response.status_code == 403
+    assert response.headers["content-type"] == PROBLEM_MEDIA_TYPE
+    assert response.json()["type"] == SIGNUP_CLOSED
+    assert user_row(session, "new") is None
+    assert session.scalar(text("SELECT count(*) FROM users")) == users_before
+
+
+def test_a_closed_brake_still_admits_a_known_pending_user_as_pending(
+    anonymous_client: TestClient, session: Session, closed: None
+) -> None:
+    insert_user(session, "waiting", "pending")
+
+    assert anonymous_client.get(ME, headers=headers("waiting")).json()["role"] == "pending"
+    response = anonymous_client.get(FOODS, headers=headers("waiting"))
+    assert response.json()["type"] == PENDING_APPROVAL
+
+
+def test_a_closed_brake_leaves_a_member_unaffected(client: TestClient, closed: None) -> None:
+    assert client.get(ME).json()["role"] == "member"
+    assert client.get(FOODS).status_code == 200
+
+
+def test_reopening_the_brake_lets_the_new_identity_sign_up(
+    anonymous_client: TestClient, session: Session, closed: None
+) -> None:
+    assert anonymous_client.get(ME, headers=headers("new")).status_code == 403
+
+    session.execute(text("UPDATE signup SET open = true"))
+
+    assert anonymous_client.get(ME, headers=headers("new")).json()["role"] == "pending"
 
 
 # Approved Users

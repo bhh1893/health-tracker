@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# The owner's command for Users and Roles (ADR 0022). Run on the dev VM.
+# The owner's command for Users, Roles and the Sign-up brake (ADR 0022, ADR 0026).
+# Run on the dev VM.
 #
-#   users list                         every User, Pending first
+#   users list                         the Sign-up brake, then every User, Pending first
 #   users approve <user-id>            Pending to Member
 #   users set-role <user-id> <role>    pending | member | admin; never removes the last Admin
 #   users claim-seeded <user-id>       move a Pending User's identity onto the seeded User
+#   users signup close | open | status the Sign-up brake: new Users only, known ones unaffected
 #
 # The rules live in health_api.users, inside the api image, so this only gets there: it
 # runs the module in a live api pod, which connects with that pod's own DATABASE_URL
