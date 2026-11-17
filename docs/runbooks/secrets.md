@@ -33,12 +33,11 @@ iac/scripts/save-tls
 
 It prints the certificate's subject, issuer and end date. A stale copy is not dangerous: after a rebuild, cert-manager sees it is past its renewal time (or expired) and issues a new one, which costs one certificate from the weekly limit and, if expired, a couple of minutes of `:443` refusing handshakes.
 
-Two credentials are the exception: they live only in GitHub Actions secrets and have no file here.
+One credential is the exception: it lives only in GitHub Actions secrets and has no file here.
 
 | GitHub Actions secret | What it is | Used by | Set up in |
 | --- | --- | --- | --- |
 | `TAG_BUMP_DEPLOY_KEY` | Deploy key with write access (ADR 0018), a secret of the `tag-bump` Environment, not of the repo (ADR 0028) | `bump-tags` job | "CI tag bump key" below |
-| `TS_OAUTH_ID`, `TS_OAUTH_SECRET`, `TS_TAILNET` | Tailscale OAuth client with the `policy_file` scope, and the tailnet's name (ADR 0020) | `tailnet-policy-test`, `tailnet-policy-apply` jobs | `docs/runbooks/tailnet.md` |
 
 ## First install
 
@@ -119,7 +118,6 @@ Then finish for the secret you rotated:
 - **`auth-cookie-secret`:** `kubectl -n health-tracker rollout restart deployment/api deployment/web`. Every User is signed out and signs in again (`google-oauth.md`, "Rotate").
 - **`google-client-secret`:** not generated, so skip the `dev.yml` step: add a second secret to the client, enter it, apply, restart, then delete the old one (`google-oauth.md`, "Rotate"). No one is signed out.
 - **`backup.env`:** this file is a copy of the key held by Garage, so delete the key too, before the steps above: `sudo garage key delete --yes cnpg-backup`. Then confirm backups still work with `backup-status`.
-- **`TS_OAUTH_SECRET`:** revoke the OAuth client in the Tailscale admin console and create a new one (`docs/runbooks/tailnet.md`, "CI credential"). Nothing to restart.
 - **`argocd-deploy-key`:** delete `argocd-deploy-key.pub` as well. Register the new key as in first install step 2, then delete the old one from Windows with `gh repo deploy-key list` and `gh repo deploy-key delete <id>`.
 
 ### Tunnel token

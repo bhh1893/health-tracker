@@ -6,11 +6,9 @@ status: accepted
 
 The phone reaches one Cilium Gateway (Gateway API, ADR 0001) on a LoadBalancer IP from the L2 pool. The Gateway routes `/api/*` to `api` and everything else to `web`. In v1 it serves plain HTTP on `:80`: no domain, no certificates. The shared secret is checked by a small nginx sidecar container inside the `api` pod, not by the Gateway and not by `api` itself ([Edge design](https://github.com/bhh1893/health-tracker/issues/11)). This amends [HTTPS on the home network](https://github.com/bhh1893/health-tracker/issues/6): HTTPS moves to v2, and the design for it is recorded below so v2 starts from here.
 
-**Amended by ADR 0020:** v1 now serves HTTPS at `health.nibblejiggle.xyz` through a Tailscale Service; the LAN LoadBalancer IP and bridged path are removed. The "v2 starting point: HTTPS" section is carried out there.
-
 **Amended by ADR 0021:** oauth2-proxy sidecars in the `api` and `web` pods replace the nginx sidecar and its token; nothing, not even the `web` bundle, is served without a session.
 
-**Amended by ADR 0025:** the way in is now a Cloudflare Tunnel, and ADR 0020 is superseded. The Gateway has one HTTPS listener on `:443` and no address outside the cluster; `:80` is gone (Cloudflare redirects to HTTPS at its edge). HSTS is on at Cloudflare, because browsers only ever see Cloudflare's certificate, which rebuilds never touch.
+**Amended by ADR 0025** (which superseded ADR 0020): v1 serves HTTPS at `health.nibblejiggle.xyz`, carrying out the "v2 starting point: HTTPS" section, and the way in is a Cloudflare Tunnel. The Gateway has one HTTPS listener on `:443` and no address outside the cluster; `:80` is gone (Cloudflare redirects to HTTPS at its edge). HSTS is on at Cloudflare, because browsers only ever see Cloudflare's certificate, which rebuilds never touch.
 
 ## Shape (v1)
 
