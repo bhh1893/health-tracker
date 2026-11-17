@@ -110,6 +110,28 @@ The dashboard keeps showing it, so after a dev VM rebuild copy it again from the
 
 ## Plan and apply
 
+### Where to run it
+
+Run Terraform only from `~/health-tracker-main`, a checkout that always matches `origin/main`, so you apply only what has been merged. Never run it from `~/health-tracker`: Claude sessions switch branches there, so the `.tf` files can change between your `plan` and your `apply`. A branch made before a change merged would also plan to undo that change.
+
+Create it once, and again after a dev VM rebuild:
+
+```
+git -C ~/health-tracker worktree add --detach ~/health-tracker-main origin/main
+```
+
+`--detach` puts the checkout on a commit, not a branch, so nothing can be committed there by mistake and refreshing it never needs a merge. Before each session, bring it up to date and go there:
+
+```
+git -C ~/health-tracker-main fetch -q origin
+git -C ~/health-tracker-main checkout -q --detach origin/main
+cd ~/health-tracker-main
+```
+
+Every command below starts from there. To change the edge, edit the `.tf` files on a branch in another checkout, merge the PR, then refresh this one and `apply`.
+
+### Running it
+
 `iac/scripts/cloudflare-terraform` reads the token into `CLOUDFLARE_API_TOKEN`, keeps the state at `~/.config/health-tracker/terraform/cloudflare.tfstate` (mode 600) and passes everything else to `terraform`. It refuses to run without a terminal, so Claude cannot run it.
 
 ```
