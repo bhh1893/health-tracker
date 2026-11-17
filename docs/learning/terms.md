@@ -637,6 +637,9 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **RP-initiated logout**: an OIDC feature where the app (the relying party) sends the browser to the provider's `end_session_endpoint` to end the provider's session too; Google does not offer it.
 - **Client-side filtering**: the browser downloads a whole small list once and filters it in memory as the user types, with no request per keystroke; it trades a bigger first response and simpler matching for instant results.
 - **Bounded response**: an API answer whose size has a fixed ceiling (a maximum `limit`), so no caller, honest or not, can make the server build and send an arbitrarily large reply.
+- **Account takeover**: getting into a system by logging in as its owner (phished or reused password, hijacked recovery) instead of breaking its defenses; usually the cheapest attack on a well-built system.
+- **TOTP (authenticator app)**: a 6-digit code computed from a shared secret and the current time, valid ~30 seconds; tied to your device, but a fake login page can relay it live.
+- **SIM swap**: an attacker convinces a phone carrier to move your number to their SIM, then receives your SMS codes; why SMS is never a second factor or recovery method here.
 - **Required but nullable (OpenAPI)**: the key is always present in the JSON (`required`) but its value may be `null`; clients never have to handle a missing key, only an empty value. Pydantic produces this for `str | None` with no default.
 - **Safe-area inset (`env(safe-area-inset-bottom)`)**: a CSS value the phone fills with the height of hardware or system UI over the page edge, such as the iPhone home indicator; it stays 0 unless the viewport meta tag sets `viewport-fit=cover`.
 - **`aria-current="page"`**: marks the link to the screen you are on, so a screen reader says "current page" and tests can find the active tab without reading colours.
