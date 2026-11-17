@@ -110,10 +110,11 @@ git config --global user.email "<email>"
 Skip this step if the cluster does not exist yet.
 
 1. Register the new deploy key and delete the old one (`docs/runbooks/secrets.md`).
-2. Run `iac/scripts/apply-secrets` (ADR 0015).
-3. Restart the pods.
-4. Re-paste the token on the phone.
-5. Take a base backup straight away, because the bucket is now empty.
+2. Enter the console-made values again, which have no copy off the old VM: roll the DNS-01 token (`docs/runbooks/cloudflare.md`, "Rotate") and add a new Google client secret (`docs/runbooks/google-oauth.md`, "Lost dev VM"). `apply-secrets` stops until both files exist.
+3. Run `iac/scripts/apply-secrets` (ADR 0015).
+4. Restart the pods. The new cookie secret signs every User out.
+5. Re-paste the token on the phone.
+6. Take a base backup straight away, because the bucket is now empty.
 
 ## 7. Re-adopt the Cloudflare state (VM, only if the edge exists)
 
