@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Does the public hostname answer, and only with what ADR 0025 lets it give without a
+# session? Runs daily in GitHub Actions (.github/workflows/public-probe.yml, ADR 0014)
+# and works the same from the dev VM, e.g. after a hostname change. No credentials.
+#
+# Usage: public-probe [hostname]   (default app.nibblejiggle.xyz)
+# Exit 0: every check passed. Anything else: the app is down, or something answers
+# without a session that should not.
+set -euo pipefail
+
+host=${1:-app.nibblejiggle.xyz}
+base="https://${host}"
+# Cloudflare's HSTS setting, Terraform in iac/cloudflare/ (ADR 0025: 6 months).
+hsts='max-age=15552000'
+sign_in_title='<title>Sign in - Health Tracker</title>'
+# Names the probe in the api's access lines (ADR 0030).
+user_agent='health-tracker-public-probe'
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+status=0
+fail() { echo "FAIL: $*"; status=1; }
+
+# Fetches one path with no cookie and no redirect following, then sets:
+#   code     HTTP status (000 when no response came back at all)
+#   body     response body
+#   headers  response headers, names lowercased
+# Every response must carry HSTS, so that is checked here, once per request.
+fetch() {
+  local path=$1
+  # A failed request writes nothing; never judge it by the last request's files.
+  rm -f "$tmp/headers" "$tmp/body"
+  # --retry covers a blip on the runner's network or a 502/503/504 during a rollout;
+  # a real outage lasts longer than the retries.
+  code=$(curl --silent --show-error --max-time 20 --retry 2 --retry-delay 5 \
+    --user-agent "$user_agent" \
+    --dump-header "$tmp/headers" --output "$tmp/body" --write-out '%{http_code}' \
+    "${base}${path}") || code=000
+  body=$(cat "$tmp/body" 2>/dev/null || true)
+  # HTTP header lines end in CRLF; drop the CR so patterns can anchor on $.
+  headers=$(tr -d '\r' <"$tmp/headers" 2>/dev/null | tr '[:upper:]' '[:lower:]' || true)
+  echo "GET ${path} -> ${code}"
+  if [[ "$code" != 000 ]] && ! grep -qx "strict-transport-security: ${hsts}" <<<"$headers"; then
+    fail "${path}: no 'strict-transport-security: ${hsts}' header"
+  fi
+}
+
+echo "probing ${base}"
+
+# A data route without a session: the api's auth sidecar refuses it (ADR 0021).
+fetch /api/v1/meals
+[[ "$code" == 401 ]] || fail "/api/v1/meals: want 401, got ${code}"
+
+# The app root without a session: oauth2-proxy serves its Sign-in page, as a 403.
+# A 200 here would mean the web route lost its auth sidecar.
+fetch /
+[[ "$code" == 403 ]] || fail "/: want 403, got ${code}"
+[[ "$body" == *"$sign_in_title"* ]] || fail "/: no Sign-in page"
+
+# web's readiness probe is public by design (ADR 0025) but must say only "ok".
+# Also the uptime check: 200 means a web pod is ready behind the tunnel.
+fetch /readyz
+[[ "$code" == 200 ]] || fail "/readyz: want 200, got ${code}"
+[[ "$(tr -d '[:space:]' <<<"$body")" == ok ]] || fail "/readyz: body is not a bare 'ok'"
+
+# Unknown paths, a fresh random one per run so no cache can answer for the origin.
+# Under the web route they get the Sign-in page; under /api, a 401. Never data.
+unknown="probe-$(od -An -N6 -tx1 /dev/urandom | tr -d ' \n')"
+fetch "/${unknown}"
+[[ "$code" == 403 ]] || fail "/${unknown}: want 403, got ${code}"
+[[ "$body" == *"$sign_in_title"* ]] || fail "/${unknown}: no Sign-in page"
+
+fetch "/api/v1/${unknown}"
+[[ "$code" == 401 ]] || fail "/api/v1/${unknown}: want 401, got ${code}"
+
+((status == 0)) && echo "OK"
+exit "$status"

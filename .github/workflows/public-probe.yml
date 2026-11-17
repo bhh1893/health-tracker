@@ -1,0 +1,29 @@
+name: public-probe
+
+# Tests the live deployment, not a commit, so it is not part of ci-gate (ADR 0014).
+# It checks what the internet gets without a session (ADR 0025) and doubles as uptime
+# monitoring. A failure reaches the owner as GitHub's failed-workflow email.
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: Hostname to probe (empty for the script's default)
+        required: false
+        default: ''
+  schedule:
+    - cron: '23 14 * * *'  # Daily, 06:23 Pacific standard time. Off the hour, when GitHub's scheduler is least busy.
+
+# Least privilege: the job reads the repo for the script, and nothing else. No secrets.
+permissions:
+  contents: read
+
+jobs:
+  public-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      # The input goes through env, not ${{ }} in the script line, so it cannot inject shell.
+      - run: iac/scripts/public-probe ${HOST:+"$HOST"}
+        env:
+          HOST: ${{ inputs.host }}
