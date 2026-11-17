@@ -6,6 +6,8 @@ status: accepted
 
 Vagrant does only what Terraform plus cloud-init will do in a cloud: create the VM (CPU, RAM, disk), attach NICs and IPs, set the hostname, and inject one SSH public key. Ansible, run from the dev VM, owns everything from the OS up to "all 3 nodes Ready with Cilium". Moving to a cloud in v2 replaces `iac/vagrant/` with `iac/terraform/` and adds an inventory; the Ansible roles do not change.
 
+**Amended by ADR 0025:** the workers have no bridged NIC; the `bridged_nic` and `node_firewall` roles and the `bridged` inventory group are removed.
+
 ## Shape
 
 - **Base OS:** Ubuntu 26.04 LTS (`bento/ubuntu-26.04`, box version pinned) on all VMs. containerd 2.x comes from Ubuntu's own archive; kubeadm, kubelet, kubectl come from `pkgs.k8s.io`, pinned to 1.36.

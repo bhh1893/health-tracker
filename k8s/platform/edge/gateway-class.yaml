@@ -1,0 +1,34 @@
+# A GatewayClass of our own, so the Gateway's Service never gets an address outside
+# the cluster (ADR 0025). Cilium's chart creates a class named `cilium` too, but it
+# cannot point that one at a config, and Cilium 1.20 ignores a Gateway's own
+# `infrastructure.parametersRef` (seen at build: `Accepted=False InvalidParameters`).
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: cilium-cluster-only
+spec:
+  controllerName: io.cilium/gateway-controller
+  parametersRef:
+    group: cilium.io
+    kind: CiliumGatewayClassConfig
+    name: cluster-only
+    namespace: edge
+---
+# Shapes the Service Cilium generates for each Gateway of the class above. Cilium
+# allows only LoadBalancer or NodePort here, not ClusterIP, so this gets as close:
+#   - no NodePorts, so nothing listens on a node's own addresses;
+#   - a load balancer class nothing implements, so no IP pool, today's or a future
+#     one, ever hands the Service an outside address. It stays `<pending>`.
+# The cost: the Gateway reports `Programmed=False` (`AddressNotAssigned`) for good,
+# while Envoy serves normally on the ClusterIP. Check the listeners' `ResolvedRefs`
+# and `Accepted` instead.
+apiVersion: cilium.io/v2alpha1
+kind: CiliumGatewayClassConfig
+metadata:
+  name: cluster-only
+  namespace: edge
+spec:
+  service:
+    type: LoadBalancer
+    allocateLoadBalancerNodePorts: false
+    loadBalancerClass: health-tracker.invalid/none

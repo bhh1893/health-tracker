@@ -1,6 +1,6 @@
-# The one way in (ADR 0010, ADR 0025). Cilium sees this and creates a LoadBalancer
-# Service, which takes its IP from the pool in cilium/l2-announcement.yaml, and runs
-# Envoy to serve it.
+# The one way in (ADR 0010, ADR 0025), reached only by cloudflared. Cilium sees this,
+# runs Envoy to serve it, and creates the Service `cilium-gateway-edge`, shaped by
+# gateway-class.yaml to have no address outside the cluster.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -14,32 +14,13 @@ metadata:
     # production allows 5 certificates per name per 7 days.
     cert-manager.io/cluster-issuer: letsencrypt-production
 spec:
-  gatewayClassName: cilium
-  addresses:
-    - type: IPAddress
-      value: 192.168.0.250
+  gatewayClassName: cilium-cluster-only
   listeners:
-    # The LAN path the phone uses today. Removed with the LAN path in #147, once the
-    # tunnel is verified (ADR 0025).
-    - name: http
-      protocol: HTTP
-      port: 80
-      # Routes live with their services. Only the app namespace may attach one.
-      allowedRoutes:
-        kinds:
-          # The API server fills in `group` if left out, and then every apply sees a
-          # difference and reports `configured`, which breaks Ansible's changed=0.
-          - group: gateway.networking.k8s.io
-            kind: HTTPRoute
-        namespaces:
-          from: Selector
-          selector:
-            matchLabels:
-              kubernetes.io/metadata.name: health-tracker
-    # TLS ends here (ADR 0025): Envoy decrypts with the certificate in the Secret
-    # below, then routes on the path like the http listener. A client must send this
-    # hostname as SNI, or the handshake has no certificate to offer. Routes with no
-    # `hostnames` of their own attach to both listeners.
+    # The only listener. No `:80`: browsers never reach the Gateway, and Cloudflare
+    # redirects HTTP to HTTPS at its edge (ADR 0025).
+    # TLS ends here: Envoy decrypts with the certificate in the Secret below, then
+    # routes on the path. cloudflared sends this hostname as SNI (`originServerName`),
+    # or the handshake has no certificate to offer.
     - name: https
       protocol: HTTPS
       port: 443
@@ -47,10 +28,13 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          # `group` and `kind` spelled out for the same changed=0 reason as above.
+          # The API server fills in `group` and `kind` if left out, and then every
+          # apply sees a difference and reports `configured`, which breaks Ansible's
+          # changed=0. Same for the route kind below.
           - group: ""
             kind: Secret
             name: health-tls
+      # Routes live with their services. Only the app namespace may attach one.
       allowedRoutes:
         kinds:
           - group: gateway.networking.k8s.io

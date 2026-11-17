@@ -7,18 +7,14 @@
 # Vagrant only creates the machines, the job Terraform plus cloud-init will do in
 # a cloud. Everything from the OS up belongs to Ansible, run from the dev VM.
 
-# VirtualBox's name for the host's Wi-Fi adapter (`VBoxManage list bridgedifs`).
-# Without an exact match, `vagrant up` stops to ask, which breaks unattended rebuilds.
-BRIDGE_ADAPTER = "Intel(R) Wi-Fi 6E AX211 160MHz"
-
 OPS_PUBLIC_KEY = File.read(File.expand_path("~/.ssh/health-tracker-ops.pub")).strip
 
 # These IPs are duplicated in the Ansible inventory on purpose (ADR 0004). Change
 # one, change the other: iac/ansible/inventories/vagrant/hosts.yml.
 NODES = [
-  { name: "k8s-cp-1",     ip: "192.168.56.10", memory: 3072, bridged: false },
-  { name: "k8s-worker-1", ip: "192.168.56.11", memory: 4096, bridged: true },
-  { name: "k8s-worker-2", ip: "192.168.56.12", memory: 4096, bridged: true },
+  { name: "k8s-cp-1",     ip: "192.168.56.10", memory: 3072 },
+  { name: "k8s-worker-1", ip: "192.168.56.11", memory: 4096 },
+  { name: "k8s-worker-2", ip: "192.168.56.12", memory: 4096 },
 ].freeze
 
 Vagrant.configure("2") do |config|
@@ -42,10 +38,8 @@ Vagrant.configure("2") do |config|
       # Host-only: all cluster and Ansible traffic. The kubelet pins to this IP.
       machine.vm.network "private_network", ip: node[:ip]
 
-      # Bridged: puts workers on the home LAN so the phone can reach them. The
-      # address comes from the router's DHCP. Cilium announces the LoadBalancer
-      # pool (192.168.0.250-251) on this NIC itself, so Vagrant must not assign it.
-      machine.vm.network "public_network", bridge: BRIDGE_ADAPTER if node[:bridged]
+      # No NIC on the home LAN: the only way in is the Cloudflare tunnel, which
+      # dials out through the NAT NIC (ADR 0025).
 
       machine.vm.provider "virtualbox" do |vb|
         # Prefixed because VirtualBox names are global to the host.

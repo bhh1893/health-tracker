@@ -1,0 +1,26 @@
+# Only cloudflared may reach the Gateway (ADR 0025). The api trusts
+# `CF-Connecting-IP` as the visitor's address, which holds only if nothing but the
+# tunnel can send it a request; any other pod could set the header.
+#
+# Envoy is not a pod: Cilium runs it on every node and gives its traffic the
+# reserved `ingress` identity. A policy that selects that identity applies to every
+# Gateway in the cluster, hence cluster-wide. Once selected, everything this rule
+# does not allow is refused: Envoy answers `403` `Access denied` (seen at build).
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: gateway-from-cloudflared
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: reserved:ingress
+        operator: Exists
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: edge
+            app.kubernetes.io/name: cloudflared
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

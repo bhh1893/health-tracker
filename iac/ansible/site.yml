@@ -1,27 +1,12 @@
 # Takes the nodes to "all Ready with Cilium healthy" (ADR 0004), then installs the
 # platform components the app layer needs (ADR 0016). Run from iac/ansible:
 #   ansible-playbook site.yml
-# base goes first: it closes password SSH, and workers are on the LAN.
+# base goes first: it closes password SSH before anything else runs.
 - name: Secure and prepare the OS
   hosts: k8s_cluster
   become: true
   roles:
     - role: base
-
-# The `bridged` group exists only in the Vagrant inventory, so in a cloud this
-# play matches no hosts and does nothing.
-- name: Stop the bridged NIC adding routes
-  hosts: bridged
-  become: true
-  roles:
-    - role: bridged_nic
-
-# Before anything listens on the LAN. Same Vagrant-only group as above.
-- name: Firewall the bridged NIC
-  hosts: bridged
-  become: true
-  roles:
-    - role: node_firewall
 
 - name: Install the container runtime and Kubernetes packages
   hosts: k8s_cluster

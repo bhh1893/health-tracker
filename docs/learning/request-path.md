@@ -34,10 +34,10 @@ phone <──redirect──> accounts.google.com            proxy ──code for
 
 | Step | Today | Target | Built by |
 | --- | --- | --- | --- |
-| 1 DNS | `health` is a proxied CNAME to the tunnel, so it resolves to Cloudflare's edge; the LAN path still uses the raw IP `192.168.0.250` | same, LAN path gone | #146, #188 |
+| 1 DNS | `health` is a proxied CNAME to the tunnel, so it resolves to Cloudflare's edge | same | #146, #188 |
 | 2 Cloudflare edge | browser TLS ends; Always Use HTTPS, HSTS, the `/oauth2/` rate limit; sets `CF-Connecting-IP` | same | #188 |
 | 3 Tunnel | 2 `cloudflared` pods, 4 QUIC connections each, forward to the Gateway | same | #189 |
-| 4 Gateway | Envoy, HTTPS on `:443` (tunnel and LAN) and HTTP on `:80` (LAN) | HTTPS on `:443` only, reachable only from `cloudflared` | #146, #147 removes `:80` |
+| 4 Gateway | Envoy, HTTPS on `:443` only, reachable only from `cloudflared`; no address outside the cluster | same | #146, #147 |
 | 5 Service | same | same | - |
 | 6 Sidecar | oauth2-proxy checks a session cookie (`api` and `web`); any Google account | same | #150, #151 |
 | 7 `api` | caller's User from proxy headers; unknown signs up as Pending; Pending gets `403` | same | #151 |
@@ -85,26 +85,27 @@ phone <──redirect──> accounts.google.com            proxy ──code for
   - A backend missing from the egress policy: Envoy answers `403` with the plain-text body `Access denied`. Seen at build; `cilium-dbg monitor -t l7` on the node shows `verdict Denied`.
   - The precheck line `Cloudflare API ... FAIL` at startup is expected: the policy blocks `api.cloudflare.com`, used only for auto-update.
 
-### 4. Gateway (HTTPS built in #146)
+### 4. Gateway (HTTPS built in #146, locked to the tunnel in #147)
 
-- **What:** the Gateway `edge` (`k8s/platform/edge/gateway.yaml`). Cilium turns it into a LoadBalancer Service and runs Envoy to serve it. eBPF on the node hands packets for the Gateway's address to Envoy.
-- **Decides:** which backend gets the request, by path, using the `HTTPRoute`s that live with each service. Longest prefix wins: `/api` goes to the `api` Service (`services/api/k8s/httproute.yaml`), everything else to `web` (`services/web/k8s/httproute.yaml`). Routes name no hostname, so they attach to both listeners.
+- **What:** the Gateway `edge` (`k8s/platform/edge/gateway.yaml`). Cilium runs Envoy to serve it and makes the Service `cilium-gateway-edge`, which `gateway-class.yaml` keeps inside the cluster: no outside IP, no NodePorts. eBPF on the node hands packets for the Service's cluster IP to Envoy.
+- **Decides:** which backend gets the request, by path, using the `HTTPRoute`s that live with each service. Longest prefix wins: `/api` goes to the `api` Service (`services/api/k8s/httproute.yaml`), everything else to `web` (`services/web/k8s/httproute.yaml`).
 - **TLS ends here (#146):** the `https` listener on `:443` holds a Let's Encrypt certificate for `health.nibblejiggle.xyz` in Secret `edge/health-tls`. A client must send that name as SNI, or Envoy has no certificate to offer. Before this step the request is encrypted; after it, Envoy can read the path.
   - **Where the certificate comes from:** the Gateway's `cert-manager.io/cluster-issuer: letsencrypt-production` annotation makes cert-manager create a `Certificate`. It proves control with DNS-01: writes a `TXT` record at `_acme-challenge.health.nibblejiggle.xyz` through the Cloudflare API, Let's Encrypt looks it up, the record is deleted. The Gateway never needs to be reachable from the internet for this. Renewal is automatic at two thirds of the 90 days.
   - **Rebuilds:** `save-tls` keeps a copy on the dev VM, and `apply-secrets` restores it before the Gateway exists, so a rebuild issues nothing (Let's Encrypt allows 5 per name per 7 days).
-  - **Twice (ADR 0025):** the browser's TLS ends at Cloudflare's edge (step 2); `cloudflared` opens a second TLS connection to this listener (step 3). `:80` goes in #147.
+  - **Twice (ADR 0025):** the browser's TLS ends at Cloudflare's edge (step 2); `cloudflared` opens a second TLS connection to this listener (step 3). There is no `:80` listener: Cloudflare redirects `http://` at its edge.
+- **Fenced (#147):** `k8s/platform/edge/gateway-policy.yaml` selects Envoy's reserved `ingress` identity and admits only `cloudflared` pods on `443`. Without it any pod could reach the Gateway and set `CF-Connecting-IP`, the header `api` trusts as the visitor's address.
 - **Watch:**
-  - `kubectl get gateway -n edge` (address, `PROGRAMMED`), and per listener: `kubectl get gateway edge -n edge -o jsonpath='{range .status.listeners[*]}{.name}{" "}{.conditions[?(@.type=="Programmed")].status}{"\n"}{end}'`
-  - `kubectl get svc -n edge` (the LoadBalancer Service Cilium made; ports `80` and `443`)
+  - `kubectl get gateway -n edge`: `PROGRAMMED False` is expected, since the Service never gets an outside address. Check the listeners instead: `kubectl get gateway edge -n edge -o jsonpath='{range .status.listeners[*]}{.name}{" "}{.conditions[?(@.type=="ResolvedRefs")].status}{"\n"}{end}'` (`True`: the certificate Secret is found)
+  - `kubectl get svc -n edge` (the Service Cilium made: `EXTERNAL-IP <pending>`, port `443` with no NodePort)
   - `kubectl get httproute -n health-tracker -o wide`
   - `kubectl get certificate,certificaterequest,order,challenge -n edge` (one issuance, in the order it happens)
-  - `curl --resolve health.nibblejiggle.xyz:443:192.168.0.250 https://health.nibblejiggle.xyz/` (a handshake that checks the certificate; no `-k`)
-  - `openssl s_client -connect 192.168.0.250:443 -servername health.nibblejiggle.xyz </dev/null | openssl x509 -noout -issuer -dates`
+  - From the dev VM, through the tunnel: `curl -sI https://health.nibblejiggle.xyz/` (Envoy's answer carries `x-envoy-upstream-service-time`; a certificate problem here shows as `502`)
 - **Fails:**
   - No route matches: `404` from Envoy. A route with no ready backend: `503` (`no healthy upstream`).
-  - Secret missing: the `https` listener shows `ResolvedRefs=False` (`InvalidCertificateRef`) and `:443` refuses the handshake; `:80` keeps working. Seen on 2026-11-16 for the 2 minutes before the first issuance.
+  - Secret missing: the `https` listener shows `ResolvedRefs=False` (`InvalidCertificateRef`) and `:443` refuses the handshake. Seen on 2026-11-16 for the 2 minutes before the first issuance.
   - Issuance stuck: read `kubectl describe challenge -n edge`. `Waiting for DNS-01 challenge propagation` for a minute or two is normal; anything longer is usually the token (wrong scope, rolled) or the zone. A failed attempt backs off from 1 hour, doubling.
-  - Wrong SNI, such as `curl https://192.168.0.250`: no listener matches the name, so the handshake fails.
+  - Wrong SNI: no listener matches the name, so the handshake fails. Through the tunnel, `originServerName` always sends the right one.
+  - A client other than `cloudflared`: Envoy answers `403` with the plain-text body `Access denied`, the same answer as a backend missing from `cloudflared`'s egress policy (step 3). Cilium enforces the policy inside Envoy, after the TLS handshake, so the connection opens and the request is refused.
   - Through the tunnel, a broken certificate here shows as a Cloudflare `502`, not a browser warning: the browser only ever sees Cloudflare's certificate.
 
 ### 5. Service picks a pod (exists)

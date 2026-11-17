@@ -82,22 +82,21 @@ cilium encryption status
 
 This must print `Encryption: Wireguard (3/3 nodes)`.
 
-## Check the node firewall
+## Check nothing is reachable from the LAN
 
-Run this from a device on the home LAN, not the dev VM, which reaches the workers over the host-only network. Use the workers' `eth2` addresses from `ip -br addr show eth2`, and any NodePort from `kubectl get svc -A`.
+The nodes have no NIC on the home LAN (ADR 0025), so a LAN device has no way in but the tunnel. To check, run this in an admin PowerShell on the Windows host, which is on the home Wi-Fi. It sends traffic for one worker's pod range to the address that worker had on the LAN before #147, then tries the Postgres primary:
 
-Only the Gateway may answer. Port 22, 10250 and every NodePort must time out on each worker's LAN address, and `http://192.168.0.250/` must load.
+```powershell
+route add 10.244.2.0 mask 255.255.255.0 192.168.0.100
+Test-NetConnection 10.244.2.64 -Port 5432
+Test-NetConnection 192.168.0.250 -Port 443
+route delete 10.244.2.0
+```
 
-The workers' own LAN addresses show nothing open, even port 80: the Gateway listens only on `192.168.0.250`.
-
-Never run `systemctl start nftables` on a node. It flushes the whole ruleset, including Cilium's rules, and the Gateway stops working (ADR 0019).
+Take the pod range and IP from `kubectl get pods -n health-tracker -o wide` (`pg-1`). Both must print `TcpTestSucceeded : False`. Before #147, on 2026-11-17, both printed `True`: a LAN device could reach Postgres directly, because the node forwarded traffic to its pods, and the node firewall only filtered traffic addressed to the node itself.
 
 ## What to expect when a worker dies
 
-Measured on 2026-11-05 by powering off the worker announcing `192.168.0.250`, once each way, with a backend pod on each worker. Windows probed every second; the phone recovered by itself in roughly the same 20s:
-
-- About 20s: the IP moves to the other worker (the 15s lease expires, then a new election).
-- Until about 50s: some requests still fail, which fits the dead pod staying a backend until the node goes `NotReady`.
-- After that: all requests succeed.
+Not yet measured on the tunnel path. Expect `cloudflared` on the surviving worker to carry every request: each pod holds its own connections to Cloudflare, so losing one drops only the requests in flight on it. The earlier measurement (2026-11-05, about 20s of failures, then 50s of intermittent ones) was for the LAN IP moving between workers, which is gone.
 
 A worker that comes back rejoins by itself, and Cilium reports `OK` within a few minutes. Its `cilium status` shows errors until then.

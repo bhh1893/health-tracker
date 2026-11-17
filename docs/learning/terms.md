@@ -611,3 +611,9 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`IS DISTINCT FROM`**: SQL's null-safe "not equal"; `NULL <> 'x'` is `NULL` (neither true nor false), while `NULL IS DISTINCT FROM 'x'` is true.
 - **Header encoding (Latin-1)**: HTTP header bytes have no declared encoding; Python servers decode them as Latin-1, so UTF-8 text a proxy puts in a header must be re-read as UTF-8 or "Nguyễn" arrives garbled.
 - **Router dependency vs endpoint dependency (FastAPI)**: a function FastAPI runs before the endpoint; declared on one endpoint it guards that endpoint, and FastAPI runs each dependency once per request even if several ask for it.
+- **Attack surface**: every way something outside can reach a system; removing a path shrinks it for good, while a firewall rule in front of a path only guards it for as long as the rule stays right.
+- **GatewayClass**: the Gateway API object that names which controller runs a Gateway (here Cilium) and, through `parametersRef`, which settings it applies to every Gateway of that class.
+- **`CiliumGatewayClassConfig`**: Cilium's settings object for a GatewayClass; here it shapes the Service Cilium generates for each Gateway.
+- **`loadBalancerClass`**: a Service field naming which load balancer implementation may give it an outside IP; one that no implementation claims leaves the Service without one.
+- **`CiliumClusterwideNetworkPolicy`**: a `CiliumNetworkPolicy` without a namespace; needed when the endpoint selected is not a pod, such as Envoy's `reserved:ingress` identity.
+- **Gateway `Programmed` condition**: the Gateway API status saying the data plane is set up and the Gateway has an address; with no outside address on purpose, it stays `False` while Envoy still serves.
