@@ -169,7 +169,7 @@ describe("searching by Food", () => {
         mealOn(daysAgo(3), [oats, banana]),
       ],
     });
-    renderAt("/search", <SearchScreen />);
+    renderAt("/history/search", <SearchScreen />);
     await userEvent.click(screen.getByRole("radio", { name: "Food" }));
 
     expect(screen.getByText("Pick a Food to see results.")).toBeInTheDocument();
@@ -189,7 +189,7 @@ describe("searching by Food", () => {
   });
 
   it("never offers to create, and says when nothing matches", async () => {
-    renderAt("/search?what=food", <SearchScreen />);
+    renderAt("/history/search?what=food", <SearchScreen />);
 
     await userEvent.type(screen.getByRole("combobox", { name: "Food" }), "zzz");
 
@@ -199,7 +199,7 @@ describe("searching by Food", () => {
 
   it("clears the results when the picked text is edited", async () => {
     fakeSearchApi({ meals: [mealOn(daysAgo(1), [oats])] });
-    renderAt("/search?what=food", <SearchScreen />);
+    renderAt("/history/search?what=food", <SearchScreen />);
     await pick("Food", "oat", "Oats");
     await waitFor(() => {
       expect(dayRows()).toHaveLength(1);
@@ -217,7 +217,7 @@ describe("searching by Exercise", () => {
     fakeSearchApi({
       entries: [setOn(daysAgo(2), 1, { weight_lb: 145 }), setOn(daysAgo(2), 2)],
     });
-    renderAt("/search?what=exercise", <SearchScreen />);
+    renderAt("/history/search?what=exercise", <SearchScreen />);
     await pick("Exercise", "ben", "Bench Press");
 
     const row = await screen.findByRole("button", {
@@ -235,7 +235,7 @@ describe("searching by Exercise", () => {
 
   it("finds archived Exercises, since their history is real", async () => {
     const api = fakeSearchApi({});
-    renderAt("/search?what=exercise", <SearchScreen />);
+    renderAt("/history/search?what=exercise", <SearchScreen />);
 
     await userEvent.type(
       screen.getByRole("combobox", { name: "Exercise" }),
@@ -267,7 +267,7 @@ describe("searching by Exercise", () => {
       ],
     });
     renderAt(
-      `/search?what=exercise&id=${bench.id}&name=Bench+Press&view=sessions`,
+      `/history/search?what=exercise&id=${bench.id}&name=Bench+Press&view=sessions`,
       <SearchScreen />,
     );
 
@@ -301,7 +301,7 @@ describe("Everything, a screen at a time", () => {
 
   it("never shows a Day before all of it has loaded", async () => {
     seedMonth();
-    renderAt("/search", <SearchScreen />);
+    renderAt("/history/search", <SearchScreen />);
 
     await screen.findByRole("button", { name: "Load more" });
     // The first page of Sets ends partway through a Day; that Day waits.
@@ -314,7 +314,7 @@ describe("Everything, a screen at a time", () => {
 
   it("loads the next page on Load more, then stops at the end", async () => {
     const api = seedMonth();
-    renderAt("/search", <SearchScreen />);
+    renderAt("/history/search", <SearchScreen />);
 
     await userEvent.click(
       await screen.findByRole("button", { name: "Load more" }),
@@ -350,7 +350,7 @@ describe("Everything, a screen at a time", () => {
       },
     );
     seedMonth();
-    renderAt("/search", <SearchScreen />);
+    renderAt("/history/search", <SearchScreen />);
 
     await waitFor(() => {
       expect(dayRows()).toHaveLength(20);
@@ -369,7 +369,7 @@ describe("Everything, a screen at a time", () => {
           : HttpResponse.json({ items: [], next_cursor: null }),
       ),
     );
-    renderAt("/search", <SearchScreen />);
+    renderAt("/history/search", <SearchScreen />);
 
     const retry = await screen.findByRole("button", { name: "Try again" });
     fail = false;
@@ -405,7 +405,7 @@ describe("calories and macros", () => {
       ],
       totals: [dayTotal(day)],
     });
-    renderAt("/search", <SearchScreen />);
+    renderAt("/history/search", <SearchScreen />);
 
     await userEvent.click(
       await screen.findByRole("button", {
@@ -434,7 +434,7 @@ describe("calories and macros", () => {
       ],
       totals: [dayTotal(day, { kcal: 304, incomplete: true })],
     });
-    renderAt("/search", <SearchScreen />);
+    renderAt("/history/search", <SearchScreen />);
 
     await userEvent.click(
       await screen.findByRole("button", {
@@ -476,7 +476,7 @@ describe("calories and macros", () => {
         }),
       ],
     });
-    renderAt("/search", <SearchScreen />);
+    renderAt("/history/search", <SearchScreen />);
 
     await userEvent.click(
       await screen.findByRole("button", {
@@ -491,7 +491,7 @@ describe("calories and macros", () => {
 
   it("asks for totals over the question's range, and not for an Exercise", async () => {
     const api = fakeSearchApi({ entries: [setOn(daysAgo(1), 1)] });
-    renderAt("/search?range=7d", <SearchScreen />);
+    renderAt("/history/search?range=7d", <SearchScreen />);
     await waitFor(() => {
       expect(dayRows()).toHaveLength(1);
     });
@@ -519,7 +519,7 @@ describe("calories and macros", () => {
         ),
       ),
     );
-    renderAt("/search", <SearchScreen />);
+    renderAt("/history/search", <SearchScreen />);
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(dayRows()).toHaveLength(1);
@@ -529,20 +529,20 @@ describe("calories and macros", () => {
 describe("the question lives in the URL", () => {
   it("writes each choice to the URL and reads it back on load", async () => {
     fakeSearchApi({ meals: [mealOn(daysAgo(1), [oats])] });
-    renderAt("/search?what=food", <SearchScreen />);
+    renderAt("/history/search?what=food", <SearchScreen />);
     await pick("Food", "oat", "Oats");
     await userEvent.click(screen.getByRole("radio", { name: "7 days" }));
 
     expect(url()).toHaveTextContent(
-      `/search?what=food&id=${oats.id}&name=Oats&range=7d`,
+      `/history/search?what=food&id=${oats.id}&name=Oats&range=7d`,
     );
   });
 
-  it("returns to the window it came from", () => {
-    renderAt("/search", <SearchScreen />);
+  it("goes back up to History", () => {
+    renderAt("/history/search", <SearchScreen />);
     expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute(
       "href",
-      "/exercise",
+      "/history",
     );
   });
 });

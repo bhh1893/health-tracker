@@ -8,8 +8,11 @@ import { SignupClosedScreen } from "./auth/SignupClosedScreen";
 import { ProblemAlert } from "./components/ProblemAlert";
 import { ExerciseWindow } from "./exercise/ExerciseWindow";
 import { MealsWindow } from "./meals/MealsWindow";
+import { ProfileScreen } from "./profile/ProfileScreen";
 import { SearchScreen } from "./search/SearchScreen";
 import { WindowLayout } from "./screens/WindowLayout";
+import { AppShell } from "./shell/AppShell";
+import { RedirectKeepingQuery } from "./shell/RedirectKeepingQuery";
 
 // Loaded on first visit, not with the app: the chart library is larger than the rest
 // of the bundle, and the daily logging screens never need it (ADR 0024).
@@ -79,20 +82,36 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/exercise" replace />} />
-      <Route element={<WindowLayout />}>
-        <Route path="/exercise" element={<ExerciseWindow />} />
-        <Route path="/meals" element={<MealsWindow />} />
-      </Route>
-      <Route path="/search" element={<SearchScreen />} />
+      {/* Paths from before the bottom bar, kept forever (ADR 0031). */}
+      <Route
+        path="/search"
+        element={<RedirectKeepingQuery to="/history/search" />}
+      />
       <Route
         path="/dashboards"
-        element={
-          <Suspense fallback={<Loading />}>
-            <DashboardsScreen />
-          </Suspense>
-        }
+        element={<RedirectKeepingQuery to="/history" />}
       />
-      <Route path="*" element={<NotFound />} />
+      <Route element={<AppShell />}>
+        {/* Add */}
+        <Route element={<WindowLayout />}>
+          <Route path="/exercise" element={<ExerciseWindow />} />
+          <Route path="/meals" element={<MealsWindow />} />
+        </Route>
+        {/* History */}
+        <Route
+          path="/history"
+          element={
+            // Inside the shell, so the bar stays while the chart chunk loads.
+            <Suspense fallback={<Loading />}>
+              <DashboardsScreen />
+            </Suspense>
+          }
+        />
+        <Route path="/history/search" element={<SearchScreen />} />
+        {/* Profile */}
+        <Route path="/profile" element={<ProfileScreen />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
     </Routes>
   );
 }

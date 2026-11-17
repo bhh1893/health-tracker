@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router";
@@ -27,6 +27,17 @@ function renderAt(path: string, client = createQueryClient()) {
   );
 }
 
+// The bar's links only, so the Exercise | Meals links above it never match.
+const tab = (name: string) =>
+  within(screen.getByRole("navigation", { name: "Tabs" })).getByRole("link", {
+    name,
+  });
+const findTab = async (name: string) =>
+  within(await screen.findByRole("navigation", { name: "Tabs" })).getByRole(
+    "link",
+    { name },
+  );
+
 const pendingHeading = () =>
   screen.findByRole("heading", { name: "Waiting for approval" });
 
@@ -48,6 +59,10 @@ describe("a Pending User", () => {
     expect(await pendingHeading()).toBeInTheDocument();
     expect(
       screen.queryByRole("link", { name: "Meals" }),
+    ).not.toBeInTheDocument();
+    // The waiting screen replaces the whole route tree, bar included (ADR 0031).
+    expect(
+      screen.queryByRole("navigation", { name: "Tabs" }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sign out" })).toHaveAttribute(
       "href",
@@ -216,36 +231,65 @@ describe("the shell", () => {
     );
   });
 
-  it("reaches Search from the header icon", async () => {
+  it("opens History from the bar, loading the dashboard on first visit", async () => {
     renderAt("/exercise");
 
-    await userEvent.click(await screen.findByRole("link", { name: "Search" }));
+    await userEvent.click(await findTab("History"));
 
-    expect(
-      await screen.findByRole("heading", { name: "Search" }),
-    ).toBeInTheDocument();
-  });
-
-  it("reaches Dashboards from the header icon, and comes back to the same Day", async () => {
-    renderAt("/meals?day=2026-11-02");
-
-    await userEvent.click(
-      await screen.findByRole("link", { name: "Dashboards" }),
-    );
-
-    // The screen is its own chunk, loaded on this first visit.
+    // The screen is its own chunk, loaded on this first visit (ADR 0024).
     expect(
       await screen.findByRole("heading", { name: "Dashboards" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute(
-      "href",
-      "/meals?day=2026-11-02",
-    );
+    expect(tab("History")).toHaveAttribute("aria-current", "page");
+    expect(tab("Add")).not.toHaveAttribute("aria-current");
+  });
+
+  it("opens the Profile placeholder from the bar", async () => {
+    renderAt("/exercise");
+
+    await userEvent.click(await findTab("Profile"));
+
+    expect(
+      await screen.findByRole("heading", { name: "Profile" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("url")).toHaveTextContent("/profile");
+  });
+
+  it.each([
+    ["/search?what=food&range=7d", "/history/search?what=food&range=7d"],
+    ["/dashboards?tab=meals&range=90d", "/history?tab=meals&range=90d"],
+  ])("sends the old %s to %s, query included", async (from, to) => {
+    renderAt(from);
+
+    expect(await findTab("History")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByLabelText("url")).toHaveTextContent(to);
+  });
+
+  it("returns each tab to where it was left, and resets it on a second tap", async () => {
+    renderAt("/meals?day=2026-11-02");
+    await screen.findByRole("heading", { name: "Meals on 2026-11-02" });
+
+    await userEvent.click(tab("History"));
+    await screen.findByRole("heading", { name: "Dashboards" });
+    await userEvent.click(tab("Add"));
+
+    expect(
+      await screen.findByRole("heading", { name: "Meals on 2026-11-02" }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(tab("Add"));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: `Exercise on ${toDay(new Date())}`,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("url")).toHaveTextContent(/^\/exercise$/);
   });
 
   it("shows Problem Details when the API refuses a call", async () => {
     server.use(
-      http.get("*/api/v1/exercises", () =>
+      http.get("*/api/v1/exercise-entries", () =>
         HttpResponse.json(
           {
             type: "about:blank",
@@ -265,10 +309,13 @@ describe("the shell", () => {
     expect(alert).toHaveTextContent("limit: Too large.");
   });
 
-  it("shows not found on an unknown path", async () => {
+  it("shows not found on an unknown path, with the bar and no tab active", async () => {
     renderAt("/no-such-page");
     expect(
       await screen.findByRole("heading", { name: "Page not found" }),
     ).toBeInTheDocument();
+    for (const name of ["History", "Add", "Profile"]) {
+      expect(tab(name)).not.toHaveAttribute("aria-current");
+    }
   });
 });
