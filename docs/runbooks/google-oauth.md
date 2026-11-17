@@ -28,7 +28,7 @@ Commands below are one per line with no `#` comments: zsh at a prompt passes `#`
 5. **Client.** "Clients", "Create client".
    - Application type: **Web application**. Name: `health-tracker oauth2-proxy`.
    - Authorized JavaScript origins: **none**. Origins are for browser code that talks to Google itself; here only the proxy does, from the server.
-   - Authorized redirect URIs: exactly one, `https://health.nibblejiggle.xyz/oauth2/callback`. Google matches it character for character, so no trailing slash.
+   - Authorized redirect URIs: exactly one, `https://app.nibblejiggle.xyz/oauth2/callback`. Google matches it character for character, so no trailing slash.
    - "Create".
 
 6. **Save the secret.** Google shows the client secret once, in the dialog that follows (verified at build, see below). Copy it and, on the dev VM:

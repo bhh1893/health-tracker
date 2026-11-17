@@ -4,13 +4,13 @@ status: accepted
 
 # Cloudflare edge as Terraform, `cloudflared` as a plain Deployment in `edge`
 
-Everything at Cloudflare that a decision depends on (the tunnel and its routes, the `health` record, HTTPS and HSTS, Bot Fight Mode, the rate limiting rule, the brake rule) is Terraform in `iac/cloudflare/`, applied by hand from the dev VM. The tunnel is remotely managed, so `cloudflared` runs on a token alone: a plain Deployment of 2 replicas in `edge`, applied by Ansible with the Gateway and fenced by an egress policy. Terraform never sees the tunnel token, so its state holds no secret. Decided in [Tunnel config, credential and rebuild](https://github.com/bhh1893/health-tracker/issues/180), facts in [Public way in to a home cluster](https://github.com/bhh1893/health-tracker/issues/171). Follows ADR 0025 and amends ADR 0009, 0014, 0015 and 0026.
+Everything at Cloudflare that a decision depends on (the tunnel and its routes, the `app` record, HTTPS and HSTS, Bot Fight Mode, the rate limiting rule, the brake rule) is Terraform in `iac/cloudflare/`, applied by hand from the dev VM. The tunnel is remotely managed, so `cloudflared` runs on a token alone: a plain Deployment of 2 replicas in `edge`, applied by Ansible with the Gateway and fenced by an egress policy. Terraform never sees the tunnel token, so its state holds no secret. Decided in [Tunnel config, credential and rebuild](https://github.com/bhh1893/health-tracker/issues/180), facts in [Public way in to a home cluster](https://github.com/bhh1893/health-tracker/issues/171). Follows ADR 0025 and amends ADR 0009, 0014, 0015 and 0026.
 
 ## Edge as code
 
 - **Terraform, `iac/cloudflare/`.** Provider specifics live under `iac/` (ADR 0003); `iac/terraform/` stays reserved for v2 cloud VMs (ADR 0004). Terraform and the provider are pinned exactly (`dev.yml` installs Terraform with a checksum; provider `5.29.0`; `.terraform.lock.hcl` committed). Who bumps them is [Patching internet-facing components](https://github.com/bhh1893/health-tracker/issues/178).
 - **Managed:**
-  - the tunnel, `config_src = "cloudflare"` (remotely managed), and its ingress rules: `health.nibblejiggle.xyz` -> `https://<Gateway Service>.edge.svc.cluster.local:443` with `originServerName: health.nibblejiggle.xyz`, then the catch-all `http_status:404` (ADR 0025);
+  - the tunnel, `config_src = "cloudflare"` (remotely managed), and its ingress rules: `app.nibblejiggle.xyz` -> `https://<Gateway Service>.edge.svc.cluster.local:443` with `originServerName: app.nibblejiggle.xyz`, then the catch-all `http_status:404` (ADR 0025);
   - the proxied `health` CNAME to `<tunnel-uuid>.cfargotunnel.com`;
   - Always Use HTTPS and HSTS (6 months, no `includeSubDomains`, no preload; ADR 0025);
   - Bot Fight Mode off and the `/oauth2/` rate limiting rule (ADR 0027);

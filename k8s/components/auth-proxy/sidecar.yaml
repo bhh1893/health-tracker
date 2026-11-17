@@ -21,7 +21,7 @@ spec:
             # Google sends the browser back here. Set outright: the proxy sees plain
             # HTTP from the Gateway, so it would otherwise build an http:// URL that
             # does not match the one registered with Google.
-            - --redirect-url=https://health.nibblejiggle.xyz/oauth2/callback
+            - --redirect-url=https://app.nibblejiggle.xyz/oauth2/callback
             # The session cookie (ADR 0021). `__Host-` makes the browser insist on
             # Secure, Path=/ and no Domain, so no other site under the zone can set or
             # read it. Same name and secret in every pod: one sign-in covers both.

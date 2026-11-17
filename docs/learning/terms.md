@@ -529,8 +529,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **TCP**: a transport protocol that turns unreliable packets into an ordered, reliable byte stream between two ports (a "connection"); UDP is the no-guarantees alternative.
 - **HTTP**: the application protocol of the web: a request (method, path, headers, body) and a response (status, headers, body), sent as plain text unless wrapped in TLS.
 - **TLS**: encryption wrapped around a TCP connection, so only the two ends can read it; the server proves its identity with a certificate. HTTPS is HTTP inside TLS.
-- **Certificate**: a file that says "this public key belongs to `health.nibblejiggle.xyz`", signed by a certificate authority (e.g. Let's Encrypt) that browsers trust.
-- **DNS**: the internet's phone book: turns a name like `health.nibblejiggle.xyz` into an IP address (A record) or into another name to look up (CNAME record).
+- **Certificate**: a file that says "this public key belongs to `app.nibblejiggle.xyz`", signed by a certificate authority (e.g. Let's Encrypt) that browsers trust.
+- **DNS**: the internet's phone book: turns a name like `app.nibblejiggle.xyz` into an IP address (A record) or into another name to look up (CNAME record).
 - **NAT / port-forwarding**: a home router shares one public IP across all home devices and drops unsolicited inbound traffic; port-forwarding is the router setting that sends inbound traffic on a port to one device.
 - **Reverse proxy**: a server that receives requests on behalf of other servers and forwards them; Cloudflare's edge, the Cilium Gateway and oauth2-proxy are all reverse proxies.
 - **Outbound tunnel**: a program inside a private network dials out to a provider and holds the connection open, so the provider can send requests back down it without any inbound port opened.

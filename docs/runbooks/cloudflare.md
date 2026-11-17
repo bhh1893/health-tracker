@@ -1,15 +1,15 @@
 # Cloudflare
 
-Everything at Cloudflare the app depends on is Terraform in `iac/cloudflare/`: the tunnel and its routes, the `health` record, Always Use HTTPS, HSTS, Bot Fight Mode, the rate limiting rule and the Sign-up brake rule (ADR 0029). This runbook covers the rest, which stays manual: the account, moving DNS hosting for `nibblejiggle.xyz` from Porkbun to Cloudflare, DNSSEC, the API tokens and "Under Attack" mode, plus how to run Terraform. Do them yourself, in a browser and a dev VM terminal. Claude cannot see tokens or run `plan`, by design (ADR 0015, ADR 0029).
+Everything at Cloudflare the app depends on is Terraform in `iac/cloudflare/`: the tunnel and its routes, the `app` record, Always Use HTTPS, HSTS, Bot Fight Mode, the rate limiting rule and the Sign-up brake rule (ADR 0029). This runbook covers the rest, which stays manual: the account, moving DNS hosting for `nibblejiggle.xyz` from Porkbun to Cloudflare, DNSSEC, the API tokens and "Under Attack" mode, plus how to run Terraform. Do them yourself, in a browser and a dev VM terminal. Claude cannot see tokens or run `plan`, by design (ADR 0015, ADR 0029).
 
 Commands below are one per line with no `#` comments: zsh at a prompt passes `#` and the words after it to the command as arguments.
 
 ## Four words first
 
 - **Registrar** (Porkbun): who you rent the name from. It tells the `.xyz` registry which nameservers answer for the name. Porkbun stays the registrar.
-- **Nameservers** (Cloudflare): the servers that answer "what is `health.nibblejiggle.xyz`?". Whoever runs them is where you edit records.
+- **Nameservers** (Cloudflare): the servers that answer "what is `app.nibblejiggle.xyz`?". Whoever runs them is where you edit records.
 - **Records:** the rows those nameservers serve, such as `A` (name to IPv4), `CNAME` (name to another name) and `TXT` (free text, used to prove control).
-- **Certificate:** a separate thing from DNS. Let's Encrypt signs one for a name after you prove you control it. With DNS-01, the proof is a `TXT` record at `_acme-challenge.health.nibblejiggle.xyz`, which cert-manager writes through the Cloudflare API. That API is the reason for the move.
+- **Certificate:** a separate thing from DNS. Let's Encrypt signs one for a name after you prove you control it. With DNS-01, the proof is a `TXT` record at `_acme-challenge.app.nibblejiggle.xyz`, which cert-manager writes through the Cloudflare API. That API is the reason for the move.
 
 How a lookup finds the answer: a resolver (such as `1.1.1.1`) asks the root servers who runs `.xyz`, asks the `.xyz` registry who runs `nibblejiggle.xyz` (the NS records Porkbun set), then asks those nameservers for the record. Changing nameservers changes the middle answer. That answer is cached for its TTL, 3600 s at the `.xyz` registry, so a move takes up to an hour to be seen everywhere.
 
@@ -84,7 +84,7 @@ Terraform uses this token to manage the edge. It is a separate token from the DN
 2. Name: `terraform nibblejiggle.xyz`.
 3. Add two permission policies. The dashboard groups permissions by category, and a group lists only the permissions for the scope you picked. Zone permissions do not appear until the policy is scoped to a zone.
    - **Account policy,** Include, your account: `Cloudflare Tunnel: Edit` (the tunnel and its routes).
-   - **Zone policy,** Include, specific zone `nibblejiggle.xyz`: `Zone: Read` (looking the zone up by name), `DNS: Edit` (the `health` record), `Zone Settings: Edit` (Always Use HTTPS, HSTS), `Zone WAF: Edit` (both rulesets), `Bot Management: Edit` (Bot Fight Mode). The first three are in "DNS & Zones"; the other two are in a security group.
+   - **Zone policy,** Include, specific zone `nibblejiggle.xyz`: `Zone: Read` (looking the zone up by name), `DNS: Edit` (the `app` record), `Zone Settings: Edit` (Always Use HTTPS, HSTS), `Zone WAF: Edit` (both rulesets), `Bot Management: Edit` (Bot Fight Mode). The first three are in "DNS & Zones"; the other two are in a security group.
 4. Check the scopes: the summary must name your account and `nibblejiggle.xyz`, or the token can also edit any zone you add later.
 5. No client IP filter and no expiration, as for the DNS-01 token. It is used only from the dev VM, a few times a year.
 6. "Continue to summary": it must list exactly these 6 permissions on your account and the one zone. "Create Token". On the dev VM:
@@ -157,6 +157,20 @@ stat -c '%a %n' ~/.config/health-tracker/terraform/*
 
 An error such as `Could not open file` is a failed check, not a pass.
 
+## Change the hostname
+
+The name lives in three places: `local.hostname` in `iac/cloudflare/zone.tf` (DNS record, tunnel route, `origin_server_name`), the Gateway's `https` listener in `k8s/platform/edge/gateway.yaml`, and `--redirect-url` in `k8s/components/auth-proxy/sidecar.yaml`. A fourth copy sits outside the repo: the redirect URI on the Google OAuth client. Change all of them in one PR. The Secret `edge/health-tls`, the tunnel and every token keep their names and values.
+
+Each step below runs from `~/health-tracker-main`, refreshed after the merge (see "Where to run it"), so Ansible and Terraform apply exactly what merged. Expect a few minutes of downtime between steps 2 and 4; the old name stops working at step 4 and does not redirect.
+
+1. **Google, add the new URI.** Google Cloud console, "Clients", the web client, "Authorized redirect URIs": add `https://<new name>/oauth2/callback` and keep the old one, so sign-in works on whichever name the proxy is using (`google-oauth.md`).
+2. **Merge the PR.** Argo CD syncs the auth proxy's new `--redirect-url`; if auto-sync is off, sync from the UI (`platform.md`).
+3. **Gateway.** Run `site.yml` as in `cluster-nodes.md`, from `~/health-tracker-main/iac/ansible`: twice, the second showing `changed=0`. The listener takes the new hostname, and cert-manager reissues the certificate into the same Secret, by DNS-01, in a minute or two. Wait for `kubectl -n edge get certificate health-tls` to show `READY True`, and check the new name with `kubectl -n edge get certificate health-tls -o jsonpath='{.spec.dnsNames}'`.
+4. **Cloudflare.** `iac/scripts/cloudflare-terraform plan`: it must change only the tunnel config (`~`) and the DNS record (`~` or `-/+`). Then `apply`, then `plan` again for "No changes", then the state checks under "Running it" (`tunnel.tf`'s inputs changed).
+5. **Check.** `curl -sI https://<new name>/` shows `server: cloudflare` and `x-envoy-upstream-service-time`. Sign in on the phone: the session cookie belonged to the old name, so sign in again. Update the home-screen shortcut.
+6. **Save the certificate.** `iac/scripts/save-tls`, or a rebuild would restore the copy for the old name (`secrets.md`, "Gateway certificate").
+7. **Google, remove the old URI.** Only after step 5 passed.
+
 ## Sign-up brake, level 2
 
 For a traffic flood on the sign-in path, when `users signup close` (level 1, ADR 0026) is not enough. It blocks `/oauth2/start` at Cloudflare, before the tunnel, so existing Users cannot sign in again either while it is on.
@@ -165,7 +179,7 @@ For a traffic flood on the sign-in path, when `users signup close` (level 1, ADR
 iac/scripts/cloudflare-terraform apply -var signup_brake_edge=true
 ```
 
-Check from a browser: `https://health.nibblejiggle.xyz/oauth2/start` shows Cloudflare's block page. Undo:
+Check from a browser: `https://app.nibblejiggle.xyz/oauth2/start` shows Cloudflare's block page. Undo:
 
 ```
 iac/scripts/cloudflare-terraform apply

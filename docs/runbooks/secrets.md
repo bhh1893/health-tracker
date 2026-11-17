@@ -67,7 +67,7 @@ One credential is the exception: it lives only in GitHub Actions secrets and has
 
    A second run prints `unchanged` for every Secret.
 
-5. Sign in on the phone: open `https://health.nibblejiggle.xyz/` and tap "Sign in with Google". Nothing to copy; the session cookie lasts 30 days (ADR 0021).
+5. Sign in on the phone: open `https://app.nibblejiggle.xyz/` and tap "Sign in with Google". Nothing to copy; the session cookie lasts 30 days (ADR 0021).
 
 ## CI tag bump key
 
@@ -146,7 +146,7 @@ Anyone holding this token can run their own connector, and Cloudflare sends them
    ```
 
    `"success": true` means done.
-4. Check: the connectors list shows exactly two, both from the home IP, and `https://health.nibblejiggle.xyz/` loads.
+4. Check: the connectors list shows exactly two, both from the home IP, and `https://app.nibblejiggle.xyz/` loads.
 
 ## Claude guardrail
 
