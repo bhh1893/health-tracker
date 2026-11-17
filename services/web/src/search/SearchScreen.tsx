@@ -5,12 +5,11 @@ import {
   Label,
   NumberField,
 } from "react-aria-components";
-import { Link, useLocation, useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { CatalogComboBox } from "../catalog/CatalogComboBox";
 import { exerciseCatalog, foodCatalog } from "../catalog/catalogs";
 import { fieldClass, labelClass } from "../components/formStyles";
-import { backTarget } from "../lib/backTarget";
 import { useToday } from "../lib/useToday";
 import { DayResults } from "./DayResults";
 import { LastSessions } from "./LastSessions";
@@ -77,18 +76,12 @@ function DayField({ label, value, max, onChange }: DayFieldProps) {
 // holds no state of its own, like the Day pager.
 export function SearchScreen() {
   const [params, setParams] = useSearchParams();
-  // location.state is `any`: whatever a link chose to pass. Read it as unknown.
-  const state: unknown = useLocation().state;
   const today = useToday();
   const query = parseSearch(params, today);
 
-  // Replace, not push: Back should leave Search, not undo each chip tap. The state
-  // is passed on, or the Back link would forget where it leads.
+  // Replace, not push: Back should leave Search, not undo each chip tap.
   function update(change: Partial<SearchQuery>) {
-    setParams(toSearchParams({ ...query, ...change }), {
-      replace: true,
-      state,
-    });
+    setParams(toSearchParams({ ...query, ...change }), { replace: true });
   }
 
   const catalog = query.what === "exercise" ? exerciseCatalog : foodCatalog;
@@ -97,7 +90,8 @@ export function SearchScreen() {
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-4">
       <header className="flex items-center gap-4">
-        <Link className="text-teal-700 underline" to={backTarget(state)}>
+        {/* Search lives under History, so Back goes up to it (ADR 0031). */}
+        <Link className="text-teal-700 underline" to="/history">
           Back
         </Link>
         <h1 className="text-xl font-semibold">Search</h1>

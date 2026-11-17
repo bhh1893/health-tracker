@@ -1,8 +1,7 @@
-import { Link, useLocation, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 
 import { CatalogComboBox } from "../catalog/CatalogComboBox";
 import { exerciseCatalog } from "../catalog/catalogs";
-import { backTarget } from "../lib/backTarget";
 import { useToday } from "../lib/useToday";
 import { Segments } from "../search/Segments";
 import {
@@ -34,29 +33,20 @@ const RANGES = [
 // so this screen holds no state of its own.
 export default function DashboardsScreen() {
   const [params, setParams] = useSearchParams();
-  // location.state is `any`: whatever a link chose to pass. Read it as unknown.
-  const state: unknown = useLocation().state;
   const today = useToday();
   const query = parseDashboard(params);
   const from = rangeStart(query.range, today);
 
-  // Replace, not push: Back should leave Dashboards, not undo each chip tap. The
-  // state is passed on, or the Back link would forget where it leads.
+  // Replace, not push: the phone's Back should leave Dashboards, not undo each
+  // chip tap.
   function update(change: Partial<DashboardQuery>) {
-    setParams(toDashboardParams({ ...query, ...change }), {
-      replace: true,
-      state,
-    });
+    setParams(toDashboardParams({ ...query, ...change }), { replace: true });
   }
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-4">
-      <header className="flex items-center gap-4">
-        <Link className="text-teal-700 underline" to={backTarget(state)}>
-          Back
-        </Link>
-        <h1 className="text-xl font-semibold">Dashboards</h1>
-      </header>
+      {/* No Back link: Dashboards is History's root, and the bar leaves it. */}
+      <h1 className="text-xl font-semibold">Dashboards</h1>
 
       <Segments
         label="Dashboard"

@@ -43,7 +43,7 @@ export function parseDashboard(params: URLSearchParams): DashboardQuery {
   };
 }
 
-// Writes only what differs from the defaults, so the plain screen is /dashboards.
+// Writes only what differs from the defaults, so the plain screen is /history.
 export function toDashboardParams(query: DashboardQuery) {
   const params = new URLSearchParams();
   if (query.tab !== DEFAULTS.tab) {

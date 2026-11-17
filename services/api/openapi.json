@@ -395,6 +395,17 @@
       },
       "Me": {
         "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
           "name": {
             "anyOf": [
               {
@@ -423,6 +434,7 @@
         "required": [
           "role",
           "name",
+          "email",
           "restaurant_day_kcal"
         ],
         "title": "Me",

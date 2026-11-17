@@ -640,3 +640,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Account takeover**: getting into a system by logging in as its owner (phished or reused password, hijacked recovery) instead of breaking its defenses; usually the cheapest attack on a well-built system.
 - **TOTP (authenticator app)**: a 6-digit code computed from a shared secret and the current time, valid ~30 seconds; tied to your device, but a fake login page can relay it live.
 - **SIM swap**: an attacker convinces a phone carrier to move your number to their SIM, then receives your SMS codes; why SMS is never a second factor or recovery method here.
+- **Required but nullable (OpenAPI)**: the key is always present in the JSON (`required`) but its value may be `null`; clients never have to handle a missing key, only an empty value. Pydantic produces this for `str | None` with no default.
+- **Safe-area inset (`env(safe-area-inset-bottom)`)**: a CSS value the phone fills with the height of hardware or system UI over the page edge, such as the iPhone home indicator; it stays 0 unless the viewport meta tag sets `viewport-fit=cover`.
+- **`aria-current="page"`**: marks the link to the screen you are on, so a screen reader says "current page" and tests can find the active tab without reading colours.
+- **Adjusting state while rendering**: React's pattern for state that must follow a changing input (here the URL): compare and call `setState` during render behind a guard, instead of in an effect that would commit a stale frame first.

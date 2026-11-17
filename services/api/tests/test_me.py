@@ -4,12 +4,12 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from identities import MEMBER_ID, MEMBER_NAME
+from identities import MEMBER_EMAIL, MEMBER_ID, MEMBER_NAME
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 ME = "/api/me"
-MEMBER = {"role": "member", "name": MEMBER_NAME}
+MEMBER = {"role": "member", "name": MEMBER_NAME, "email": MEMBER_EMAIL}
 
 
 def kcal_of(response: Any) -> float:
