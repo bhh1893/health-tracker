@@ -624,3 +624,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Singleton row**: a table that can hold exactly one row, enforced by a key column whose only legal value is fixed (`id boolean PRIMARY KEY CHECK (id)`); used for one global setting such as the Sign-up brake.
 - **Per-pod counter (the 2N ceiling)**: a rate limit counted in each replica's own memory; a load balancer spreads one User's requests across N pods, so they can make up to N times the limit before every pod refuses them.
 - **`limits` (Python library)**: rate limiting algorithms (fixed and moving window) and counter storage (memory, Redis, ...), with no web framework attached; slowapi and Flask-Limiter are built on it.
+- **Existence leak**: a response that differs between "not yours" and "not there" (say `403` vs `404`), so an attacker can probe which ids are real; giving both the same answer closes it.
+- **Router-level dependency**: a FastAPI `Depends` attached when a router is included, so it runs before every endpoint in that router without each endpoint asking for it.

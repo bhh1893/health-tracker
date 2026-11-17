@@ -112,7 +112,7 @@ def flatmap_case(_: HookContext, case: Case[Any]) -> Any:
 
 @pytest.fixture
 def api_schema(committing_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> BaseSchema:
-    """The contract the running app serves, with one of everything already in the database."""
+    """The app's contract, with one of everything already in the database."""
     # Every case is the same Member within seconds: at the real limits most would be 429.
     monkeypatch.setenv(RATE_LIMIT_ENV, "1000000/minute")
     monkeypatch.setenv(WRITE_RATE_LIMIT_ENV, "1000000/minute")
@@ -137,7 +137,12 @@ def api_schema(committing_client: TestClient, monkeypatch: pytest.MonkeyPatch) -
         ("exercise-entries", EXERCISE_ENTRY, {**OCCURRED, "exercise_id": EXERCISE, "reps": 5}),
     ):
         committing_client.put(f"/api/v1/{path}/{row_id}", json=body).raise_for_status()
-    return schemathesis.openapi.from_asgi("/openapi.json", create_app())
+    # From app.openapi(), not a route: the app serves no /openapi.json (ADR 0014). CI checks
+    # that this matches the committed openapi.json.
+    app = create_app()
+    loaded = schemathesis.openapi.from_dict(app.openapi())
+    loaded.app = app
+    return loaded
 
 
 schema = schemathesis.pytest.from_fixture("api_schema")

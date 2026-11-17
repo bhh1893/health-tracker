@@ -32,7 +32,6 @@ from health_api.catalogs import (
     normalize_name,
 )
 from health_api.db import DbSession, database_url
-from health_api.identity import CurrentUser
 
 CSV_PATH = Path(__file__).resolve().parents[2] / "data" / "reference_foods.csv"
 CSV_COLUMNS = ("id", "name", *FOOD_COLUMNS)
@@ -205,8 +204,6 @@ def reference_foods_router() -> APIRouter:
         description="Suggest Reference Foods matching q, to copy Nutrition into a Food.",
     )
     def suggest_reference_foods(
-        # Not used in the query: the list is shared. Asked for so only a User may read it.
-        user: CurrentUser,
         session: DbSession,
         q: Annotated[str, Query(max_length=MAX_NAME_LENGTH, pattern=NO_NUL)] = "",
         limit: Annotated[int, Query(ge=1, le=50)] = 10,
