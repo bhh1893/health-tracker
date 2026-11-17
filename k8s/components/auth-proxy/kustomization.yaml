@@ -1,0 +1,20 @@
+# The oauth2-proxy sidecar every app pod runs (ADR 0021). A Component, not a base: it
+# adds to resources that already exist instead of bringing its own.
+#
+# Included once, by the overlay, and patched into every Deployment there. Two services
+# including it each would generate the same ConfigMap twice, which kustomize refuses.
+# Every Deployment, not a list: a new service is behind the proxy by default, and one
+# that forgets to listen on 127.0.0.1:8000 fails its probes instead of going public.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+# The generated name carries a hash of the content, so editing either file changes the
+# Deployments and rolls the pods. A plain ConfigMap would change with nothing restarting.
+configMapGenerator:
+  - name: auth-proxy
+    files:
+      - alpha-config.yaml
+      - sign_in.html
+patches:
+  - path: sidecar.yaml
+    target:
+      kind: Deployment

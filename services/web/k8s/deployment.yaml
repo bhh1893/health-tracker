@@ -38,18 +38,18 @@ spec:
       containers:
         - name: web
           image: ghcr.io/bhh1893/health-tracker-web
-          ports:
-            - name: http
-              containerPort: 8080
-          # Static files with no dependencies, so one check answers both questions.
+          # No ports: nginx listens on 127.0.0.1:8000, reachable only through the
+          # auth-proxy sidecar (k8s/components/auth-proxy/), which passes the probes
+          # through with no session. A number, not `http`: a port name resolves only
+          # within its own container.
           livenessProbe:
             httpGet:
-              path: /
-              port: http
+              path: /healthz
+              port: 8080
           readinessProbe:
             httpGet:
-              path: /
-              port: http
+              path: /readyz
+              port: 8080
           resources:
             requests:
               cpu: 10m

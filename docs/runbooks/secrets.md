@@ -4,7 +4,6 @@ Every secret value lives in `~/.config/health-tracker/` on the dev VM, and `iac/
 
 | File | Made by | Kubernetes Secret | Namespace | Used by |
 | --- | --- | --- | --- | --- |
-| `api-token` | `dev.yml` | `api-token` (key `token`) | `health-tracker` | nginx sidecar |
 | `db-owner.env` | `dev.yml` | `db-owner` | `health-tracker` | Migration Job, CNPG role `app` |
 | `db-api.env` | `dev.yml` | `db-api` | `health-tracker` | `api`, CNPG role `api_rw` |
 | `backup.env` | `dev.yml` | `backup-key` | `health-tracker` | CNPG Barman Cloud plugin |
@@ -13,6 +12,7 @@ Every secret value lives in `~/.config/health-tracker/` on the dev VM, and `iac/
 | `cloudflare-tunnel-token` | Cloudflare dashboard, then `enter-secret` (`cloudflare.md`) | `cloudflared` (key `token`) | `edge` | `cloudflared`, as `TUNNEL_TOKEN` (ADR 0029) |
 | `google-client-secret` | Google Cloud console, then `enter-secret` (`google-oauth.md`) | `auth-proxy` (key `client-secret`) | `health-tracker` | oauth2-proxy sidecars in `api` and `web` |
 | `auth-cookie-secret` | `dev.yml` | `auth-proxy` (key `cookie-secret`) | `health-tracker` | oauth2-proxy sidecars in `api` and `web` |
+| `auth-allowed-emails` (temporary, until #151) | You, by hand (first install, step 2) | `auth-proxy-allowlist` (key `emails`) | `health-tracker` | oauth2-proxy sidecars: the only emails allowed to sign in |
 | `health-tls.json` (optional) | cert-manager, then `save-tls` | `health-tls` | `edge` | Gateway `https` listener |
 | `cloudflare-terraform-token` | Cloudflare dashboard, then `enter-secret` (`cloudflare.md`) | none: `CLOUDFLARE_API_TOKEN` at apply time | - | Terraform, through `cloudflare-terraform` (ADR 0029) |
 
@@ -50,7 +50,13 @@ Two credentials are the exception: they live only in GitHub Actions secrets and 
    ansible-playbook iac/ansible/dev.yml -e dotfiles_repo=git@github.com:bhh1893/dotfiles.git
    ```
 
-2. Enter the values made in a web console: the DNS-01 token and the tunnel token (`cloudflare.md`), and the Google client secret (`google-oauth.md`). `apply-secrets` stops until all three exist.
+2. Enter the values made in a web console: the DNS-01 token and the tunnel token (`cloudflare.md`), and the Google client secret (`google-oauth.md`). Then write the sign-in allowlist, one email per line, your own Google account only. `apply-secrets` stops until all four exist.
+
+   ```
+   (umask 077 && printf '%s\n' 'you@gmail.com' > ~/.config/health-tracker/auth-allowed-emails)
+   ```
+
+   Replace `you@gmail.com` with your address. **Temporary:** until `api` tells Users apart ([#151](https://github.com/bhh1893/health-tracker/issues/151)), every signed-in request is the seeded User, so this list is what keeps other Google accounts out of your data. #151 deletes the file, this step and the Secret. To change the list later, edit the file and run `apply-secrets`; the sidecars notice the change by themselves within a minute or so, with no restart.
 
 3. Register the deploy key on GitHub, from a Windows terminal. Read-only is the default; never add `--allow-write` to this key. The key is tied to your `gh` login, so de-authorizing `gh` removes it.
 
@@ -69,13 +75,7 @@ Two credentials are the exception: they live only in GitHub Actions secrets and 
 
    A second run prints `unchanged` for every Secret.
 
-5. Put the token on the phone. Run this yourself in a terminal: it refuses to print anywhere else.
-
-   ```
-   iac/scripts/show-token
-   ```
-
-   Scan the QR code, copy the text, and paste it into the app's "enter secret" screen.
+5. Sign in on the phone: open `https://health.nibblejiggle.xyz/` and tap "Sign in with Google". Nothing to copy; the session cookie lasts 30 days (ADR 0021).
 
 ## CI tag bump key
 
@@ -107,7 +107,7 @@ To rotate, delete the old key first (`gh repo deploy-key list`, then `gh repo de
 
 ## Rotate a secret
 
-Rotate only on suspected exposure, including any `gitleaks` failure: the repo is public (ADR 0017), so deleting a commit does not take a leaked value back. Each rotation is the same shape: replace the value, run `apply-secrets`, restart whatever read the old one, because env vars and nginx's file read do not update a running process.
+Rotate only on suspected exposure, including any `gitleaks` failure: the repo is public (ADR 0017), so deleting a commit does not take a leaked value back. Each rotation is the same shape: replace the value, run `apply-secrets`, restart whatever read the old one, because env vars do not update a running process.
 
 Delete the file, then regenerate and apply:
 
@@ -119,7 +119,6 @@ iac/scripts/apply-secrets
 
 Then finish for the secret you rotated:
 
-- **`api-token`:** `kubectl -n health-tracker rollout restart deployment/api`, then `show-token` and re-paste on the phone.
 - **`db-api.env`:** `kubectl -n health-tracker rollout restart deployment/api`. CNPG changes the role's password by itself, through the `cnpg.io/reload` label. `api` fails to connect until the restart finishes.
 - **`db-owner.env`:** nothing to restart; the next migration Job reads the new value.
 - **`cloudflare-dns01-token`:** not generated, so skip the `dev.yml` step: roll the token in Cloudflare and enter it again (`cloudflare.md`, "Rotate"), then `apply-secrets`. Nothing to restart.
@@ -166,4 +165,4 @@ Anyone holding this token can run their own connector, and Cloudflare sends them
 - `Bash(*.config/health-tracker*)`: any other command that names the directory, such as `grep` or `python`.
 - `Bash(kubectl *get*secret*)`: reading Secrets, including with flags before `get` and in lists such as `pods,secrets`.
 
-This stops accidents, not a determined process: Claude runs as the same Linux user, and a script that builds the path itself gets past all three (ADR 0015). `show-token` is covered separately by refusing to run without a terminal. Anything that reads a value, including `argocd-initial-admin-secret`, is yours to run by hand.
+This stops accidents, not a determined process: Claude runs as the same Linux user, and a script that builds the path itself gets past all three (ADR 0015). Anything that reads a value, including `argocd-initial-admin-secret`, is yours to run by hand.

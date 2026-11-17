@@ -40,7 +40,7 @@ Added 2026-11-13, after ADR 0021 put oauth2-proxy in front of `api` and retired 
 - **The smoke Job checks the auth boundary only, with no credential.** Through the `api` and `web` Services, so the sidecars answer as they do for real traffic:
   - `GET /api/v1/meals` with no cookie: `401`, not a redirect.
   - The same with forged identity headers: `401`.
-  - `GET /` on `web`: a redirect to sign-in.
+  - `GET /` on `web`: the Sign-in page, which oauth2-proxy serves itself with `403` rather than a redirect (ADR 0021, "Built").
   - `/readyz` on `api` passes.
 - **Dropped from the smoke Job:** the Food and Meal create, read back and delete. Confidence that real reads and writes work now comes from the integration tests on real Postgres through the same migrations and `api_rw` grants, the migration Job succeeding, `/readyz`, and daily use.
 - **Manual, once at build:** a signed-in request with forged `sub` headers still resolves to the signed-in User. Added to ADR 0021's "Verify at build" list, since it cannot run without a session.

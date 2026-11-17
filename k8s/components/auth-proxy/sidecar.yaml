@@ -1,0 +1,110 @@
+# Added to every Deployment in the overlay that includes this component (ADR 0021).
+# The name below is a placeholder: kustomization.yaml picks the targets, and kustomize
+# ignores a patch's own name when a target is given.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: any
+spec:
+  template:
+    spec:
+      # A native sidecar: an init container with restartPolicy Always keeps running.
+      # Kubernetes starts it before the app and stops it after, so requests in flight
+      # during a shutdown still have a way out.
+      initContainers:
+        - name: auth-proxy
+          # Tag and digest (ADR 0028): a moved tag cannot change what runs without a PR.
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6@sha256:c3415e8660af553f5e18f5d90db050614c02493c0ac6260ac59442f6d9b12048
+          restartPolicy: Always
+          args:
+            - --alpha-config=/etc/auth-proxy/config/alpha-config.yaml
+            # Google sends the browser back here. Set outright: the proxy sees plain
+            # HTTP from the Gateway, so it would otherwise build an http:// URL that
+            # does not match the one registered with Google.
+            - --redirect-url=https://health.nibblejiggle.xyz/oauth2/callback
+            # The session cookie (ADR 0021). `__Host-` makes the browser insist on
+            # Secure, Path=/ and no Domain, so no other site under the zone can set or
+            # read it. Same name and secret in every pod: one sign-in covers both.
+            - --cookie-name=__Host-health_session
+            - --cookie-secure=true
+            - --cookie-httponly=true
+            - --cookie-samesite=lax
+            # Fixed 30 days from sign-in, never extended (refresh stays off), and no
+            # call to Google after sign-in (ADR 0021, "Session").
+            - --cookie-expire=720h
+            # Keep only what the headers need. The cookie holds no Google tokens, so a
+            # stolen one is a session here and nothing more, and it stays small.
+            - --session-cookie-minimal=true
+            # No session on /api/*: a bare 401, never a redirect to sign-in, so
+            # `web` can tell an expired session from a page load.
+            - --api-route=^/api/
+            # The probes, passed through with no session: they report status only
+            # (ADR 0010). Anchored, so /healthz/anything still needs a session.
+            - --skip-auth-route=GET=^/(healthz|readyz)$
+            # TEMPORARY, removed by #151 "api identifies Users from proxy headers".
+            # Until `api` reads the headers, every request is the seeded User, so any
+            # Google account would see the owner's data. Only the emails in this file
+            # may sign in. `--email-domain=*` must stay off while it is here: oauth2-proxy
+            # lets everyone in when the domain list has `*`, whatever the file says.
+            # #151 swaps this flag for `--email-domain=*` (ADR 0026).
+            - --authenticated-emails-file=/etc/auth-proxy/allowlist/emails
+            # Our own Sign-in page (sign_in.html); the error page stays the default.
+            - --custom-templates-dir=/etc/auth-proxy/config
+            # The default footer prints the proxy's version, a free hint for scanners.
+            - --footer=-
+            # One log line per probe per pod would bury the real traffic.
+            - --silence-ping-logging=true
+          env:
+            # Both from one Secret made by apply-secrets (ADR 0015).
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-proxy
+                  key: cookie-secret
+            # Read into alpha-config.yaml's clientSecret when the file is loaded.
+            - name: AUTH_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-proxy
+                  key: client-secret
+          ports:
+            - name: http
+              containerPort: 8080
+          # The proxy's own endpoints: /ping answers if the process is up, /ready also
+          # checks its session store. Neither reaches the app, so a hung app restarts
+          # the app and a hung proxy restarts the proxy.
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: auth-proxy-config
+              mountPath: /etc/auth-proxy/config
+              readOnly: true
+            - name: auth-proxy-allowlist
+              mountPath: /etc/auth-proxy/allowlist
+              readOnly: true
+      volumes:
+        - name: auth-proxy-config
+          configMap:
+            name: auth-proxy
+        # TEMPORARY, removed by #151 with the flag above. A file on the dev VM,
+        # applied by apply-secrets: emails are personal data and the repo is public.
+        - name: auth-proxy-allowlist
+          secret:
+            secretName: auth-proxy-allowlist

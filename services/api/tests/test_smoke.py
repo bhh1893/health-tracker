@@ -1,33 +1,25 @@
-"""The smoke script against a stub of the API, so its own logic is tested without a cluster."""
+"""The smoke script against a stub of the two sidecars, so its own logic is tested without a
+cluster. The stub answers as oauth2-proxy does with no session; each flag breaks one rule."""
 
-import json
 import threading
-import time
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any
 
 import pytest
-import uvicorn
-from fastapi import Request, Response
-from starlette.middleware.base import RequestResponseEndpoint
 
-from health_api.main import create_app
-from health_api.smoke import SmokeFailure, run
-
-TOKEN = "test-token"
+from health_api.smoke import FORGED_IDENTITY, SmokeFailure, run
 
 
 @dataclass
 class Stub:
     url: str = ""
-    foods: dict[str, str] = field(default_factory=dict[str, str])
-    meals: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
-    deletes: int = 0
-    enforce_token: bool = True
-    accept_any_token: bool = False
-    corrupt_reads: bool = False
+    # Each one is a way the auth boundary could be broken.
+    api_open: bool = False
+    trusts_forged_headers: bool = False
+    api_redirects: bool = False
+    web_open: bool = False
+    web_readyz_leaks: bool = False
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -36,59 +28,33 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         pass
 
-    def answer(self, status: int, body: object = None) -> None:
-        content = b"" if body is None else json.dumps(body).encode()
+    def answer(self, status: int, body: bytes = b"", location: str | None = None) -> None:
         self.send_response(status)
-        self.send_header("Content-Length", str(len(content)))
+        if location is not None:
+            self.send_header("Location", location)
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        self.wfile.write(content)
-
-    def authorized(self) -> bool:
-        if not self.stub.enforce_token:
-            return True
-        authorization = self.headers.get("Authorization")
-        if authorization == f"Bearer {TOKEN}":
-            return True
-        if self.stub.accept_any_token and authorization is not None:
-            return True
-        self.answer(401)
-        return False
+        self.wfile.write(body)
 
     def do_GET(self) -> None:
-        if not self.authorized():
-            return
-        if self.path == "/api/v1/meals":
-            self.answer(200, {"items": [], "next_cursor": None})
-        elif self.path in self.stub.meals:
-            food_id = self.stub.meals[self.path]["food_entries"][0]["food_id"]
-            name = self.stub.foods[f"/api/v1/foods/{food_id}"]
-            name = "wrong" if self.stub.corrupt_reads else name
-            self.answer(200, {"food_entries": [{"food": {"name": name}}]})
+        # One server stands in for both Services; the path prefix says which.
+        service, _, path = self.path.removeprefix("/").partition("/")
+        path = "/" + path
+        if path in ("/healthz", "/readyz"):
+            leak = service == "web" and self.stub.web_readyz_leaks
+            self.answer(200, b'{"status":"ok","version":"1.2.3"}' if leak else b"ok\n")
+        elif service == "api":
+            forged = self.headers.get("X-Auth-Subject") == FORGED_IDENTITY["X-Auth-Subject"]
+            if self.stub.api_open or (forged and self.stub.trusts_forged_headers):
+                self.answer(200, b'{"items":[]}')
+            elif self.stub.api_redirects:
+                self.answer(302, location="/oauth2/start")
+            else:
+                self.answer(401)
+        elif self.stub.web_open:
+            self.answer(200, b'<div id="root"></div>')
         else:
-            self.answer(404)
-
-    def do_PUT(self) -> None:
-        if not self.authorized():
-            return
-        length = int(self.headers["Content-Length"])
-        body = json.loads(self.rfile.read(length))
-        if self.path.startswith("/api/v1/foods/"):
-            self.stub.foods[self.path] = body["name"]
-        else:
-            self.stub.meals[self.path] = body
-        self.answer(201, {})
-
-    def do_DELETE(self) -> None:
-        if not self.authorized():
-            return
-        self.stub.deletes += 1
-        # As the foreign key does: a Food in use cannot be deleted.
-        if self.path.startswith("/api/v1/foods/") and self.stub.meals:
-            self.answer(409)
-            return
-        self.stub.foods.pop(self.path, None)
-        self.stub.meals.pop(self.path, None)
-        self.answer(204)
+            self.answer(403, b'<form action="/oauth2/start">')
 
 
 @pytest.fixture
@@ -105,65 +71,39 @@ def stub() -> Iterator[Stub]:
     thread.join()
 
 
-@pytest.fixture
-def real_api(database_url: str) -> Iterator[str]:
-    """The real app on real Postgres, behind a stand-in for the sidecar's token check."""
-
-    async def check_token(request: Request, call_next: RequestResponseEndpoint) -> Response:
-        if request.headers.get("Authorization") != f"Bearer {TOKEN}":
-            return Response(status_code=401)
-        return await call_next(request)
-
-    app = create_app()
-    app.middleware("http")(check_token)
-    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=0, log_level="warning"))
-    thread = threading.Thread(target=server.run, daemon=True)
-    thread.start()
-    while not server.started:
-        time.sleep(0.01)
-    port = server.servers[0].sockets[0].getsockname()[1]
-    yield f"http://127.0.0.1:{port}"
-    server.should_exit = True
-    thread.join()
+def run_against(stub: Stub) -> None:
+    run(f"{stub.url}/api", f"{stub.url}/web")
 
 
-def test_passes_against_the_real_api(real_api: str) -> None:
-    """The stub accepts any body. Only this proves the real API takes what the script sends."""
-    run(real_api, TOKEN)
+def test_passes_when_the_boundary_holds(stub: Stub) -> None:
+    run_against(stub)
 
 
-def test_passes_and_leaves_no_rows_behind(stub: Stub) -> None:
-    run(stub.url, TOKEN)
-    assert stub.foods == {}
-    assert stub.meals == {}
+def test_fails_when_api_needs_no_session(stub: Stub) -> None:
+    stub.api_open = True
+    with pytest.raises(SmokeFailure, match="no session on /api is refused"):
+        run_against(stub)
 
 
-def test_never_prints_the_token(stub: Stub, capsys: pytest.CaptureFixture[str]) -> None:
-    run(stub.url, TOKEN)
-    assert TOKEN not in capsys.readouterr().out
+def test_fails_when_forged_headers_are_trusted(stub: Stub) -> None:
+    stub.trusts_forged_headers = True
+    with pytest.raises(SmokeFailure, match="forged identity headers are refused"):
+        run_against(stub)
 
 
-def test_fails_when_the_token_check_is_off(stub: Stub) -> None:
-    stub.enforce_token = False
-    with pytest.raises(SmokeFailure, match="no token is refused"):
-        run(stub.url, TOKEN)
+def test_fails_when_api_redirects_instead_of_401(stub: Stub) -> None:
+    stub.api_redirects = True
+    with pytest.raises(SmokeFailure, match="expected 401, got 302"):
+        run_against(stub)
 
 
-def test_fails_when_any_token_is_accepted(stub: Stub) -> None:
-    stub.accept_any_token = True
-    with pytest.raises(SmokeFailure, match="wrong token is refused"):
-        run(stub.url, TOKEN)
+def test_fails_when_web_needs_no_session(stub: Stub) -> None:
+    stub.web_open = True
+    with pytest.raises(SmokeFailure, match="Sign-in page"):
+        run_against(stub)
 
 
-def test_fails_on_a_bad_token(stub: Stub) -> None:
-    with pytest.raises(SmokeFailure, match="token is accepted"):
-        run(stub.url, "not-the-token")
-
-
-def test_cleans_up_when_the_read_back_is_wrong(stub: Stub) -> None:
-    stub.corrupt_reads = True
-    with pytest.raises(SmokeFailure, match="wrong Food"):
-        run(stub.url, TOKEN)
-    assert stub.deletes == 2
-    assert stub.foods == {}
-    assert stub.meals == {}
+def test_fails_when_web_readyz_says_more_than_a_status(stub: Stub) -> None:
+    stub.web_readyz_leaks = True
+    with pytest.raises(SmokeFailure, match="more than a status"):
+        run_against(stub)
