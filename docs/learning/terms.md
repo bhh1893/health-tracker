@@ -566,6 +566,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Renovate**: a third-party bot that does what Dependabot version updates do but can also read custom files through regex rules; it needs write access to the repo.
 - **Release-watch**: subscribing to a GitHub repo's releases and security advisories (Watch -> Custom) so each new version arrives as an email.
 - **GitHub Environment**: a named deploy target in a repo with its own secrets and rules, e.g. "only the `main` branch may use it"; workflow jobs must name it to read its secrets.
+- **Deployment branch policy**: an Environment's list of branches allowed to use it; a job on any other ref fails before its first step and never sees the Environment's secrets.
 - **Remotely vs locally managed tunnel**: a Cloudflare Tunnel's routes are held either by Cloudflare (set by dashboard, API or Terraform; `cloudflared` needs only a token) or in a `config.yml` next to `cloudflared` (plus a credentials file).
 - **Terraform provider**: the plugin that teaches Terraform one API, e.g. `cloudflare/cloudflare`; pinned in `.terraform.lock.hcl`.
 - **Terraform state**: Terraform's record of which real objects it manages and their last known settings; it can hold secrets, so where it lives matters.

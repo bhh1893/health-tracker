@@ -38,7 +38,7 @@ Two credentials are the exception: they live only in GitHub Actions secrets and 
 
 | GitHub Actions secret | What it is | Used by | Set up in |
 | --- | --- | --- | --- |
-| `TAG_BUMP_DEPLOY_KEY` | Deploy key with write access (ADR 0018) | `bump-tags` job | "CI tag bump key" below |
+| `TAG_BUMP_DEPLOY_KEY` | Deploy key with write access (ADR 0018), a secret of the `tag-bump` Environment, not of the repo (ADR 0028) | `bump-tags` job | "CI tag bump key" below |
 | `TS_OAUTH_ID`, `TS_OAUTH_SECRET`, `TS_TAILNET` | Tailscale OAuth client with the `policy_file` scope, and the tailnet's name (ADR 0020) | `tailnet-policy-test`, `tailnet-policy-apply` jobs | `docs/runbooks/tailnet.md` |
 
 ## First install
@@ -79,14 +79,31 @@ Two credentials are the exception: they live only in GitHub Actions secrets and 
 
 ## CI tag bump key
 
-The one deploy key with write access: CI uses it to commit image tags to `main` past the PR rule (ADR 0018). Run this yourself, not through Claude. The private key goes straight into GitHub and is then deleted, so there is nothing to back up. To rotate, delete the old key on GitHub and repeat these steps.
+The one deploy key with write access: CI uses it to commit image tags to `main` past the PR rule (ADR 0018). It is a secret of the `tag-bump` Environment, which only `main` may use, so a workflow run on a PR or any other branch cannot read it (ADR 0028). Never store it as a repository secret: those reach every branch.
 
-```
-ssh-keygen -q -t ed25519 -N '' -C 'health-tracker tag bump' -f ~/tag-bump-key
-gh repo deploy-key add ~/tag-bump-key.pub --repo bhh1893/health-tracker --allow-write --title "health-tracker tag bump"
-gh secret set TAG_BUMP_DEPLOY_KEY --repo bhh1893/health-tracker < ~/tag-bump-key
-rm ~/tag-bump-key ~/tag-bump-key.pub
-```
+1. Create the Environment and limit it to `main`. Once per repo; the first command is safe to repeat, the second fails with "already exists" if `main` is already listed.
+
+   ```
+   gh api -X PUT repos/bhh1893/health-tracker/environments/tag-bump \
+     -F 'deployment_branch_policy[protected_branches]=false' \
+     -F 'deployment_branch_policy[custom_branch_policies]=true'
+   gh api -X POST repos/bhh1893/health-tracker/environments/tag-bump/deployment-branch-policies \
+     -f name=main -f type=branch
+   gh api repos/bhh1893/health-tracker/environments/tag-bump/deployment-branch-policies --jq '.branch_policies[].name'
+   ```
+
+   The last command prints only `main`.
+
+2. Make the key and store it. Run this yourself, not through Claude. The private key goes straight into GitHub and is then deleted, so there is nothing to back up.
+
+   ```
+   ssh-keygen -q -t ed25519 -N '' -C 'health-tracker tag bump' -f ~/tag-bump-key
+   gh repo deploy-key add ~/tag-bump-key.pub --repo bhh1893/health-tracker --allow-write --title "health-tracker tag bump"
+   gh secret set TAG_BUMP_DEPLOY_KEY --env tag-bump --repo bhh1893/health-tracker < ~/tag-bump-key
+   rm ~/tag-bump-key ~/tag-bump-key.pub
+   ```
+
+To rotate, delete the old key first (`gh repo deploy-key list`, then `gh repo deploy-key delete <id>`), so there is never a second write key (ADR 0018), then repeat step 2. Bumps fail until step 2 is done, so do not merge in between.
 
 ## Rotate a secret
 
