@@ -6,6 +6,8 @@ status: accepted
 
 Each User has an internal UUID that Entries point at, plus the OIDC identity that signs in as them. A Role change is made by a command that runs inside a live `api` pod as `api_rw`, and each change is recorded in an append-only `role_changes` table. Decided in [Users, Roles and the approval command](https://github.com/bhh1893/health-tracker/issues/125). This builds on ADR 0021 and amends it (the email header).
 
+**Amended by [Profile identity, avatar and sign-out](https://github.com/bhh1893/health-tracker/issues/220):** `email` is also shown back to its owner, through `GET /api/me`, on Profile and the Pending screen. Still display only, never used for lookup.
+
 ## Shape
 
 ### `users`
@@ -17,7 +19,7 @@ Each User has an internal UUID that Entries point at, plus the OIDC identity tha
 | `subject` | `text`, nullable | OIDC `sub`. Never changes and is never reused at one issuer. |
 | `role` | `text NOT NULL DEFAULT 'pending'` | `CHECK (role IN ('pending','member','admin'))`. |
 | `name` | `text`, nullable | Display only: `GET /api/me` returns it. |
-| `email` | `text`, nullable | Display only: how the Admin recognises a Pending person. Never used for lookup. |
+| `email` | `text`, nullable | Display only: how the Admin recognises a Pending person, and shown back to its owner by `GET /api/me`. Never used for lookup. |
 | `created_at` | `timestamptz` | Unchanged. |
 
 - `UNIQUE (issuer, subject)`, plus `CHECK ((issuer IS NULL) = (subject IS NULL))`.

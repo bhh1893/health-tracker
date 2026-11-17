@@ -14,6 +14,8 @@ The v1 API is a JSON REST API under `/api/v1`, described by the generated OpenAP
 
 **Amended by ADR 0027:** every operation can return `429` (Problem type `urn:health-tracker:problem:rate-limited`, with `Retry-After`) when a User passes the per-User rate limit.
 
+**Amended by [Profile identity, avatar and sign-out](https://github.com/bhh1893/health-tracker/issues/220):** `GET /api/me` gains `email` (nullable), the caller's own address, for Profile and the Pending screen.
+
 ## Shape
 
 - **Resources:**
