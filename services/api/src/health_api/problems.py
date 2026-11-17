@@ -33,6 +33,8 @@ KIND_IMMUTABLE = "urn:health-tracker:problem:kind-immutable"
 PENDING_APPROVAL = "urn:health-tracker:problem:pending-approval"
 # A 403: the caller is new, and the Admin has closed Sign-up (ADR 0026).
 SIGNUP_CLOSED = "urn:health-tracker:problem:signup-closed"
+# A 429: the User passed a per-User limit (ADR 0027).
+RATE_LIMITED = "urn:health-tracker:problem:rate-limited"
 
 
 class FieldError(BaseModel):

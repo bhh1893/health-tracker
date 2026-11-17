@@ -19,6 +19,7 @@ from health_api.problems import (
     document_problem_media_type,
     register_problem_handlers,
 )
+from health_api.rate_limits import TOO_MANY_REQUESTS, add_rate_limits
 from health_api.reference_foods import reference_foods_router
 
 
@@ -37,19 +38,23 @@ def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title="Health Tracker API", version="1", lifespan=lifespan)
     register_problem_handlers(app)
+    # Added first so it sits inside the access log: add_middleware wraps the app in the
+    # newest middleware, so a refused request still gets its access line.
+    add_rate_limits(app)
     # Inside ServerErrorMiddleware, which add_middleware always keeps outermost: an
     # unhandled exception passes through here first, so its line says 500.
     app.add_middleware(AccessLogMiddleware)
     app.include_router(health.router)
     # Every data route needs an approved User (ADR 0021). /api/me declares its own: GET is
-    # open to Pending.
-    data = {**DATABASE_UNAVAILABLE, **UNAUTHENTICATED, **NOT_APPROVED}
+    # open to Pending. Every /api route can be rate limited; the probes never are.
+    api = {**DATABASE_UNAVAILABLE, **TOO_MANY_REQUESTS}
+    data = {**api, **UNAUTHENTICATED, **NOT_APPROVED}
     for catalog in CATALOGS:
         app.include_router(catalog_router(catalog), responses=data)
     app.include_router(meals_router(), responses=data)
     app.include_router(exercise_entries_router(), responses=data)
     app.include_router(days_router(), responses=data)
     app.include_router(reference_foods_router(), responses=data)
-    app.include_router(me_router(), responses=DATABASE_UNAVAILABLE)
+    app.include_router(me_router(), responses=api)
     document_problem_media_type(app)
     return app

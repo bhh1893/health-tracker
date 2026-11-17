@@ -40,7 +40,7 @@ phone <──redirect──> accounts.google.com            proxy ──code for
 | 4 Gateway | Envoy, HTTPS on `:443` only, reachable only from `cloudflared`; no address outside the cluster | same | #146, #147 |
 | 5 Service | same | same | - |
 | 6 Sidecar | oauth2-proxy checks a session cookie (`api` and `web`); any Google account | same | #150, #151 |
-| 7 `api` | caller's User from proxy headers; unknown signs up as Pending; Pending gets `403` | same | #151 |
+| 7 `api` | per-User rate and write limits; caller's User from proxy headers; unknown signs up as Pending; Pending gets `403` | same | #151, #192 |
 
 ## Every request
 
@@ -138,9 +138,10 @@ phone <──redirect──> accounts.google.com            proxy ──code for
   - App not on `127.0.0.1:8000`: the probes fail and the pod never goes ready, so the Service never sends it traffic.
   - Alpha config in an old shape after a version bump: the proxy logs `has invalid keys` and exits. Seen while building #150 (v7.14 moved `claim:` under `claimSource:`).
 
-### 7. `api` (reads proxy headers since #151)
+### 7. `api` (reads proxy headers since #151, rate limits since #192)
 
 - **What:** uvicorn binds `127.0.0.1:8000` (`services/api/Dockerfile:37`), so only containers in the same pod can reach it. Localhost is the trust boundary: anything that gets here came through the sidecar, which set the `X-Auth-*` headers.
+- **Limits first:** `RateLimits` (`services/api/src/health_api/rate_limits.py`), an ASGI middleware, counts the request against the User's `(issuer, sub)` before routing: `RATE_LIMIT` (300/minute) on everything, `WRITE_RATE_LIMIT` (60/minute) also on `POST`, `PUT`, `PATCH`, `DELETE`. Past either, `429` Problem `urn:health-tracker:problem:rate-limited` with `Retry-After`, and no query is sent. Probes and requests with no identity pass through uncounted. Counters live in the pod's memory, so with 2 pods a User can get up to twice the limit (ADR 0027).
 - **Decides:** who is calling, in `signed_in_user` (`services/api/src/health_api/identity.py`), before any route code runs.
   - No `X-Auth-Issuer` or `X-Auth-Subject`: `401` Problem. Never a fallback to the seeded User.
   - Known `(issuer, sub)`: one indexed `SELECT` on `users_issuer_subject_key`. `name`/`email` are written only if the headers differ from what is stored.
@@ -156,6 +157,8 @@ phone <──redirect──> accounts.google.com            proxy ──code for
   - Database unreachable: `503` Problem, from the identity lookup itself, since it is the first query of every request.
   - Proxy stops sending `X-Auth-Issuer`/`X-Auth-Subject` (alpha config regression): every request is `401`, and `web` reloads into sign-in in a loop. Fails closed.
   - Proxy stops sending `name`/`email`: the stored values stay; nothing breaks.
+  - Over a limit: `429` with `Retry-After`; `web` shows "Too many requests. Wait a moment and try again." and does not retry. Seen in `kubectl logs -n health-tracker deploy/api -c api` as a `rate limit ... passed by` warning with the visitor IP.
+  - `RATE_LIMIT` that does not parse: the new pods crash at boot, so the rollout stops and the old pods keep serving.
 
 ## First visit only: sign-in (built in #150)
 

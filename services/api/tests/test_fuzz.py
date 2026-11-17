@@ -22,6 +22,7 @@ from schemathesis import BaseSchema, Case, GenerationMode, HookContext
 from schemathesis.specs.openapi.checks import positive_data_acceptance
 
 from health_api.main import create_app
+from health_api.rate_limits import RATE_LIMIT_ENV, WRITE_RATE_LIMIT_ENV
 
 pytestmark = pytest.mark.fuzz
 
@@ -110,8 +111,11 @@ def flatmap_case(_: HookContext, case: Case[Any]) -> Any:
 
 
 @pytest.fixture
-def api_schema(committing_client: TestClient) -> BaseSchema:
+def api_schema(committing_client: TestClient, monkeypatch: pytest.MonkeyPatch) -> BaseSchema:
     """The contract the running app serves, with one of everything already in the database."""
+    # Every case is the same Member within seconds: at the real limits most would be 429.
+    monkeypatch.setenv(RATE_LIMIT_ENV, "1000000/minute")
+    monkeypatch.setenv(WRITE_RATE_LIMIT_ENV, "1000000/minute")
     for path, row_id, body in (
         ("foods", FOOD, {"name": "Fuzz food", "nutrition": NUTRITION, "piece_g": 50}),
         ("exercises", EXERCISE, {"name": "Fuzz exercise"}),
@@ -148,6 +152,6 @@ def test_api_keeps_its_contract(case: Case[Any]) -> None:
     response = case.call_and_validate(
         headers=MEMBER_HEADERS, excluded_checks=[positive_data_acceptance]
     )
-    # 401 and 403 are in the contract, so a run that lost its identity would still pass,
-    # having tested nothing past current_user.
-    assert response.status_code not in (401, 403), response.text
+    # 401, 403 and 429 are in the contract, so a run that lost its identity or hit a limit
+    # would still pass, having tested nothing past the check that refused it.
+    assert response.status_code not in (401, 403, 429), response.text

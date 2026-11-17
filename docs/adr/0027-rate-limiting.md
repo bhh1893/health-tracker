@@ -21,19 +21,19 @@ Two limits, each where the layer knows enough to apply it. Cloudflare sees the v
 - **One limit for every Role: 300 requests per minute per User, per pod**, moving window, reads and writes alike. A busy session is about 60 a minute (a dashboard load fires about 10), so 300 leaves 5x headroom and cuts a runaway loop at 100 requests/s within about 3 s. Pending is still restricted to `GET /api/me` by authorization (ADR 0021); the limit applies on top.
 - **Writes also count against a separate limit: 60 per minute per User, per pod** (`POST`, `PUT`, `PATCH`, `DELETE`), configured as `WRITE_RATE_LIMIT=60/minute`. A real logging session is under 10 writes a minute. At 300 a minute across 2 pods a stolen session or bad Member could fill Postgres's 5Gi volume in days; at 60 it takes weeks, long enough to notice in daily use. Same `429` Problem as below. Added by ADR 0030 ([Public threat model](https://github.com/bhh1893/health-tracker/issues/179)).
 - **Keyed on the identity headers** oauth2-proxy sets and overwrites (`(issuer, sub)`), **checked before the database lookup**, so a throttled request never touches Postgres.
-- **slowapi**, counters in each pod's memory. With 2 replicas the real ceiling is up to 600 a minute. Accepted: the limit guards against runaways and a stolen session, not exact quotas.
+- **`limits`** (moving window, in-memory storage) behind a small ASGI middleware of our own, counters in each pod's memory. The build replaced slowapi, see Consequences. With 2 replicas the real ceiling is up to 600 a minute. Accepted: the limit guards against runaways and a stolen session, not exact quotas.
 - **Configured by env var** (e.g. `RATE_LIMIT=300/minute`), so changing it is a manifest change, not a code change.
 - **Exempt:** `/healthz` and `/readyz`. They carry no identity (ADR 0010), and a shared anonymous bucket could be exhausted and fail the probes.
 - **No IP-based limit in `api`:** every request there has an identity. `CF-Connecting-IP` (ADR 0025) is for logs only.
 
 ### What a limited client sees (amends ADR 0006)
 
-- `api` answers `429` as a Problem (`application/problem+json`) with type `urn:health-tracker:problem:rate-limited` and a `Retry-After` header in seconds. The contract lists `429` on every operation.
+- `api` answers `429` as a Problem (`application/problem+json`) with type `urn:health-tracker:problem:rate-limited` and a `Retry-After` header in seconds. The contract lists `429` on every `/api` operation; the probes are exempt, so they do not.
 - `web` keeps its rule of never retrying a `4xx` and shows "Too many requests. Wait a moment and try again." through its existing error path.
 
 ### Seeing it
 
-- `api` logs every `429` at warning level with the User id and `CF-Connecting-IP`. Edge blocks appear in Cloudflare's Security Events. No metrics or alerts in v1.
+- `api` logs every `429` at warning level with the User's `(issuer, sub)` and `CF-Connecting-IP`. Not the User id: that takes the database lookup the limit exists to skip. `iac/scripts/users list` maps one to the other. Edge blocks appear in Cloudflare's Security Events. No metrics or alerts in v1.
 
 ## Considered Options
 
@@ -53,3 +53,4 @@ Two limits, each where the layer knows enough to apply it. Cloudflare sees the v
 - The edge rule uses the only rate limiting rule Free allows. Another per-IP limit at the edge means a paid plan or a custom rule (5 on Free).
 - **Verify at build:** which actions Free allows on the rate limiting rule; 21 requests to `/oauth2/start` from one IP within 10 s get a `429`; the SPA works with Bot Fight Mode off and the Free Managed Ruleset on; the 301st request in a minute from one User to one pod gets the `429` Problem with `Retry-After`, and Postgres sees no query for it; the 61st write in a minute from one User to one pod gets the same `429`; probes are never limited.
 - **Edge limit, seen at build, 2026-11-17** ([#189](https://github.com/bhh1893/health-tracker/issues/189)): the rule fires, but not at request 21. 22 requests to `/oauth2/start` in 4 s all got `200`. 60 requests over 21 s got the first `429` (with `Retry-After`) at request 45, about 15 s in, then mostly `429`. Cloudflare's counting is approximate: counters sync across machines in a data centre with a delay, so a short burst overshoots. It still stops a script hammering `/oauth2/callback`; it does not cap a burst at 20. The check above is replaced by: a sustained burst from one IP gets `429` within about 20 s.
+- **`api` limits, seen at build, 2026-11-17** ([#192](https://github.com/bhh1893/health-tracker/issues/192)): slowapi was dropped for `limits`, the library it wraps. slowapi's `default_limits` count per path, so 300 a minute would have meant 300 per endpoint; only its global `application_limits` count across paths, and they cannot be filtered by method, so the write limit needed private attributes. Its middleware also skips paths that match no route. The middleware here is about 40 lines in `services/api/src/health_api/rate_limits.py`. Tests prove the 301st request and the 61st write get the `429` Problem with `Retry-After` and send Postgres no query, probes are never limited, and a refused request uses up no allowance.
