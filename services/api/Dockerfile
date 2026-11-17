@@ -33,4 +33,5 @@ USER 10001
 EXPOSE 8000
 # The migration Job reuses this image with its own command (ADR 0016).
 # 127.0.0.1: only the auth sidecar in the same pod can reach this port (ADR 0010).
-CMD ["uvicorn", "--factory", "health_api.main:create_app", "--host", "127.0.0.1", "--port", "8000"]
+# --no-access-log: its client is always the sidecar; health_api.access writes the real line.
+CMD ["uvicorn", "--factory", "health_api.main:create_app", "--host", "127.0.0.1", "--port", "8000", "--no-access-log"]
