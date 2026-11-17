@@ -47,6 +47,17 @@ Whoever controls one of these accounts controls the app, with no attack on the c
 
 Each needs a passkey or app-based 2FA, never SMS. A build ticket checks all four and records the result. This is the cheapest control in this ADR and covers the highest-impact risk.
 
+**Verified at build, 2026-11-17** ([#196](https://github.com/bhh1893/health-tracker/issues/196)):
+
+| Account | Second factor | SMS | Recovery codes |
+| --- | --- | --- | --- |
+| Cloudflare | None of its own: Sign in with Google only, no password set, so it inherits Google's | Not offered | None issued |
+| Porkbun | Authenticator app | Off | Offline |
+| Google Cloud | Passkey and authenticator app | Removed as a method and as the recovery phone | Offline |
+| GitHub | Authenticator app | Removed, fallback number included | Offline |
+
+All four send password resets to that same Google account, so its inbox is covered by its own row. Cloudflare could likely gain a password through "forgot password" from that inbox, so it is exactly as safe as the Google account. Adding a passkey to GitHub, the account that can deploy code, would make it phishing-resistant; not required.
+
 ### Tunnel token theft: rotate, and look at connectors monthly
 
 Anyone holding the tunnel token can run their own connector, and Cloudflare sends them a share of real requests, cookies included. Nothing in the cluster would notice. Rotation steps are in ADR 0029. Added here:
