@@ -629,3 +629,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Layout route**: a route with no page of its own that draws a shared frame (a header, a tab bar) and renders whichever child route matched inside it, through React Router's `<Outlet />`.
 - **Catch-all route**: a route with `path="*"` that matches any URL no other route claims; it renders the Not Found page.
 - **Redirect route**: a route whose only job is to send an old URL to its new one (`<Navigate replace />`), so links saved before a move keep working.
+- **Synthetic monitoring**: a script that acts like a visitor on a schedule and checks the answers, so a broken or wrongly exposed site is caught before a real visitor finds it; here the daily `public-probe` workflow.
+- **Testing the commit vs testing the deployment**: CI tests prove the code in a commit is right; a probe of the live site proves what is actually running, with its config, edge settings and infra, is right, and can fail when no commit changed.
+- **GitHub Actions `schedule` trigger**: runs a workflow on a cron line in UTC from the default branch only; GitHub may start it minutes late at busy times, and turns it off after 60 days without repo activity in a public repo.
+- **Expression injection (GitHub Actions)**: `${{ }}` is pasted into a `run:` script as text before the shell reads it, so user-controlled input there can run commands; passing it through `env:` keeps it a plain variable.
