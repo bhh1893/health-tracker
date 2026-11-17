@@ -1,0 +1,37 @@
+# Same shape as cilium.yml: one directory per version, a pinned checksum, and a
+# link onto the PATH. The sha256 was checked once against HashiCorp's signed
+# SHA256SUMS when the pin was set; Ansible checks every download against it.
+- name: Create the Terraform version directory
+  become: true
+  ansible.builtin.file:
+    path: "/opt/terraform/{{ dev_workstation_terraform_version }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download Terraform
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ dev_workstation_terraform_release }}/terraform_{{ dev_workstation_terraform_version }}_linux_amd64.zip"
+    dest: "/opt/terraform/{{ dev_workstation_terraform_version }}/terraform.zip"
+    checksum: "sha256:{{ dev_workstation_terraform_sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Unpack Terraform
+  become: true
+  ansible.builtin.unarchive:
+    src: "/opt/terraform/{{ dev_workstation_terraform_version }}/terraform.zip"
+    dest: "/opt/terraform/{{ dev_workstation_terraform_version }}"
+    include: [terraform]  # the zip also carries a licence file
+    remote_src: true
+    creates: "/opt/terraform/{{ dev_workstation_terraform_version }}/terraform"
+
+- name: Link Terraform onto the PATH
+  become: true
+  ansible.builtin.file:
+    src: "/opt/terraform/{{ dev_workstation_terraform_version }}/terraform"
+    dest: /usr/local/bin/terraform
+    state: link

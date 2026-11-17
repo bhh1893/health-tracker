@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Runs Terraform on iac/cloudflare/ with the Cloudflare token and the state file
+# from the dev VM (ADR 0029). Run it yourself in a terminal, never through Claude.
+#
+#   cloudflare-terraform plan
+#   cloudflare-terraform apply
+#   cloudflare-terraform apply -var signup_brake_edge=true
+#
+# Any arguments go to terraform as they are. fmt and validate need no token:
+# run those with plain terraform.
+set -euo pipefail
+
+secrets_dir="$HOME/.config/health-tracker"
+token_file="$secrets_dir/cloudflare-terraform-token"
+state_dir="$secrets_dir/terraform"
+module_dir="$(cd "$(dirname "$0")/../cloudflare" && pwd)"
+
+# Claude's commands get no terminal on stdin, so this stops a chat from using the
+# token (ADR 0029). Only stdin: piping the output (show -json | jq) is fine, since
+# plans and state hold no secret.
+if [[ ! -t 0 ]]; then
+  echo "cloudflare-terraform: run this yourself in a terminal" >&2
+  exit 1
+fi
+
+if [[ $# -eq 0 ]]; then
+  echo "usage: cloudflare-terraform <terraform command> [args]" >&2
+  exit 2
+fi
+
+if [[ ! -s "$token_file" ]]; then
+  echo "cloudflare-terraform: no $token_file; see docs/runbooks/cloudflare.md, \"Terraform token\"" >&2
+  exit 1
+fi
+
+# Terraform creates the state and its .backup with mode 666 minus the umask, so
+# 077 makes them 600, like every other file in $secrets_dir.
+umask 077
+mkdir -p "$state_dir"
+
+# Cheap when nothing changed, and makes a fresh clone or worktree ready to plan.
+# -reconfigure: the backend path is per machine, so never offer to migrate state.
+terraform -chdir="$module_dir" init -input=false -reconfigure \
+  -backend-config="path=$state_dir/cloudflare.tfstate" >/dev/null
+
+# Exported to terraform's environment only, never on its command line, where `ps`
+# would show it.
+CLOUDFLARE_API_TOKEN="$(<"$token_file")"
+export CLOUDFLARE_API_TOKEN
+exec terraform -chdir="$module_dir" "$@"

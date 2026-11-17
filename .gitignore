@@ -26,3 +26,9 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .hypothesis/
+
+# Terraform: providers are downloaded per checkout; state lives on the dev VM
+# (ADR 0029), never in the repo. .terraform.lock.hcl is committed.
+.terraform/
+*.tfstate
+*.tfstate.*

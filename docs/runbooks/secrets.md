@@ -11,8 +11,11 @@ Every secret value lives in `~/.config/health-tracker/` on the dev VM, and `iac/
 | `argocd-deploy-key` | `dev.yml` | `repo-health-tracker` | `argocd` | Argo CD |
 | `cloudflare-dns01-token` | Cloudflare dashboard, then `enter-secret` (`cloudflare.md`) | `cloudflare-dns01-token` (key `api-token`) | `cert-manager` | Let's Encrypt ClusterIssuers (DNS-01) |
 | `health-tls.json` (optional) | cert-manager, then `save-tls` | `health-tls` | `edge` | Gateway `https` listener |
+| `cloudflare-terraform-token` | Cloudflare dashboard, then `enter-secret` (`cloudflare.md`) | none: `CLOUDFLARE_API_TOKEN` at apply time | - | Terraform, through `cloudflare-terraform` (ADR 0029) |
 
-A value made by hand in a web console goes in with `iac/scripts/enter-secret <file>`, run yourself in a terminal: it reads the value at a hidden prompt, so it never reaches the screen, shell history, `ps` or Claude. `apply-secrets` stops if any file above is missing, except `health-tls.json`.
+A value made by hand in a web console goes in with `iac/scripts/enter-secret <file>`, run yourself in a terminal: it reads the value at a hidden prompt, so it never reaches the screen, shell history, `ps` or Claude. `apply-secrets` stops if any file above is missing, except `health-tls.json` and `cloudflare-terraform-token`, which it does not use.
+
+`terraform/cloudflare.tfstate` sits here too, for the guardrail below and mode 600, though it holds no secret (ADR 0029).
 
 ## Gateway certificate
 

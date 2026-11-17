@@ -14,6 +14,11 @@ dev_workstation_cilium_cli_sha256: b7224a62bfed0e84f1a84567d274fefc5017df76a936e
 dev_workstation_cilium_cli_release: >-
   https://github.com/cilium/cilium-cli/releases/download/v{{ dev_workstation_cilium_cli_version }}
 
+# Terraform for iac/cloudflare/ (ADR 0029). Same pin as the CI job.
+dev_workstation_terraform_version: "1.17.2"
+dev_workstation_terraform_sha256: e6f16b2f0b137ee5729caa8c4e79a3bae4ee261acd198a1fcfa8584a6296605b
+dev_workstation_terraform_release: "https://releases.hashicorp.com/terraform/{{ dev_workstation_terraform_version }}"
+
 dev_workstation_uv_version: "0.13.7"
 dev_workstation_uv_sha256: c5221ff41b7892bfc223543883600125f6a47fe845093e0f5bdff4f359196d83
 dev_workstation_uv_release: "https://github.com/astral-sh/uv/releases/download/{{ dev_workstation_uv_version }}"

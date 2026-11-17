@@ -115,6 +115,10 @@ Skip this step if the cluster does not exist yet.
 4. Re-paste the token on the phone.
 5. Take a base backup straight away, because the bucket is now empty.
 
+## 7. Re-adopt the Cloudflare state (VM, only if the edge exists)
+
+The Terraform state for Cloudflare lived on the old VM (ADR 0029). Cloudflare keeps serving without it. Make a new Terraform token, then import the live objects: `docs/runbooks/cloudflare.md`, "Terraform token" and "Lost state". Copy the tunnel token from the dashboard again as well (same runbook, "Tunnel token").
+
 ## Check it worked
 
 ```
@@ -124,6 +128,7 @@ docker run --rm hello-world
 sudo garage status
 gh auth status
 git config user.email
+terraform version
 ```
 
-The playbook recap must show `changed=0`, Docker must print its hello message without `sudo`, Garage must list one healthy node, `gh` must show you logged in, and git must print your email.
+The playbook recap must show `changed=0`, Docker must print its hello message without `sudo`, Garage must list one healthy node, `gh` must show you logged in, git must print your email, and `terraform version` must print the pin in the `dev_workstation` role defaults.
