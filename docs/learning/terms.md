@@ -600,3 +600,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Cilium DNS proxy**: a resolver Cilium slips between a pod and kube-dns when a policy has a `dns` rule; it reads each answer so `toFQDNs` knows which IPs a name stands for.
 - **`maxSurge` / `maxUnavailable`**: how far a rolling update may go above or below the replica count while it swaps pods; `0` / `1` means "remove one, then add its replacement".
 - **`TUNNEL_TOKEN`**: the env var `cloudflared tunnel run` reads its token from, so the token stays off the command line that `ps` shows.
+- **PKCE (Proof Key for Code Exchange)**: the client makes a random secret per sign-in, sends only its hash to the provider, and must show the secret when trading the code for tokens, so a stolen authorization code is useless on its own.
+- **`SameSite` cookie attribute**: tells the browser when to send a cookie on requests started by another site; `Lax` sends it on top-level link clicks (so the return from Google works) but not on cross-site `POST`, `PUT` or `DELETE`, which blocks most CSRF.
+- **OIDC discovery**: the provider publishes its endpoints and signing keys at `<issuer>/.well-known/openid-configuration`, so a client needs only the issuer URL; oauth2-proxy reads it once at start.
+- **oauth2-proxy alpha config**: oauth2-proxy's YAML config file for upstreams, injected headers and providers; "alpha" means its shape can change between minor releases (it did in v7.14), so read release notes on every bump.
+- **Docker host networking (`--network host`)**: the container shares the host's network stack, so a server bound to the container's `127.0.0.1` is reachable on the host's `127.0.0.1`; a published port (`-p`) can only reach the container's own interface.

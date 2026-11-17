@@ -1,5 +1,5 @@
-# Only the sidecar's token-checked port. The health port is left out on purpose, so
-# nothing can route to it, and `api`'s own port is not reachable from outside the pod.
+# The auth-proxy sidecar's port, named `http` in k8s/components/auth-proxy/. `api`'s own
+# port is not reachable from outside the pod.
 apiVersion: v1
 kind: Service
 metadata:

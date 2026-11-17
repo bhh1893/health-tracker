@@ -6,7 +6,6 @@
       - curl
       - git
       - python3-debian  # needed by deb822_repository below
-      - qrencode  # show-token draws the API token as a QR code
       - tmux
       - unzip  # Ansible's unarchive needs it for Terraform's .zip
     state: present

@@ -339,22 +339,25 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: docker build -t web services/web
-      - run: docker run -d --read-only --tmpfs /tmp -p 8080:8080 web
+      # Host networking: nginx listens on 127.0.0.1 only (ADR 0021), which a published
+      # port cannot reach. Sharing the runner's network makes that 127.0.0.1 the runner's.
+      - run: docker run -d --read-only --tmpfs /tmp --network host web
       - name: Check the served page and its headers
         run: |
-          # --retry-all-errors, not --retry-connrefused: Docker's port proxy accepts the
-          # connection before nginx is up, then resets it, which is not a refused connection.
-          curl -fsS --retry 10 --retry-all-errors --retry-delay 1 -o /dev/null http://localhost:8080/
-          page="$(curl -fsS http://localhost:8080/)"
+          curl -fsS --retry 10 --retry-connrefused --retry-delay 1 -o /dev/null http://localhost:8000/
+          page="$(curl -fsS http://localhost:8000/)"
           grep -q '<div id="root">' <<< "${page}"
           # Deep link: the fallback serves the app, not a 404.
-          curl -fsS http://localhost:8080/day/2026-11-05 | grep -q '<div id="root">'
-          curl -fsSI http://localhost:8080/ | grep -qi '^cache-control: no-cache'
+          curl -fsS http://localhost:8000/day/2026-11-05 | grep -q '<div id="root">'
+          curl -fsSI http://localhost:8000/ | grep -qi '^cache-control: no-cache'
           asset="$(grep -o '/assets/[^"]*\.js' <<< "${page}" | head -n 1)"
-          curl -fsSI "http://localhost:8080${asset}" | grep -qi '^cache-control:.*immutable'
-          curl -fsSI http://localhost:8080/manifest.webmanifest | grep -qi '^content-type: application/manifest+json'
+          curl -fsSI "http://localhost:8000${asset}" | grep -qi '^cache-control:.*immutable'
+          curl -fsSI http://localhost:8000/manifest.webmanifest | grep -qi '^content-type: application/manifest+json'
           # A missing asset is a real 404, not index.html served as JavaScript.
-          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/assets/missing.js)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/assets/missing.js)" = 404
+          # Probe paths answer a bare status, not index.html: they are public (ADR 0025).
+          test "$(curl -fsS http://localhost:8000/healthz)" = ok
+          test "$(curl -fsS http://localhost:8000/readyz)" = ok
 
   # Sends the policy file to Tailscale, which checks its syntax and runs its `tests`
   # block. Nothing on the tailnet changes (ADR 0020). Pinned to a commit: the action

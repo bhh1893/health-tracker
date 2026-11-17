@@ -1,0 +1,71 @@
+# oauth2-proxy's structured config (ADR 0021). Upstreams, injected headers and the
+# provider can only be set here, not as flags; everything else is a flag in sidecar.yaml.
+# "Alpha" means the shape may change between minor releases: read the release notes
+# on every bump (docs/runbooks/patching.md).
+#
+# One file for every pod: the sidecars must agree on all of it, or one sign-in would
+# not cover both `api` and `web`.
+
+server:
+  # The pod IP, so the Gateway (through the Service) and the kubelet's probes reach it.
+  # 8080 is also the port cloudflared's egress policy allows (ADR 0029).
+  bindAddress: "0.0.0.0:8080"
+
+upstreamConfig:
+  upstreams:
+    # Every app container behind this sidecar listens on 127.0.0.1:8000, never the pod
+    # IP, so this sidecar is the only way in. A mistake there fails the probes instead
+    # of opening the app (ADR 0010, ADR 0021).
+    - id: app
+      path: /
+      uri: http://127.0.0.1:8000
+
+# Who is asking, for `api` (ADR 0021, ADR 0022). preserveRequestValue defaults to
+# false: any copy of these headers the client sent is deleted before the real value
+# is added, so a client cannot claim to be someone else. Users are keyed by
+# (issuer, subject); name and email are display data that may change.
+# `claimSource:` wraps `claim:` since v7.14.0; the flat form is rejected at start.
+injectRequestHeaders:
+  - name: X-Auth-Issuer
+    values:
+      - claimSource:
+          claim: iss
+  - name: X-Auth-Subject
+    values:
+      - claimSource:
+          claim: sub
+  - name: X-Auth-Name
+    values:
+      - claimSource:
+          claim: name
+  - name: X-Auth-Email
+    values:
+      - claimSource:
+          claim: email
+
+providers:
+  # The generic OIDC provider at Google's issuer, not oauth2-proxy's `google` one, so
+  # changing provider is a config change (ADR 0021).
+  - id: google
+    provider: oidc
+    # Shown on the Sign-in page's button.
+    name: Google
+    # Public: Google shows it in the address bar on every sign-in (ADR 0015).
+    clientID: 664110649375-7893ue4hdvmmn7odfks4gh4i58tfladn.apps.googleusercontent.com
+    # Filled from the env var when the file is loaded, so the value stays in the Secret.
+    # Unset would mean empty, and oauth2-proxy refuses to start without one.
+    clientSecret: ${AUTH_PROXY_CLIENT_SECRET}
+    scope: openid email profile
+    # PKCE: the code in the callback URL is useless without a secret the proxy made
+    # for this sign-in. Defense in depth next to the client secret.
+    code_challenge_method: S256
+    # Copied from the ID token into the session, so the headers above can read them.
+    # The session otherwise keeps only email and user.
+    additionalClaims:
+      - iss
+      - sub
+      - name
+    oidcConfig:
+      # Discovery reads the endpoints and signing keys from here at start. Every ID
+      # token's `iss` must equal it exactly, so X-Auth-Issuer is always this string.
+      issuerURL: https://accounts.google.com

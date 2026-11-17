@@ -19,4 +19,5 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Numeric so Kubernetes runAsNonRoot can verify it without reading /etc/passwd.
 # Same uid as the base image; stated here so this file shows it.
 USER 101
-EXPOSE 8080
+# On 127.0.0.1 only (nginx.conf): the auth-proxy sidecar is the way in.
+EXPOSE 8000

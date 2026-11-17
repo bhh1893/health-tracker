@@ -39,7 +39,7 @@ phone <──redirect──> accounts.google.com            proxy ──code for
 | 3 Tunnel | 2 `cloudflared` pods, 4 QUIC connections each, forward to the Gateway | same | #189 |
 | 4 Gateway | Envoy, HTTPS on `:443` (tunnel and LAN) and HTTP on `:80` (LAN) | HTTPS on `:443` only, reachable only from `cloudflared` | #146, #147 removes `:80` |
 | 5 Service | same | same | - |
-| 6 Sidecar | nginx checks a static Bearer token (`api` only) | oauth2-proxy checks a session cookie (`api` and `web`) | #150 |
+| 6 Sidecar | oauth2-proxy checks a session cookie (`api` and `web`); only allowlisted emails until #151 | same, any Google account | #150 |
 | 7 `api` | every caller is the seeded User | caller's User from proxy headers, Pending gets `403` | #151 |
 
 ## Every request
@@ -117,15 +117,26 @@ phone <──redirect──> accounts.google.com            proxy ──code for
   - `kubectl get endpointslices -n health-tracker -l kubernetes.io/service-name=api`
 - **Fails:** a pod failing `/readyz` drops out of the EndpointSlice and gets no traffic. If both fail, step 4 returns `503`.
 
-### 6. Sidecar (exists; becomes oauth2-proxy in #150)
+### 6. Sidecar: oauth2-proxy (built in #150)
 
-- **What (today):** the `auth-sidecar` nginx container in the `api` pod (`services/api/k8s/sidecar/nginx.conf`). The Service's `targetPort: http` is its port `8080`. On `/api/` it compares the `Authorization` header with `Bearer <api-token>`, removes the header, and forwards to `127.0.0.1:8000`. Port `8081` passes probes through without a token. The `web` pod has no sidecar today.
-- **What (target):** oauth2-proxy in both pods. No valid session cookie: `401` on `/api/*`, the Sign-in page everywhere else. Valid cookie: it removes any identity headers the client sent, adds the real ones (issuer, `sub`, `name`, `email`), and forwards to `127.0.0.1`.
-- **Decides:** whether the request is allowed in at all, and (target) who it is from.
-- **Watch (today):**
-  - From Windows on home Wi-Fi: `curl.exe -i http://192.168.0.250/api/v1/meals` returns `401` with a Problem body.
-  - `kubectl logs -n health-tracker deploy/api -c auth-sidecar`
-- **Fails (today):** wrong or missing token gives `401` from nginx; `api` never sees the request.
+- **What:** an `auth-proxy` native sidecar in every `api` and `web` pod, patched into each Deployment by `k8s/components/auth-proxy/` (included by `k8s/envs/vagrant/kustomization.yaml`). The Service's `targetPort: http` is its port `8080`. Behind it, the app container listens on `127.0.0.1:8000` only: uvicorn in `api`, nginx in `web`.
+- **Decides:** whether the request gets in, and who it is from.
+  - Valid `__Host-health_session` cookie: delete any `X-Auth-*` headers the client sent, add the real ones (`X-Auth-Issuer`, `X-Auth-Subject`, `X-Auth-Name`, `X-Auth-Email`), forward to `127.0.0.1:8000`.
+  - No session, `/api/*` (or `Accept: application/json`): `401`.
+  - No session, anything else: the Sign-in page (`sign_in.html`), status `403`.
+  - `GET /healthz` and `GET /readyz` pass with no session, for the kubelet's probes.
+  - Session valid but email not on the allowlist (until #151): `403` forbidden page.
+- **How it checks the cookie without Google:** the cookie is encrypted and signed with the cookie secret and carries its sign-in time. A cookie this proxy did not make fails the signature; one older than 30 days fails the age check. Google's ID token was checked once, at sign-in, with keys from Google's discovery document.
+- **Watch:**
+  - `curl -s -o /dev/null -w '%{http_code}\n' https://health.nibblejiggle.xyz/api/v1/meals` (`401`)
+  - `curl -s https://health.nibblejiggle.xyz/ | grep 'Sign in with'` (the Sign-in page)
+  - `kubectl -n health-tracker logs deploy/web -c auth-proxy` (one line per request: who, path, status; and `AuthSuccess` / `AuthFailure` at sign-in)
+  - `kubectl -n health-tracker get pods` (`2/2` when both the sidecar and the app are ready)
+- **Fails:**
+  - Proxy cannot reach Google at start (discovery): it exits, the pod shows `CrashLoopBackOff`, and the app container never starts. Fails closed.
+  - `auth-proxy` or `auth-proxy-allowlist` Secret missing: the pod stays in `CreateContainerConfigError` or `ContainerCreating` until `apply-secrets` runs.
+  - App not on `127.0.0.1:8000`: the probes fail and the pod never goes ready, so the Service never sends it traffic.
+  - Alpha config in an old shape after a version bump: the proxy logs `has invalid keys` and exits. Seen while building #150 (v7.14 moved `claim:` under `claimSource:`).
 
 ### 7. `api` (exists; reads proxy headers in #151)
 
@@ -145,12 +156,15 @@ phone <──redirect──> accounts.google.com            proxy ──code for
 5. The proxy verifies the ID token's signature and claims, sets the `__Host-health_session` cookie (encrypted with the cookie secret), and redirects back to the page originally asked for.
 6. For 30 days, only the cookie matters. Google is out of the loop.
 
-- **Watch:** fill in during #150. Use the browser's network tab with "Preserve log" on to see each redirect and cookie.
-- **Fails:** fill in during #150.
+- **Watch:** the browser's network tab with "Preserve log" on shows each hop: `/oauth2/start` (`302` to Google, sets `__Host-health_session_csrf`), Google's pages, `/oauth2/callback?code=...&state=...` (`302` back, sets `__Host-health_session`, clears the CSRF cookie), then the page first asked for. `kubectl -n health-tracker logs deploy/web -c auth-proxy | grep -i auth` shows the callback's result.
+- **Fails:**
+  - The Google consent screen in Testing and the account not a test user: Google refuses at step 3 with `Error 403: access_denied`. oauth2-proxy never sees it.
+  - Email not on the allowlist (until #151): Google signs the person in, then the proxy answers the callback with its `403` forbidden page and sets no session.
+  - Redirect URI mismatch (`--redirect-url` differs from the one registered): Google shows `Error 400: redirect_uri_mismatch` at step 3.
+  - CSRF cookie missing at the callback (more than 15 minutes at Google, or a different browser): the proxy refuses the callback; start again.
 
 ## Open questions
 
 - Where does Cilium's Envoy run, and how does eBPF hand it a packet addressed to the Gateway? Partly answered in #189: it runs per node, not as a pod, and the Gateway Service's only endpoint is the placeholder `192.192.192.192:9999`. The handoff itself (TPROXY) is still open.
 - How does Envoy choose between the two `api` pods? (now)
-- How does traffic leave the cluster when oauth2-proxy calls Google in step 4 of sign-in? (#150)
-- How does the proxy check a Google ID token without asking Google on every request? (#150)
+- How does traffic leave the cluster when oauth2-proxy calls Google in step 4 of sign-in? Nothing restricts egress from the `health-tracker` namespace, so it leaves through the node like any pod's outbound connection. Which address Google sees (Cilium masquerading, then VirtualBox NAT) is still open.
