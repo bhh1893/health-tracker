@@ -1,6 +1,7 @@
 import { Button } from "react-aria-components";
 
 import { ProblemAlert } from "../components/ProblemAlert";
+import { SignOutLink } from "./SignOutLink";
 
 interface PendingScreenProps {
   checking: boolean;
@@ -31,15 +32,7 @@ export function PendingScreen({
       >
         {checking ? "Checking..." : "Check again"}
       </Button>
-      {/* A plain link, not a router Link: sign-out is served by the auth-proxy
-          sidecar, so the browser must really go there. It clears the session
-          cookie and returns to /, which then shows the Sign-in page. */}
-      <a
-        className="text-center text-base text-teal-700 underline"
-        href="/oauth2/sign_out"
-      >
-        Sign out
-      </a>
+      <SignOutLink />
     </main>
   );
 }

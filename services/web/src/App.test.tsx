@@ -82,6 +82,38 @@ describe("a Pending User", () => {
   });
 });
 
+describe("a new identity while Sign-up is closed", () => {
+  const signupClosed = http.get("*/api/me", () =>
+    HttpResponse.json(
+      {
+        type: "urn:health-tracker:problem:signup-closed",
+        title: "Forbidden",
+        status: 403,
+        detail: "Sign-up is closed.",
+      },
+      { status: 403 },
+    ),
+  );
+
+  it("sees only the closed screen, with Sign out and no retry", async () => {
+    server.use(signupClosed);
+    renderAt("/exercise");
+
+    expect(
+      await screen.findByRole("heading", { name: "Sign-up is closed" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign out" })).toHaveAttribute(
+      "href",
+      "/oauth2/sign_out",
+    );
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Meals" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("the signed-in check", () => {
   it("shows the failure and recovers on Try again", async () => {
     server.use(
