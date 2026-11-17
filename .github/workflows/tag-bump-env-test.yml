@@ -1,0 +1,30 @@
+name: tag-bump-env-test
+
+# Throwaway (#184): proves a PR run cannot read TAG_BUMP_DEPLOY_KEY. Never merge.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Expected: refused before its first step by the Environment's branch policy.
+  with-environment:
+    runs-on: ubuntu-24.04
+    environment: tag-bump
+    steps:
+      - env:
+          KEY: ${{ secrets.TAG_BUMP_DEPLOY_KEY }}
+        run: |
+          if [ -n "${KEY}" ]; then echo "KEY IS READABLE"; exit 1; fi
+          echo "key empty"
+
+  # Expected: passes, the secret is empty without the Environment.
+  without-environment:
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          KEY: ${{ secrets.TAG_BUMP_DEPLOY_KEY }}
+        run: |
+          if [ -n "${KEY}" ]; then echo "KEY IS READABLE"; exit 1; fi
+          echo "key empty"
