@@ -20,7 +20,7 @@ Nothing is served without a session, not even the `web` bundle. oauth2-proxy rep
 - **Expiry.** When `web` gets a `401` it does a full-page reload into sign-in, returning to the same path. Unsaved form input is lost. That is accepted, on condition that the session lifetime (decided in Session lifetime on the phone) makes expiry rare in daily use.
 - **The owner claims the seeded User.** The owner signs in, is Pending once, then runs the `claim-seeded` mode of the approval command on the dev VM. In one transaction it writes the owner's identity onto `019a0000-0000-7000-8000-000000000001` as Admin and deletes the empty Pending User.
 - **Google Cloud setup is a manual runbook.** Google has no API or Terraform resource for a regular web OAuth client. Project `health-tracker`; consent screen External, **In production**; Web application client; one redirect URI; no JavaScript origins.
-- **Who may sign in:** any Google account (`--email-domain=*`). The gates are the tailnet (ADR 0020) and then Approval. An email allowlist would be a third, hand-kept list repeating Approval.
+- **Who may sign in:** any Google account (`--email-domain=*`). The only gate is Approval (ADR 0026); there is no tailnet in front (ADR 0025). An email allowlist would be a third, hand-kept list repeating Approval.
 
 ### Enforcement
 

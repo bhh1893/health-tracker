@@ -12,7 +12,7 @@ Commands below are one per line with no `#` comments: zsh at a prompt passes `#`
 
 ## Create the client
 
-1. **Project.** In `console.cloud.google.com`, the project `health-tracker` (no organization). It already exists from the Tailscale setup; create it only on a new Google account. Everything below is inside it.
+1. **Project.** In `console.cloud.google.com`, the project `health-tracker` (no organization). It already exists; create it only on a new Google account. Everything below is inside it.
 
 2. **Consent screen.** Open "Google Auth Platform" and "Get started".
    - App name `health-tracker`, your email as user support and developer contact.

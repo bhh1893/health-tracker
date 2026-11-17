@@ -28,7 +28,6 @@ jobs:
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
       k8s: ${{ steps.filter.outputs.k8s }}
-      tailnet: ${{ steps.filter.outputs.tailnet }}
       cloudflare: ${{ steps.filter.outputs.cloudflare }}
     steps:
       - uses: actions/checkout@v7
@@ -55,9 +54,6 @@ jobs:
               - 'k8s/**'
               - 'services/*/k8s/**'
               - '.github/workflows/ci.yml'
-            # Not ci.yml: this job needs a secret, and a workflow-only PR should not.
-            tailnet:
-              - 'iac/tailscale/**'
             cloudflare:
               - 'iac/cloudflare/**'
               - '.github/workflows/ci.yml'
@@ -359,23 +355,6 @@ jobs:
           test "$(curl -fsS http://localhost:8000/healthz)" = ok
           test "$(curl -fsS http://localhost:8000/readyz)" = ok
 
-  # Sends the policy file to Tailscale, which checks its syntax and runs its `tests`
-  # block. Nothing on the tailnet changes (ADR 0020). Pinned to a commit: the action
-  # runs with a credential that can rewrite the policy.
-  tailnet-policy-test:
-    needs: changes
-    if: needs.changes.outputs.tailnet == 'true' && github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: tailscale/gitops-acl-action@5a4a17f5708e9bf96f4ee915a95e9f83c2eebe1a  # v1.5.2
-        with:
-          tailnet: ${{ secrets.TS_TAILNET }}
-          oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          policy-file: iac/tailscale/policy.hujson
-          action: test
-
   # Static checks only (ADR 0029): no token, no state, nothing at Cloudflare changes.
   # The owner runs plan and apply from the dev VM. `init -backend=false` downloads the
   # provider the lock file names, and fails if its hashes do not match.
@@ -414,7 +393,6 @@ jobs:
       - yamllint
       - ansible-lint
       - kubeconform
-      - tailnet-policy-test
       - terraform
       - api-lint
       - api-test
@@ -435,31 +413,6 @@ jobs:
           if echo "${RESULTS}" | grep -Eq '"(failure|cancelled)"'; then
             exit 1
           fi
-
-  # Merge only: makes the committed file the tailnet's live policy (ADR 0020). Tailscale
-  # runs the same checks again and refuses a policy that fails them.
-  tailnet-policy-apply:
-    needs: [changes, ci-gate]
-    if: >-
-      !cancelled()
-      && github.event_name == 'push'
-      && needs.ci-gate.result == 'success'
-      && needs.changes.outputs.tailnet == 'true'
-    runs-on: ubuntu-24.04
-    # One apply at a time, and never cancelled halfway: two merges close together
-    # queue instead of racing to be the last write.
-    concurrency:
-      group: tailnet-policy-apply
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v7
-      - uses: tailscale/gitops-acl-action@5a4a17f5708e9bf96f4ee915a95e9f83c2eebe1a  # v1.5.2
-        with:
-          tailnet: ${{ secrets.TS_TAILNET }}
-          oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          policy-file: iac/tailscale/policy.hujson
-          action: apply
 
   # Merge only: builds each changed service and pushes it to GHCR, tagged with the commit
   # (ADR 0016). !cancelled(): by default a job is skipped when any job upstream of it was,

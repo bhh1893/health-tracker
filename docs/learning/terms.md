@@ -445,7 +445,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Autogroup**: a built-in Tailscale group filled in by role, such as `autogroup:owner` or `autogroup:member` (every person on the tailnet), so a policy needs no email addresses.
 - **`autoApprovers`**: the policy section that approves ahead of time what a device may announce, such as hosting a Tailscale Service, so no one has to click approve.
 - **Device approval**: a tailnet setting that holds every new device in a waiting state until an admin approves it; signing in is not enough to get on the network.
-- **OAuth client (Tailscale)**: a non-person credential for Tailscale's API, limited to chosen scopes (ours: `policy_file`), unlike a personal API key that can do everything its owner can and dies after 90 days; created on the admin console's Trust credentials page.
+- **OAuth client (Tailscale)**: a non-person credential for Tailscale's API, limited to chosen scopes (such as `policy_file`), unlike a personal API key that can do everything its owner can and dies after 90 days; created on the admin console's Trust credentials page.
 - **Defense in depth**: several independent layers of protection, so one failing (a device admitted by mistake) does not expose everything (a Pending User still sees no data).
 - **OIDC (OpenID Connect)**: a standard login protocol on top of OAuth 2.0; an identity provider signs a token saying who the person is, and the app trusts that signature instead of storing passwords.
 - **OAuth client ID**: identifies an application registered with an identity provider (our `web` app), never a person.
