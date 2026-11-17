@@ -8,6 +8,8 @@ Browsing the past has two jobs, and v1 gives each its own surface. The two loggi
 
 **Amended by ADR 0024:** a Dashboards screen joins Search in the header; Search results show each Meal's total and each Day's Day Total (ADR 0023).
 
+**Amended by ADR 0031:** Search moves to `/history/search` under the History tab (`/search` redirects); its Back link goes to `/history`, and `BackState` is removed.
+
 ## Day pager (in the Exercise and Meals windows)
 
 - **Header:** `‹ Day ›`. ‹ steps back one Day, › steps forward and is disabled on Today. Tapping the date opens the phone's native date picker (`max` = today; no future Days). A banner, "Viewing a past Day, tap to jump to Today", shows whenever the viewed Day is not Today.
