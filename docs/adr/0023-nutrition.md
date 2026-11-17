@@ -6,6 +6,8 @@ status: accepted
 
 A Food gains optional Nutrition: calories, protein, carbs and fat for a Basis amount in grams, entered as printed on the label, plus an optional Piece Weight that turns a count into grams. Totals are never stored. `GET /days` computes them on read, so correcting a Food fixes every past Day. A Day with a Restaurant Meal is a Restaurant Day: its calories become a flat per-User value and its macros are unknown. Reference Foods, a list the owner curates in the repo and every deploy loads, only prefill a User's Food by copying values. Decided in [Macros and calories for Foods](https://github.com/bhh1893/health-tracker/issues/128). This amends ADR 0002, ADR 0006 and ADR 0008.
 
+**Amended by ADR 0032:** the Food sheet opens only from Profile's Foods page, not from the Meal sheet; the Incomplete badge links to that page filtered to Foods with no Nutrition, instead of listing the Day's Foods.
+
 ## Shape
 
 ### Nutrition on a Food
