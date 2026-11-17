@@ -13,10 +13,14 @@ from sqlalchemy.orm import Session
 
 from health_api.catalogs import MAX_KCAL
 from health_api.db import DbSession
-from health_api.identity import CurrentUser
+from health_api.identity import NOT_APPROVED, UNAUTHENTICATED, CurrentUser, Role, SignedInUser
 
 
 class Me(BaseModel):
+    # `web` branches on it: Pending shows "Waiting for approval" (ADR 0021).
+    role: Role
+    # From the identity provider, for display. Null if the provider sent none.
+    name: str | None
     # What every Restaurant Day counts as, whatever else was logged on it (ADR 0023).
     restaurant_day_kcal: float
 
@@ -31,28 +35,36 @@ class PatchMe(BaseModel):
 
 
 def load_me(session: Session, user: UUID) -> Me:
-    kcal = session.execute(
-        text("SELECT restaurant_day_kcal FROM users WHERE id = :user"), {"user": user}
-    ).scalar_one()
-    return Me(restaurant_day_kcal=float(kcal))
+    row = (
+        session.execute(
+            text("SELECT role, name, restaurant_day_kcal FROM users WHERE id = :user"),
+            {"user": user},
+        )
+        .mappings()
+        .one()
+    )
+    return Me(
+        role=row["role"], name=row["name"], restaurant_day_kcal=float(row["restaurant_day_kcal"])
+    )
 
 
 def me_router() -> APIRouter:
-    router = APIRouter(prefix="/api/me", tags=["me"])
+    router = APIRouter(prefix="/api/me", tags=["me"], responses=UNAUTHENTICATED)
 
     @router.get(
         "",
         operation_id="get_me",
         response_model=Me,
-        description="Read the calling User's settings.",
+        description="Read the calling User's Role and settings. The one route open to Pending.",
     )
-    def get_me(user: CurrentUser, session: DbSession) -> Me:
-        return load_me(session, user)
+    def get_me(user: SignedInUser, session: DbSession) -> Me:
+        return load_me(session, user.id)
 
     @router.patch(
         "",
         operation_id="patch_me",
         response_model=Me,
+        responses=NOT_APPROVED,
         description="Change the calling User's settings, such as the Restaurant Day calories.",
     )
     def patch_me(body: PatchMe, user: CurrentUser, session: DbSession) -> Me:

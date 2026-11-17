@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Get Me
-         * @description Read the calling User's settings.
+         * @description Read the calling User's Role and settings. The one route open to Pending.
          */
         get: operations["get_me"];
         put?: never;
@@ -543,8 +543,15 @@ export interface components {
         };
         /** Me */
         Me: {
+            /** Name */
+            name: string | null;
             /** Restaurant Day Kcal */
             restaurant_day_kcal: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "pending" | "member" | "admin";
         };
         /** MealPage */
         MealPage: {
@@ -822,6 +829,15 @@ export interface operations {
                     "application/json": components["schemas"]["Me"];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -857,6 +873,24 @@ export interface operations {
             };
             /** @description The body could not be read as JSON text. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -905,6 +939,24 @@ export interface operations {
                     "application/json": components["schemas"]["DayTotal"][];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -949,6 +1001,24 @@ export interface operations {
                     "application/json": components["schemas"]["ExerciseEntryPage"];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -987,6 +1057,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExerciseEntry"];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing, or not yours. */
@@ -1060,6 +1148,24 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Missing, or not yours. */
             404: {
                 headers: {
@@ -1107,6 +1213,24 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1147,6 +1271,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogRef"][];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Validation Error */
@@ -1191,6 +1333,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExerciseSession"][];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing, or not yours. */
@@ -1240,6 +1400,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogRef"];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing, or not yours. */
@@ -1313,6 +1491,24 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Missing, or not yours. */
             404: {
                 headers: {
@@ -1369,6 +1565,24 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Conflicts with the current state. */
             409: {
                 headers: {
@@ -1424,6 +1638,24 @@ export interface operations {
             };
             /** @description The body could not be read as JSON text. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1491,6 +1723,24 @@ export interface operations {
                     "application/json": components["schemas"]["Food"][];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1529,6 +1779,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Food"];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing, or not yours. */
@@ -1602,6 +1870,24 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Missing, or not yours. */
             404: {
                 headers: {
@@ -1658,6 +1944,24 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Conflicts with the current state. */
             409: {
                 headers: {
@@ -1713,6 +2017,24 @@ export interface operations {
             };
             /** @description The body could not be read as JSON text. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1782,6 +2104,24 @@ export interface operations {
                     "application/json": components["schemas"]["MealPage"];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1820,6 +2160,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing, or not yours. */
@@ -1893,6 +2251,24 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Missing, or not yours. */
             404: {
                 headers: {
@@ -1949,6 +2325,24 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1988,6 +2382,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReferenceFood"][];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Validation Error */
@@ -2032,6 +2444,24 @@ export interface operations {
                     "application/json": components["schemas"]["CatalogRef"][];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2070,6 +2500,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogRef"];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Missing, or not yours. */
@@ -2143,6 +2591,24 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Missing, or not yours. */
             404: {
                 headers: {
@@ -2199,6 +2665,24 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Conflicts with the current state. */
             409: {
                 headers: {
@@ -2254,6 +2738,24 @@ export interface operations {
             };
             /** @description The body could not be read as JSON text. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

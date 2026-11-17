@@ -3,6 +3,7 @@ from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
+from identities import MEMBER_HEADERS, MEMBER_ID, insert_member
 from migrate import alembic_upgrade, plain_url
 from sqlalchemy import URL, Engine, create_engine, text
 from sqlalchemy.orm import Session
@@ -108,11 +109,20 @@ def empty_database(postgres: URL, role_urls: dict[str, URL]) -> Iterator[dict[st
 
 
 @pytest.fixture
-def client(session: Session, database_url: str) -> Iterator[TestClient]:
+def anonymous_client(session: Session, database_url: str) -> Iterator[TestClient]:
+    """`client` with no identity headers: tests add the ones they need, or none."""
     app = create_app()
     app.dependency_overrides[get_session] = lambda: session
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def client(session: Session, anonymous_client: TestClient) -> TestClient:
+    """Every request as the Member MEMBER_ID, as if oauth2-proxy had signed them in."""
+    insert_member(session)
+    anonymous_client.headers.update(MEMBER_HEADERS)
+    return anonymous_client
 
 
 @pytest.fixture
@@ -123,9 +133,13 @@ def committing_client(database_url: str, api_rw_engine: Engine) -> Iterator[Test
     never committed. A write route's test needs this fixture to prove that its work survives.
     These rows are real commits, and tests that expect empty tables share this database.
     """
-    with TestClient(create_app()) as test_client:
+    with api_rw_engine.begin() as connection:
+        insert_member(connection)
+    with TestClient(create_app(), headers=MEMBER_HEADERS) as test_client:
         yield test_client
     with api_rw_engine.begin() as connection:
-        # Entries first: their foreign keys restrict deleting a Catalog item in use.
+        # Entries first: their foreign keys restrict deleting a Catalog item in use. The
+        # Member last, once nothing points at it.
         for table in ("meals", "exercise_entries", "foods", "exercises", "restaurants"):
             connection.execute(text(f"DELETE FROM {table}"))
+        connection.execute(text("DELETE FROM users WHERE id = :id"), {"id": MEMBER_ID})

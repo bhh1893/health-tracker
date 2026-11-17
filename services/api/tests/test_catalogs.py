@@ -5,6 +5,7 @@ from uuid import UUID, uuid4, uuid7
 
 import pytest
 from fastapi.testclient import TestClient
+from identities import MEMBER_ID
 from name_pairs import (
     ACCEPTED_FALSE_ALARMS,
     ACCEPTED_MISSES,
@@ -19,7 +20,6 @@ from sqlalchemy.orm import Session
 
 import health_api.catalogs as catalogs
 from health_api.catalogs import MAX_NAME_LENGTH, SIMILARITY_THRESHOLD, WORD_SIMILARITY_THRESHOLD
-from health_api.identity import SEEDED_USER_ID
 from health_api.problems import (
     EXACT_DUPLICATE,
     ITEM_IN_USE,
@@ -58,7 +58,7 @@ def insert_meal(session: Session, day: str, restaurant: UUID | None = None) -> U
             """
         ),
         {
-            "user": SEEDED_USER_ID,
+            "user": MEMBER_ID,
             "kind": "restaurant" if restaurant else "foods",
             "restaurant": restaurant,
             "at": f"{day}T12:00:00+00:00",
@@ -78,7 +78,7 @@ def use_food(
             """
         ),
         {
-            "user": SEEDED_USER_ID,
+            "user": MEMBER_ID,
             "meal": insert_meal(session, day),
             "food": food,
             "quantity": quantity,
@@ -96,7 +96,7 @@ def use_exercise(session: Session, exercise: UUID, day: str) -> None:
             """
         ),
         {
-            "user": SEEDED_USER_ID,
+            "user": MEMBER_ID,
             "exercise": exercise,
             "at": f"{day}T12:00:00+00:00",
             "day": day,
@@ -119,12 +119,6 @@ def someone_elses(session: Session, table: str, name: str) -> UUID:
         text(f"INSERT INTO {table} (user_id, name) VALUES (:owner, :name) RETURNING id"),
         {"owner": owner, "name": name},
     ).scalar_one()
-
-
-def test_current_user_is_the_seeded_row(session: Session) -> None:
-    ids = session.execute(text("SELECT id FROM users")).scalars().all()
-
-    assert ids == [SEEDED_USER_ID]
 
 
 @every_catalog
@@ -185,7 +179,7 @@ def test_put_trims_and_collapses_whitespace(client: TestClient) -> None:
         {"name": "   "},
         {"name": "nul\x00byte"},
         {"name": "x" * (MAX_NAME_LENGTH + 1)},
-        {"name": "Oats", "user_id": str(SEEDED_USER_ID)},
+        {"name": "Oats", "user_id": str(MEMBER_ID)},
         {},
     ],
     ids=["blank", "nul", "too-long", "unknown-field", "missing"],

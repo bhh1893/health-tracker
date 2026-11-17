@@ -606,3 +606,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **OIDC discovery**: the provider publishes its endpoints and signing keys at `<issuer>/.well-known/openid-configuration`, so a client needs only the issuer URL; oauth2-proxy reads it once at start.
 - **oauth2-proxy alpha config**: oauth2-proxy's YAML config file for upstreams, injected headers and providers; "alpha" means its shape can change between minor releases (it did in v7.14), so read release notes on every bump.
 - **Docker host networking (`--network host`)**: the container shares the host's network stack, so a server bound to the container's `127.0.0.1` is reachable on the host's `127.0.0.1`; a published port (`-p`) can only reach the container's own interface.
+- **`401` vs `403`**: `401 Unauthorized` means "I don't know who you are" (no identity: sign in); `403 Forbidden` means "I know who you are, and you may not do this" (a Pending User).
+- **`ON CONFLICT DO NOTHING`**: an `INSERT` that silently skips a row whose unique key already exists, so two racing first requests cannot both insert or make one fail; unlike an upsert, the existing row is left untouched.
+- **`IS DISTINCT FROM`**: SQL's null-safe "not equal"; `NULL <> 'x'` is `NULL` (neither true nor false), while `NULL IS DISTINCT FROM 'x'` is true.
+- **Header encoding (Latin-1)**: HTTP header bytes have no declared encoding; Python servers decode them as Latin-1, so UTF-8 text a proxy puts in a header must be re-read as UTF-8 or "Nguyễn" arrives garbled.
+- **Router dependency vs endpoint dependency (FastAPI)**: a function FastAPI runs before the endpoint; declared on one endpoint it guards that endpoint, and FastAPI runs each dependency once per request even if several ask for it.

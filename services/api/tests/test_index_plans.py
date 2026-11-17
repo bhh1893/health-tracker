@@ -23,8 +23,9 @@ from uuid import uuid7
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from identities import ISSUER, headers
 from seed import seed_database
-from sqlalchemy import URL, Connection, Engine, event, text
+from sqlalchemy import URL, Connection, Engine, create_engine, event, text
 
 from health_api.identity import SEEDED_USER_ID
 from health_api.main import create_app
@@ -32,6 +33,7 @@ from health_api.main import create_app
 pytestmark = pytest.mark.index_plans
 
 ENTRY_TABLES = {"meals", "food_entries", "exercise_entries"}
+OWNER_SUBJECT = "owner"
 # Far enough above the small-table regime that a plan here means something.
 MIN_SEEDED_SETS = 1_000_000
 
@@ -119,6 +121,18 @@ class Statement:
 def seeded(role_urls: dict[str, URL], migrated: None) -> None:
     url = role_urls["app"].set(drivername="postgresql")
     seed_database(url.render_as_string(hide_password=False))
+    # The seeded User owns the rows the cases ask about. Signing in as them, as the owner
+    # does after claim-seeded, makes every request reach those rows.
+    engine = create_engine(role_urls["app"])
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE users SET issuer = :issuer, subject = :subject, role = 'admin' "
+                "WHERE id = :id"
+            ),
+            {"issuer": ISSUER, "subject": OWNER_SUBJECT, "id": SEEDED_USER_ID},
+        )
+    engine.dispose()
 
 
 @pytest.fixture(scope="module")
@@ -127,7 +141,7 @@ def api(role_urls: dict[str, URL], seeded: None) -> Iterator[TestClient]:
     url = role_urls["api_rw"].set(drivername="postgresql")
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv("DATABASE_URL", url.render_as_string(hide_password=False))
-        with TestClient(create_app()) as client:
+        with TestClient(create_app(), headers=headers(OWNER_SUBJECT)) as client:
             yield client
 
 

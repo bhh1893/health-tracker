@@ -17,6 +17,7 @@ import pytest
 import schemathesis
 from fastapi.testclient import TestClient
 from hypothesis import strategies as st
+from identities import MEMBER_HEADERS
 from schemathesis import BaseSchema, Case, GenerationMode, HookContext
 from schemathesis.specs.openapi.checks import positive_data_acceptance
 
@@ -142,4 +143,11 @@ schema = schemathesis.pytest.from_fixture("api_schema")
 def test_api_keeps_its_contract(case: Case[Any]) -> None:
     # Every default check but this one, which wants all schema-valid data accepted. Ours is
     # refused by design when it breaks a rule a schema cannot state, such as a missing Food.
-    case.call_and_validate(excluded_checks=[positive_data_acceptance])
+    # The Member's headers go on every case, invalid ones too: the contract does not list
+    # them, since the proxy sets them, so the generator would never send them (ADR 0014).
+    response = case.call_and_validate(
+        headers=MEMBER_HEADERS, excluded_checks=[positive_data_acceptance]
+    )
+    # 401 and 403 are in the contract, so a run that lost its identity would still pass,
+    # having tested nothing past current_user.
+    assert response.status_code not in (401, 403), response.text

@@ -39,8 +39,8 @@ phone <──redirect──> accounts.google.com            proxy ──code for
 | 3 Tunnel | 2 `cloudflared` pods, 4 QUIC connections each, forward to the Gateway | same | #189 |
 | 4 Gateway | Envoy, HTTPS on `:443` (tunnel and LAN) and HTTP on `:80` (LAN) | HTTPS on `:443` only, reachable only from `cloudflared` | #146, #147 removes `:80` |
 | 5 Service | same | same | - |
-| 6 Sidecar | oauth2-proxy checks a session cookie (`api` and `web`); only allowlisted emails until #151 | same, any Google account | #150 |
-| 7 `api` | every caller is the seeded User | caller's User from proxy headers, Pending gets `403` | #151 |
+| 6 Sidecar | oauth2-proxy checks a session cookie (`api` and `web`); any Google account | same | #150, #151 |
+| 7 `api` | caller's User from proxy headers; unknown signs up as Pending; Pending gets `403` | same | #151 |
 
 ## Every request
 
@@ -125,7 +125,6 @@ phone <──redirect──> accounts.google.com            proxy ──code for
   - No session, `/api/*` (or `Accept: application/json`): `401`.
   - No session, anything else: the Sign-in page (`sign_in.html`), status `403`.
   - `GET /healthz` and `GET /readyz` pass with no session, for the kubelet's probes.
-  - Session valid but email not on the allowlist (until #151): `403` forbidden page.
 - **How it checks the cookie without Google:** the cookie is encrypted and signed with the cookie secret and carries its sign-in time. A cookie this proxy did not make fails the signature; one older than 30 days fails the age check. Google's ID token was checked once, at sign-in, with keys from Google's discovery document.
 - **Watch:**
   - `curl -s -o /dev/null -w '%{http_code}\n' https://health.nibblejiggle.xyz/api/v1/meals` (`401`)
@@ -134,18 +133,28 @@ phone <──redirect──> accounts.google.com            proxy ──code for
   - `kubectl -n health-tracker get pods` (`2/2` when both the sidecar and the app are ready)
 - **Fails:**
   - Proxy cannot reach Google at start (discovery): it exits, the pod shows `CrashLoopBackOff`, and the app container never starts. Fails closed.
-  - `auth-proxy` or `auth-proxy-allowlist` Secret missing: the pod stays in `CreateContainerConfigError` or `ContainerCreating` until `apply-secrets` runs.
+  - `auth-proxy` Secret missing: the pod stays in `CreateContainerConfigError` or `ContainerCreating` until `apply-secrets` runs.
   - App not on `127.0.0.1:8000`: the probes fail and the pod never goes ready, so the Service never sends it traffic.
   - Alpha config in an old shape after a version bump: the proxy logs `has invalid keys` and exits. Seen while building #150 (v7.14 moved `claim:` under `claimSource:`).
 
-### 7. `api` (exists; reads proxy headers in #151)
+### 7. `api` (reads proxy headers since #151)
 
-- **What:** uvicorn binds `127.0.0.1:8000` (`services/api/Dockerfile:34`), so only containers in the same pod can reach it. Localhost is the trust boundary: anything that gets here came through the sidecar.
-- **Decides (today):** nothing about identity. `current_user` returns the seeded User for every request (`services/api/src/health_api/identity.py:13`).
-- **Decides (target):** looks up `(issuer, sub)` from the headers. Unknown: signs the person up as Pending. Pending: `403` on everything but `GET /api/me`. Otherwise: their User ID scopes every query.
+- **What:** uvicorn binds `127.0.0.1:8000` (`services/api/Dockerfile:34`), so only containers in the same pod can reach it. Localhost is the trust boundary: anything that gets here came through the sidecar, which set the `X-Auth-*` headers.
+- **Decides:** who is calling, in `signed_in_user` (`services/api/src/health_api/identity.py`), before any route code runs.
+  - No `X-Auth-Issuer` or `X-Auth-Subject`: `401` Problem. Never a fallback to the seeded User.
+  - Known `(issuer, sub)`: one indexed `SELECT` on `users_issuer_subject_key`. `name`/`email` are written only if the headers differ from what is stored.
+  - Unknown: `INSERT ... ON CONFLICT DO NOTHING` as Pending, committed at once. This is Sign-up.
+  - Pending: `GET /api/me` answers `{ role: "pending", ... }`; every other route gets `403` `urn:health-tracker:problem:pending-approval` from `current_user`.
+  - Member or Admin: the User's id scopes every query, as before.
 - **Then:** queries Postgres through `DATABASE_URL` as the limited `api_rw` role.
-- **Watch:** `kubectl logs -n health-tracker deploy/api -c api`
-- **Fails:** database unreachable gives a `503` Problem.
+- **Watch:**
+  - The browser's network tab: `GET /api/me` returns `role` and `name`.
+  - `iac/scripts/users list`: a first sign-in shows up as a Pending row with name and email.
+  - `kubectl logs -n health-tracker deploy/api -c api` (no per-request identity yet; that is #191)
+- **Fails:**
+  - Database unreachable: `503` Problem, from the identity lookup itself, since it is the first query of every request.
+  - Proxy stops sending `X-Auth-Issuer`/`X-Auth-Subject` (alpha config regression): every request is `401`, and `web` reloads into sign-in in a loop. Fails closed.
+  - Proxy stops sending `name`/`email`: the stored values stay; nothing breaks.
 
 ## First visit only: sign-in (built in #150)
 
@@ -159,7 +168,6 @@ phone <──redirect──> accounts.google.com            proxy ──code for
 - **Watch:** the browser's network tab with "Preserve log" on shows each hop: `/oauth2/start` (`302` to Google, sets `__Host-health_session_csrf`), Google's pages, `/oauth2/callback?code=...&state=...` (`302` back, sets `__Host-health_session`, clears the CSRF cookie), then the page first asked for. `kubectl -n health-tracker logs deploy/web -c auth-proxy | grep -i auth` shows the callback's result.
 - **Fails:**
   - The Google consent screen in Testing and the account not a test user: Google refuses at step 3 with `Error 403: access_denied`. oauth2-proxy never sees it.
-  - Email not on the allowlist (until #151): Google signs the person in, then the proxy answers the callback with its `403` forbidden page and sets no session.
   - Redirect URI mismatch (`--redirect-url` differs from the one registered): Google shows `Error 400: redirect_uri_mismatch` at step 3.
   - CSRF cookie missing at the callback (more than 15 minutes at Google, or a different browser): the proxy refuses the callback; start again.
 

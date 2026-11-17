@@ -41,13 +41,9 @@ spec:
             # The probes, passed through with no session: they report status only
             # (ADR 0010). Anchored, so /healthz/anything still needs a session.
             - --skip-auth-route=GET=^/(healthz|readyz)$
-            # TEMPORARY, removed by #151 "api identifies Users from proxy headers".
-            # Until `api` reads the headers, every request is the seeded User, so any
-            # Google account would see the owner's data. Only the emails in this file
-            # may sign in. `--email-domain=*` must stay off while it is here: oauth2-proxy
-            # lets everyone in when the domain list has `*`, whatever the file says.
-            # #151 swaps this flag for `--email-domain=*` (ADR 0026).
-            - --authenticated-emails-file=/etc/auth-proxy/allowlist/emails
+            # Any Google account may sign in. Approval is the gate, inside `api`: a new
+            # person becomes a Pending User who can read only GET /api/me (ADR 0026).
+            - --email-domain=*
             # Our own Sign-in page (sign_in.html); the error page stays the default.
             - --custom-templates-dir=/etc/auth-proxy/config
             # The default footer prints the proxy's version, a free hint for scanners.
@@ -96,15 +92,7 @@ spec:
             - name: auth-proxy-config
               mountPath: /etc/auth-proxy/config
               readOnly: true
-            - name: auth-proxy-allowlist
-              mountPath: /etc/auth-proxy/allowlist
-              readOnly: true
       volumes:
         - name: auth-proxy-config
           configMap:
             name: auth-proxy
-        # TEMPORARY, removed by #151 with the flag above. A file on the dev VM,
-        # applied by apply-secrets: emails are personal data and the repo is public.
-        - name: auth-proxy-allowlist
-          secret:
-            secretName: auth-proxy-allowlist
