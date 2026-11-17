@@ -41,20 +41,6 @@
     wait: true
     timeout: 10m0s
 
-# Retried because the operator registers these CRDs shortly after it starts.
-- name: Apply the LoadBalancer pool and L2 announcement policy
-  ansible.builtin.command:
-    argv:
-      - kubectl
-      - apply
-      - --filename
-      - "{{ cilium_platform_dir }}/l2-announcement.yaml"
-  register: cilium_l2_apply
-  changed_when: cilium_l2_apply.stdout_lines | reject('search', ' unchanged$') | list | length > 0
-  retries: 12
-  delay: 5
-  until: cilium_l2_apply.rc == 0
-
 - name: Wait for all nodes to be Ready
   ansible.builtin.command:
     argv:
