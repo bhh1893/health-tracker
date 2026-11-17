@@ -24,7 +24,7 @@ spec:
     - name: https
       protocol: HTTPS
       port: 443
-      hostname: health.nibblejiggle.xyz
+      hostname: app.nibblejiggle.xyz
       tls:
         mode: Terminate
         certificateRefs:

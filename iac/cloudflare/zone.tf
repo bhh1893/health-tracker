@@ -8,7 +8,7 @@ data "cloudflare_zone" "this" {
 
 locals {
   zone_name   = "nibblejiggle.xyz"
-  hostname    = "health.${local.zone_name}"
+  hostname    = "app.${local.zone_name}"
   tunnel_name = "health-tracker"
   zone_id     = data.cloudflare_zone.this.zone_id
   account_id  = data.cloudflare_zone.this.account.id

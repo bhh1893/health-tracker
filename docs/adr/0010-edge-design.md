@@ -8,7 +8,7 @@ The phone reaches one Cilium Gateway (Gateway API, ADR 0001) on a LoadBalancer I
 
 **Amended by ADR 0021:** oauth2-proxy sidecars in the `api` and `web` pods replace the nginx sidecar and its token; nothing, not even the `web` bundle, is served without a session.
 
-**Amended by ADR 0025** (which superseded ADR 0020): v1 serves HTTPS at `health.nibblejiggle.xyz`, carrying out the "v2 starting point: HTTPS" section, and the way in is a Cloudflare Tunnel. The Gateway has one HTTPS listener on `:443` and no address outside the cluster; `:80` is gone (Cloudflare redirects to HTTPS at its edge). HSTS is on at Cloudflare, because browsers only ever see Cloudflare's certificate, which rebuilds never touch.
+**Amended by ADR 0025** (which superseded ADR 0020): v1 serves HTTPS at `app.nibblejiggle.xyz`, carrying out the "v2 starting point: HTTPS" section, and the way in is a Cloudflare Tunnel. The Gateway has one HTTPS listener on `:443` and no address outside the cluster; `:80` is gone (Cloudflare redirects to HTTPS at its edge). HSTS is on at Cloudflare, because browsers only ever see Cloudflare's certificate, which rebuilds never touch.
 
 ## Shape (v1)
 
