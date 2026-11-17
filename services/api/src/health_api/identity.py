@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from health_api.access import record_user
 from health_api.db import DbSession
-from health_api.problems import PENDING_APPROVAL, Problem, ProblemError
+from health_api.problems import PENDING_APPROVAL, SIGNUP_CLOSED, Problem, ProblemError
 
 # Matches the row migration 0001 seeds. The migration keeps its own copy: a migration is a
 # frozen record of the past, so it must never import from code that can change.
@@ -34,8 +34,16 @@ Role = Literal["pending", "member", "admin"]
 UNAUTHENTICATED: dict[int | str, dict[str, Any]] = {
     401: {"model": Problem, "description": "No signed-in User."},
 }
+# Any route can meet a new identity, so every route can answer signup-closed too.
 NOT_APPROVED: dict[int | str, dict[str, Any]] = {
-    403: {"model": Problem, "description": "The User is Pending until the Admin approves them."},
+    403: {
+        "model": Problem,
+        "description": "The User is Pending until the Admin approves them, "
+        "or the caller is new and Sign-up is closed.",
+    },
+}
+SIGNUP_CLOSED_RESPONSE: dict[int | str, dict[str, Any]] = {
+    403: {"model": Problem, "description": "The caller is new and Sign-up is closed."},
 }
 
 
@@ -91,6 +99,11 @@ def _sign_up(
     return row
 
 
+def signup_open(session: Session) -> bool:
+    """The Sign-up brake (ADR 0026). The migration inserts its one row; api_rw cannot delete it."""
+    return session.execute(text("SELECT open FROM signup")).scalar_one()
+
+
 def signed_in_user(request: Request, session: DbSession) -> User:
     """Any signed-in User, Pending included. Only `GET /api/me` uses it directly (ADR 0021)."""
     user = _identify(request, session)
@@ -111,6 +124,10 @@ def _identify(request: Request, session: Session) -> User:
 
     row = _find(session, issuer, subject)
     if row is None:
+        # Only a new identity reads the brake, so known Users pay nothing for it. A close that
+        # lands between this read and the insert lets that one Sign-up through: harmless.
+        if not signup_open(session):
+            raise ProblemError(403, type=SIGNUP_CLOSED, detail="Sign-up is closed.")
         # This insert is Sign-up. Committed here, not by the route: a Pending User's request
         # ends in 403 below, and the row must outlive it.
         row = _sign_up(session, issuer, subject, name, email)

@@ -16,7 +16,9 @@ from health_api.users import (
     change_role,
     claim_seeded,
     list_users,
+    load_brake,
     main,
+    set_signup,
 )
 
 CHECK_VIOLATION = "23514"
@@ -384,6 +386,82 @@ def test_saying_no_to_claim_seeded_writes_nothing(session: Session) -> None:
     assert role_of(session, target) == "pending"
 
 
+# --- The Sign-up brake (ADR 0026) ----------------------------------------------------------
+
+
+def test_a_fresh_install_starts_open(session: Session) -> None:
+    assert load_brake(session, lock=False).open
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "INSERT INTO signup (id, open) VALUES (false, false)",
+        "INSERT INTO signup (open) VALUES (false)",
+    ],
+    ids=["a-second-key", "the-same-key"],
+)
+def test_the_brake_is_one_row(owner_session: Session, statement: str) -> None:
+    """As the owner: api_rw may not insert at all, which the next test shows."""
+    with pytest.raises(IntegrityError):
+        owner_session.execute(text(statement))
+
+
+@pytest.mark.parametrize(
+    "statement", ["DELETE FROM signup", "INSERT INTO signup (open) VALUES (false)"]
+)
+def test_api_rw_cannot_remove_or_add_the_brake_row(session: Session, statement: str) -> None:
+    with pytest.raises(ProgrammingError) as caught:
+        session.execute(text(statement))
+
+    assert sqlstate(caught.value) == INSUFFICIENT_PRIVILEGE
+
+
+def test_close_then_open(session: Session) -> None:
+    opened_at = load_brake(session, lock=False).changed_at
+
+    assert set_signup(session, False, yes)
+    closed = load_brake(session, lock=False)
+    assert not closed.open
+    assert closed.changed_at > opened_at
+
+    assert set_signup(session, True, yes)
+    assert load_brake(session, lock=False).open
+
+
+def test_saying_no_leaves_the_brake_alone(session: Session) -> None:
+    assert not set_signup(session, False, no)
+
+    assert load_brake(session, lock=False).open
+
+
+def test_closing_a_closed_brake_is_refused(session: Session) -> None:
+    set_signup(session, False, yes)
+
+    with pytest.raises(Refused, match="already closed"):
+        set_signup(session, False, yes)
+
+
+def test_close_shows_the_brake_before_and_after(
+    session: Session, capsys: pytest.CaptureFixture[str]
+) -> None:
+    set_signup(session, False, no)
+
+    before, after = capsys.readouterr().out.splitlines()
+    assert before.startswith("before: Sign-up open since ")
+    assert after == "after:  Sign-up closed"
+
+
+def test_a_brake_change_made_while_asking_is_not_overwritten(session: Session) -> None:
+    def someone_else_closes_and_reopens() -> bool:
+        session.execute(text("UPDATE signup SET open = false"))
+        session.execute(text("UPDATE signup SET open = true, changed_at = now() + interval '1 s'"))
+        return True
+
+    with pytest.raises(Refused, match="changed since it was shown"):
+        set_signup(session, False, someone_else_closes_and_reopens)
+
+
 # --- The command line -----------------------------------------------------------------------
 
 
@@ -392,7 +470,9 @@ def test_list_runs_as_api_rw_from_database_url(
 ) -> None:
     assert main(["list"]) == 0
 
-    assert capsys.readouterr().out.startswith(f"{SEEDED_USER_ID}  pending  -  <->  no identity")
+    header, seeded = capsys.readouterr().out.splitlines()[:2]
+    assert header.startswith("Sign-up open since ")
+    assert seeded.startswith(f"{SEEDED_USER_ID}  pending  -  <->  no identity")
 
 
 def test_no_answer_is_no(
@@ -412,8 +492,23 @@ def test_a_refusal_exits_non_zero(database_url: str, capsys: pytest.CaptureFixtu
     assert "refused: this User is already pending" in capsys.readouterr().err
 
 
+def test_signup_status_prints_the_brake(
+    database_url: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["signup", "status"]) == 0
+
+    assert capsys.readouterr().out.startswith("Sign-up open since ")
+
+
 @pytest.mark.parametrize(
-    "argv", [[], ["approve", "not-a-uuid"], ["set-role", str(SEEDED_USER_ID), "owner"]]
+    "argv",
+    [
+        [],
+        ["approve", "not-a-uuid"],
+        ["set-role", str(SEEDED_USER_ID), "owner"],
+        ["signup"],
+        ["signup", "shut"],
+    ],
 )
 def test_bad_arguments_stop_before_connecting(argv: list[str]) -> None:
     """No database_url fixture: reaching the database would fail with KeyError instead."""
