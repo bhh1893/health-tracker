@@ -9,9 +9,17 @@ type Me = components["schemas"]["Me"];
 
 // The signed-in User the app shell asks about on load (ADR 0021). Typed from the
 // contract, so a schema change breaks compilation here (ADR 0014).
-export function signedInAs(role: Me["role"]) {
+export function signedInAs(
+  role: Me["role"],
+  email: Me["email"] = "owner@example.test",
+) {
   return http.get<never, never, Me>("*/api/me", () =>
-    HttpResponse.json({ role, name: "Owner", restaurant_day_kcal: 2500 }),
+    HttpResponse.json({
+      role,
+      name: "Owner",
+      email,
+      restaurant_day_kcal: 2500,
+    }),
   );
 }
 

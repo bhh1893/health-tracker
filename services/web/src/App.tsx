@@ -68,6 +68,7 @@ export function App() {
   if (me.data.role === "pending") {
     return (
       <PendingScreen
+        email={me.data.email}
         checking={me.isFetching}
         error={me.error}
         onCheckAgain={() => void me.refetch()}

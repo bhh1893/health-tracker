@@ -28,6 +28,9 @@ class Me(BaseModel):
     role: Role
     # From the identity provider, for display. Null if the provider sent none.
     name: str | None
+    # The caller's own address, shown so they can tell which account they used. Display
+    # only, never used for lookup (ADR 0022). Null if the provider never sent one.
+    email: str | None
     # What every Restaurant Day counts as, whatever else was logged on it (ADR 0023).
     restaurant_day_kcal: float
 
@@ -44,14 +47,17 @@ class PatchMe(BaseModel):
 def load_me(session: Session, user: UUID) -> Me:
     row = (
         session.execute(
-            text("SELECT role, name, restaurant_day_kcal FROM users WHERE id = :user"),
+            text("SELECT role, name, email, restaurant_day_kcal FROM users WHERE id = :user"),
             {"user": user},
         )
         .mappings()
         .one()
     )
     return Me(
-        role=row["role"], name=row["name"], restaurant_day_kcal=float(row["restaurant_day_kcal"])
+        role=row["role"],
+        name=row["name"],
+        email=row["email"],
+        restaurant_day_kcal=float(row["restaurant_day_kcal"]),
     )
 
 

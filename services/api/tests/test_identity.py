@@ -88,7 +88,12 @@ def test_an_unknown_identity_signs_up_as_pending(
     response = anonymous_client.get(ME, headers=headers("new", "New Person", "new@example.test"))
 
     assert response.status_code == 200, response.text
-    assert response.json() == {"role": "pending", "name": "New Person", "restaurant_day_kcal": 5000}
+    assert response.json() == {
+        "role": "pending",
+        "name": "New Person",
+        "email": "new@example.test",
+        "restaurant_day_kcal": 5000,
+    }
     row = user_row(session, "new")
     assert row is not None
     assert (row["role"], row["name"], row["email"]) == ("pending", "New Person", "new@example.test")
@@ -108,7 +113,7 @@ def test_sign_up_happens_once(anonymous_client: TestClient, session: Session) ->
 def test_sign_up_without_name_or_email(anonymous_client: TestClient) -> None:
     response = anonymous_client.get(ME, headers=headers("bare"))
 
-    assert response.json()["name"] is None
+    assert (response.json()["name"], response.json()["email"]) == (None, None)
 
 
 def test_the_loser_of_a_sign_up_race_reads_the_winners_row(session: Session) -> None:
