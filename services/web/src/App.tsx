@@ -2,8 +2,9 @@ import { lazy, Suspense } from "react";
 import { Button } from "react-aria-components";
 import { Link, Navigate, Route, Routes } from "react-router";
 
-import { useMe } from "./auth/me";
+import { isSignupClosed, useMe } from "./auth/me";
 import { PendingScreen } from "./auth/PendingScreen";
+import { SignupClosedScreen } from "./auth/SignupClosedScreen";
 import { ProblemAlert } from "./components/ProblemAlert";
 import { ExerciseWindow } from "./exercise/ExerciseWindow";
 import { MealsWindow } from "./meals/MealsWindow";
@@ -41,6 +42,11 @@ export function App() {
   const me = useMe();
 
   if (me.data === undefined) {
+    // An answer, not a failure: no "Try again", since the brake stays closed until
+    // the Admin opens it. A reload asks again.
+    if (isSignupClosed(me.error)) {
+      return <SignupClosedScreen />;
+    }
     if (me.isError) {
       return (
         <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
