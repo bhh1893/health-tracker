@@ -19,7 +19,12 @@ from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
 import health_api.catalogs as catalogs
-from health_api.catalogs import MAX_NAME_LENGTH, SIMILARITY_THRESHOLD, WORD_SIMILARITY_THRESHOLD
+from health_api.catalogs import (
+    MAX_LIST_LIMIT,
+    MAX_NAME_LENGTH,
+    SIMILARITY_THRESHOLD,
+    WORD_SIMILARITY_THRESHOLD,
+)
 from health_api.problems import (
     EXACT_DUPLICATE,
     ITEM_IN_USE,
@@ -475,11 +480,17 @@ def test_typeahead_respects_limit(client: TestClient) -> None:
     assert names(client, "foods", q="ap", limit=2) == ["Aperol", "Apple"]
 
 
-@pytest.mark.parametrize(
-    "params", [{"limit": 0}, {"limit": 51}, {"q": "x" * 201}, {"q": "nul\x00byte"}]
-)
+@pytest.mark.parametrize("params", [{"limit": 0}, {"q": "x" * 201}, {"q": "nul\x00byte"}])
 def test_suggest_rejects_bad_parameters(client: TestClient, params: dict[str, Any]) -> None:
     assert client.get(url("foods"), params=params).status_code == 422
+
+
+@every_catalog
+def test_list_limit_is_bounded_at_a_whole_catalog(client: TestClient, table: str) -> None:
+    create(client, table, "Only")
+
+    assert names(client, table, limit=MAX_LIST_LIMIT) == ["Only"]
+    assert client.get(url(table), params={"limit": MAX_LIST_LIMIT + 1}).status_code == 422
 
 
 @every_catalog
