@@ -1,6 +1,6 @@
 # Cloudflare
 
-The Cloudflare steps that cannot be Terraform (ADR 0025, ADR 0029): the account, moving DNS hosting for `nibblejiggle.xyz` from Porkbun to Cloudflare, DNSSEC, and the API tokens. Do them yourself, in a browser and a dev VM terminal. Claude cannot see tokens, by design (ADR 0015).
+Everything at Cloudflare the app depends on is Terraform in `iac/cloudflare/`: the tunnel and its routes, the `health` record, Always Use HTTPS, HSTS, Bot Fight Mode, the rate limiting rule and the Sign-up brake rule (ADR 0029). This runbook covers the rest, which stays manual: the account, moving DNS hosting for `nibblejiggle.xyz` from Porkbun to Cloudflare, DNSSEC, the API tokens and "Under Attack" mode, plus how to run Terraform. Do them yourself, in a browser and a dev VM terminal. Claude cannot see tokens or run `plan`, by design (ADR 0015, ADR 0029).
 
 Commands below are one per line with no `#` comments: zsh at a prompt passes `#` and the words after it to the command as arguments.
 
@@ -75,3 +75,115 @@ cert-manager uses this token to write and delete the `_acme-challenge` TXT recor
    Paste at the hidden prompt; nothing shows as you paste. If you lose it before entering it, roll the token in the dashboard and enter the new value.
 
 **Rotate** (only on suspected exposure): "Roll" the token in the dashboard, run `enter-secret` again, then `iac/scripts/apply-secrets`. cert-manager reads the Secret on each use, so nothing needs a restart.
+
+## Terraform token
+
+Terraform uses this token to manage the edge. It is a separate token from the DNS-01 one, and never enters the cluster or CI (ADR 0029).
+
+1. My Profile, "API Tokens", "Create Token", "Create Custom Token".
+2. Name: `terraform nibblejiggle.xyz`.
+3. Add two permission policies. The dashboard groups permissions by category, and a group lists only the permissions for the scope you picked. Zone permissions do not appear until the policy is scoped to a zone.
+   - **Account policy,** Include, your account: `Cloudflare Tunnel: Edit` (the tunnel and its routes).
+   - **Zone policy,** Include, specific zone `nibblejiggle.xyz`: `Zone: Read` (looking the zone up by name), `DNS: Edit` (the `health` record), `Zone Settings: Edit` (Always Use HTTPS, HSTS), `Zone WAF: Edit` (both rulesets), `Bot Management: Edit` (Bot Fight Mode). The first three are in "DNS & Zones"; the other two are in a security group.
+4. Check the scopes: the summary must name your account and `nibblejiggle.xyz`, or the token can also edit any zone you add later.
+5. No client IP filter and no expiration, as for the DNS-01 token. It is used only from the dev VM, a few times a year.
+6. "Continue to summary": it must list exactly these 6 permissions on your account and the one zone. "Create Token". On the dev VM:
+
+   ```
+   iac/scripts/enter-secret cloudflare-terraform-token
+   ```
+
+**Rotate** (on suspected exposure, or after a dev VM rebuild, which loses the file): "Roll" it in the dashboard and run `enter-secret` again. Nothing else uses it.
+
+## Tunnel token
+
+`cloudflared` runs on this token alone, because the tunnel is remotely managed (ADR 0029). Terraform creates the tunnel but never reads the token, so the state holds no secret.
+
+1. Zero Trust, "Networks", "Connectors", the `health-tracker` tunnel, "Add a replica" (or "Install connector"). The install command shown ends with the token, a long string starting `eyJ`. Copy only that string.
+2. On the dev VM:
+
+   ```
+   iac/scripts/enter-secret cloudflare-tunnel-token
+   ```
+
+The dashboard keeps showing it, so after a dev VM rebuild copy it again from there.
+
+## Plan and apply
+
+`iac/scripts/cloudflare-terraform` reads the token into `CLOUDFLARE_API_TOKEN`, keeps the state at `~/.config/health-tracker/terraform/cloudflare.tfstate` (mode 600) and passes everything else to `terraform`. It refuses to run without a terminal, so Claude cannot run it.
+
+```
+iac/scripts/cloudflare-terraform plan
+iac/scripts/cloudflare-terraform apply
+```
+
+`apply` shows the plan again and asks for `yes`. Read it first: `~` changes in place, `+` creates, `-` destroys, `-/+` replaces. A replace of the tunnel is refused by `prevent_destroy`; if you see that, stop and find out why.
+
+After an apply, `plan` must say "No changes". Run `plan` before each change and now and then: anything it wants to change that you did not edit is drift, usually a dashboard click. Undo it with `apply`, or put the change in the `.tf` files if you meant it.
+
+Check the state holds no secret, after the first apply and after any change to `tunnel.tf`:
+
+```
+jq '[.. | objects | select(has("tunnel_secret")) | .tunnel_secret] | all(. == null)' ~/.config/health-tracker/terraform/cloudflare.tfstate
+jq '(.resources[].instances[] | select(.private) | .private) |= @base64d | [.. | strings | select(contains("eyJ"))] | length' ~/.config/health-tracker/terraform/cloudflare.tfstate
+stat -c '%a %n' ~/.config/health-tracker/terraform/*
+```
+
+- The first must print `true`: no tunnel secret is stored.
+- The second must print `0`: no string starts a token (`eyJ`, base64 for `{"`). It decodes each resource's `private` field first. That field is the provider's own bookkeeping, stored as base64 JSON, so undecoded it always begins with `eyJ` and a plain `grep` reports it as a token.
+- The third must print `600` for each file.
+
+An error such as `Could not open file` is a failed check, not a pass.
+
+## Sign-up brake, level 2
+
+For a traffic flood on the sign-in path, when `users signup close` (level 1, ADR 0026) is not enough. It blocks `/oauth2/start` at Cloudflare, before the tunnel, so existing Users cannot sign in again either while it is on.
+
+```
+iac/scripts/cloudflare-terraform apply -var signup_brake_edge=true
+```
+
+Check from a browser: `https://health.nibblejiggle.xyz/oauth2/start` shows Cloudflare's block page. Undo:
+
+```
+iac/scripts/cloudflare-terraform apply
+```
+
+The variable defaults to `false`, so a plain `apply` turns it off, and `plan` afterwards says "No changes". While it is on, a plain `plan` shows the rule as a change: that is the reminder it is still on.
+
+## "Under Attack" mode
+
+The emergency lever for a flood the rules above do not stop (ADR 0027). It is a dashboard click, not Terraform, and must be undone afterwards. It shows every visitor a JavaScript challenge first, which breaks the SPA's API calls for anyone already on a page: they reload once it passes.
+
+On: the zone's Overview, "Under Attack Mode", on. Off: the same switch. Note in your own log when and why.
+
+## Lost state
+
+When the dev VM is rebuilt, the state file is gone but everything at Cloudflare keeps serving. Do not `apply` from an empty state: it would try to create a second tunnel and fail on the existing record and rulesets. Re-adopt the live objects instead (ADR 0029). Make a new Terraform token first (above).
+
+```
+cd iac/cloudflare
+cp import.tf.example import.tf
+../scripts/cloudflare-terraform plan
+```
+
+The plan must say "8 to import, 0 to add, 0 to change, 0 to destroy". Then:
+
+```
+../scripts/cloudflare-terraform apply
+rm import.tf
+../scripts/cloudflare-terraform plan
+cd ../..
+```
+
+The last `plan` must say "No changes". `import.tf.example` looks up each object by name and explains why it uses `import` blocks rather than one `terraform import` per resource.
+
+## Bumping Terraform or the provider
+
+Done by [Patching internet-facing components](https://github.com/bhh1893/health-tracker/issues/178). Terraform: change the version and sha256 in the `dev_workstation` role defaults and the `terraform` job in `.github/workflows/ci.yml` (same values), plus `required_version` in `iac/cloudflare/versions.tf`; take the sha256 from HashiCorp's `SHA256SUMS` after checking its signature. Provider: change the version in `versions.tf`, then
+
+```
+terraform -chdir=iac/cloudflare init -backend=false -upgrade
+```
+
+which rewrites `.terraform.lock.hcl`; commit both. Then `plan` before merging: a new provider can read the same objects differently.

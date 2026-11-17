@@ -1,0 +1,75 @@
+# Re-adopts the live Cloudflare objects into an empty state (ADR 0029, runbook
+# "Lost state"). Terraform reads only *.tf, so this file does nothing until copied:
+#
+#   cp import.tf.example import.tf
+#   ../scripts/cloudflare-terraform plan     # every resource "will be imported", 0 to add
+#   ../scripts/cloudflare-terraform apply
+#   rm import.tf
+#
+# Import blocks instead of one `terraform import` per resource: the IDs are looked
+# up here by name, so nothing has to be copied from the dashboard (DNS record and
+# ruleset IDs are not shown there), and plan previews all of it before anything is
+# written. Remove the file afterwards: on a fresh account these lookups find nothing.
+
+data "cloudflare_zero_trust_tunnel_cloudflareds" "found" {
+  account_id = local.account_id
+  name       = local.tunnel_name
+  is_deleted = false
+}
+
+data "cloudflare_dns_records" "found" {
+  zone_id = local.zone_id
+  name    = { exact = local.hostname }
+}
+
+data "cloudflare_rulesets" "found" {
+  zone_id = local.zone_id
+}
+
+locals {
+  # one() fails the plan if the lookup finds zero or several, rather than guessing.
+  found_tunnel_id = one(data.cloudflare_zero_trust_tunnel_cloudflareds.found.result).id
+  found_record_id = one(data.cloudflare_dns_records.found.result).id
+  # Cloudflare's managed rulesets are listed too; the zone's own have kind "zone".
+  found_rulesets = { for r in data.cloudflare_rulesets.found.rulesets : r.phase => r.id if r.kind == "zone" }
+}
+
+import {
+  to = cloudflare_zero_trust_tunnel_cloudflared.health
+  id = "${local.account_id}/${local.found_tunnel_id}"
+}
+
+import {
+  to = cloudflare_zero_trust_tunnel_cloudflared_config.health
+  id = "${local.account_id}/${local.found_tunnel_id}"
+}
+
+import {
+  to = cloudflare_dns_record.health
+  id = "${local.zone_id}/${local.found_record_id}"
+}
+
+import {
+  to = cloudflare_zone_setting.always_use_https
+  id = "${local.zone_id}/always_use_https"
+}
+
+import {
+  to = cloudflare_zone_setting.hsts
+  id = "${local.zone_id}/security_header"
+}
+
+import {
+  to = cloudflare_bot_management.this
+  id = local.zone_id
+}
+
+import {
+  to = cloudflare_ruleset.rate_limit
+  id = "zones/${local.zone_id}/${local.found_rulesets["http_ratelimit"]}"
+}
+
+import {
+  to = cloudflare_ruleset.custom
+  id = "zones/${local.zone_id}/${local.found_rulesets["http_request_firewall_custom"]}"
+}

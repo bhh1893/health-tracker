@@ -29,6 +29,7 @@ jobs:
       web: ${{ steps.filter.outputs.web }}
       k8s: ${{ steps.filter.outputs.k8s }}
       tailnet: ${{ steps.filter.outputs.tailnet }}
+      cloudflare: ${{ steps.filter.outputs.cloudflare }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -57,6 +58,9 @@ jobs:
             # Not ci.yml: this job needs a secret, and a workflow-only PR should not.
             tailnet:
               - 'iac/tailscale/**'
+            cloudflare:
+              - 'iac/cloudflare/**'
+              - '.github/workflows/ci.yml'
 
   # Repo-wide, so no path filter: a secret can hide in any file (ADR 0015).
   gitleaks:
@@ -369,6 +373,33 @@ jobs:
           policy-file: iac/tailscale/policy.hujson
           action: test
 
+  # Static checks only (ADR 0029): no token, no state, nothing at Cloudflare changes.
+  # The owner runs plan and apply from the dev VM. `init -backend=false` downloads the
+  # provider the lock file names, and fails if its hashes do not match.
+  terraform:
+    needs: changes
+    if: needs.changes.outputs.cloudflare == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: iac/cloudflare
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Terraform
+        # Same pin and checksum as the dev_workstation role defaults.
+        env:
+          VERSION: 1.17.2
+          SHA256: e6f16b2f0b137ee5729caa8c4e79a3bae4ee261acd198a1fcfa8584a6296605b
+        run: |
+          zip="terraform_${VERSION}_linux_amd64.zip"
+          curl -sSfL --retry 5 -o "${RUNNER_TEMP}/${zip}" "https://releases.hashicorp.com/terraform/${VERSION}/${zip}"
+          echo "${SHA256}  ${RUNNER_TEMP}/${zip}" | sha256sum -c
+          unzip -q "${RUNNER_TEMP}/${zip}" terraform -d "${RUNNER_TEMP}/bin"
+          echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
+      - run: terraform fmt -check -diff -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+
   # The only required check. Always runs; passes when every job it waits on
   # passed or was skipped (ADR 0014).
   ci-gate:
@@ -381,6 +412,7 @@ jobs:
       - ansible-lint
       - kubeconform
       - tailnet-policy-test
+      - terraform
       - api-lint
       - api-test
       - api-fuzz

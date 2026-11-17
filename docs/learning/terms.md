@@ -588,3 +588,10 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Repudiation**: being unable to prove who did an action after the fact; countered by logs that tie each request to an identity.
 - **Path-owning account**: an outside account (DNS, registrar, identity provider, code host) whose takeover hands over the app without touching the servers.
 - **Loki**: Grafana's log store; it indexes only labels (pod, namespace) rather than full text, which keeps it cheap to run.
+- **Drift (Terraform)**: the real object no longer matches the `.tf` files, usually after a dashboard click; `terraform plan` lists it as a change to undo.
+- **Data source (Terraform)**: a read-only lookup (`data "..."`) of something Terraform does not manage, such as the Cloudflare zone; refreshed on every plan.
+- **`import` block**: the config form of `terraform import`; its ID can be computed (here from data sources), and `plan` previews every adoption before `apply` writes any.
+- **Partial backend config**: leaving a `backend` block empty and passing its settings at `terraform init -backend-config=...`, because backend blocks cannot read variables or expand `~`.
+- **`prevent_destroy`**: a lifecycle flag that makes Terraform refuse any plan that would delete or replace the resource.
+- **Ruleset and phase (Cloudflare)**: a phase is a point in request handling (custom rules, rate limiting); each zone has one entry ruleset per phase, holding its rules in order.
+- **`umask`**: bits removed from a new file's permissions; `077` makes every file the process creates readable by its owner only.
