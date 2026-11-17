@@ -6,7 +6,9 @@
     <meta name="theme-color" content="#0f766e" />
     <title>Health Tracker</title>
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" href="/icon-192.png" type="image/png" />
+    <!-- SVG stays sharp at any size; browsers without SVG favicon support fall back to the PNG. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
     <!-- iOS ignores the manifest's icons and reads this one for Add to Home Screen. -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
