@@ -10,6 +10,8 @@ Every secret value lives in `~/.config/health-tracker/` on the dev VM, and `iac/
 | `backup.env` | `dev.yml` | `backup-key` | `health-tracker` | CNPG Barman Cloud plugin |
 | `argocd-deploy-key` | `dev.yml` | `repo-health-tracker` | `argocd` | Argo CD |
 | `cloudflare-dns01-token` | Cloudflare dashboard, then `enter-secret` (`cloudflare.md`) | `cloudflare-dns01-token` (key `api-token`) | `cert-manager` | Let's Encrypt ClusterIssuers (DNS-01) |
+| `google-client-secret` | Google Cloud console, then `enter-secret` (`google-oauth.md`) | `auth-proxy` (key `client-secret`) | `health-tracker` | oauth2-proxy sidecars in `api` and `web` |
+| `auth-cookie-secret` | `dev.yml` | `auth-proxy` (key `cookie-secret`) | `health-tracker` | oauth2-proxy sidecars in `api` and `web` |
 | `health-tls.json` (optional) | cert-manager, then `save-tls` | `health-tls` | `edge` | Gateway `https` listener |
 
 A value made by hand in a web console goes in with `iac/scripts/enter-secret <file>`, run yourself in a terminal: it reads the value at a hidden prompt, so it never reaches the screen, shell history, `ps` or Claude. `apply-secrets` stops if any file above is missing, except `health-tls.json`.
@@ -42,7 +44,9 @@ Two credentials are the exception: they live only in GitHub Actions secrets and 
    ansible-playbook iac/ansible/dev.yml -e dotfiles_repo=git@github.com:bhh1893/dotfiles.git
    ```
 
-2. Register the deploy key on GitHub, from a Windows terminal. Read-only is the default; never add `--allow-write` to this key. The key is tied to your `gh` login, so de-authorizing `gh` removes it.
+2. Enter the values made in a web console: the DNS-01 token (`cloudflare.md`) and the Google client secret (`google-oauth.md`). `apply-secrets` stops until both exist.
+
+3. Register the deploy key on GitHub, from a Windows terminal. Read-only is the default; never add `--allow-write` to this key. The key is tied to your `gh` login, so de-authorizing `gh` removes it.
 
    ```
    cd ~
@@ -51,7 +55,7 @@ Two credentials are the exception: they live only in GitHub Actions secrets and 
    rm argocd-deploy-key.pub
    ```
 
-3. Copy the values into the cluster.
+4. Copy the values into the cluster.
 
    ```
    iac/scripts/apply-secrets
@@ -59,7 +63,7 @@ Two credentials are the exception: they live only in GitHub Actions secrets and 
 
    A second run prints `unchanged` for every Secret.
 
-4. Put the token on the phone. Run this yourself in a terminal: it refuses to print anywhere else.
+5. Put the token on the phone. Run this yourself in a terminal: it refuses to print anywhere else.
 
    ```
    iac/scripts/show-token
@@ -96,6 +100,8 @@ Then finish for the secret you rotated:
 - **`db-api.env`:** `kubectl -n health-tracker rollout restart deployment/api`. CNPG changes the role's password by itself, through the `cnpg.io/reload` label. `api` fails to connect until the restart finishes.
 - **`db-owner.env`:** nothing to restart; the next migration Job reads the new value.
 - **`cloudflare-dns01-token`:** not generated, so skip the `dev.yml` step: roll the token in Cloudflare and enter it again (`cloudflare.md`, "Rotate"), then `apply-secrets`. Nothing to restart.
+- **`auth-cookie-secret`:** `kubectl -n health-tracker rollout restart deployment/api deployment/web`. Every User is signed out and signs in again (`google-oauth.md`, "Rotate").
+- **`google-client-secret`:** not generated, so skip the `dev.yml` step: add a second secret to the client, enter it, apply, restart, then delete the old one (`google-oauth.md`, "Rotate"). No one is signed out.
 - **`backup.env`:** this file is a copy of the key held by Garage, so delete the key too, before the steps above: `sudo garage key delete --yes cnpg-backup`. Then confirm backups still work with `backup-status`.
 - **`TS_OAUTH_SECRET`:** revoke the OAuth client in the Tailscale admin console and create a new one (`docs/runbooks/tailnet.md`, "CI credential"). Nothing to restart.
 - **`argocd-deploy-key`:** delete `argocd-deploy-key.pub` as well. Register the new key as in first install step 2, then delete the old one from Windows with `gh repo deploy-key list` and `gh repo deploy-key delete <id>`.

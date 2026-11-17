@@ -449,6 +449,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Defense in depth**: several independent layers of protection, so one failing (a device admitted by mistake) does not expose everything (a Pending User still sees no data).
 - **OIDC (OpenID Connect)**: a standard login protocol on top of OAuth 2.0; an identity provider signs a token saying who the person is, and the app trusts that signature instead of storing passwords.
 - **OAuth client ID**: identifies an application registered with an identity provider (our `web` app), never a person.
+- **OAuth client secret**: the registered app's password, sent only server to server to swap a sign-in code for tokens; unlike the client ID it must never reach a browser or git.
 - **`sub` (subject)**: the OIDC claim holding a person's stable, unique ID at one identity provider; the key that links a sign-in to our User.
 - **Identity provider (IdP)**: the service that signs people in and issues OIDC tokens (e.g. Authentik, Zitadel, Auth0).
 - **Registrar**: the company you rent a domain name from; its job here is only to say which nameservers are authoritative for the domain.
