@@ -8,6 +8,7 @@ from health_api.catalogs import CATALOGS, catalog_router
 from health_api.days import days_router
 from health_api.db import create_db_engine
 from health_api.exercise_entries import exercise_entries_router
+from health_api.identity import NOT_APPROVED, UNAUTHENTICATED
 from health_api.logs import configure_logging
 from health_api.me import me_router
 from health_api.meals import meals_router
@@ -36,12 +37,15 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Health Tracker API", version="1", lifespan=lifespan)
     register_problem_handlers(app)
     app.include_router(health.router)
+    # Every data route needs an approved User (ADR 0021). /api/me declares its own: GET is
+    # open to Pending.
+    data = {**DATABASE_UNAVAILABLE, **UNAUTHENTICATED, **NOT_APPROVED}
     for catalog in CATALOGS:
-        app.include_router(catalog_router(catalog), responses=DATABASE_UNAVAILABLE)
-    app.include_router(meals_router(), responses=DATABASE_UNAVAILABLE)
-    app.include_router(exercise_entries_router(), responses=DATABASE_UNAVAILABLE)
-    app.include_router(days_router(), responses=DATABASE_UNAVAILABLE)
+        app.include_router(catalog_router(catalog), responses=data)
+    app.include_router(meals_router(), responses=data)
+    app.include_router(exercise_entries_router(), responses=data)
+    app.include_router(days_router(), responses=data)
+    app.include_router(reference_foods_router(), responses=data)
     app.include_router(me_router(), responses=DATABASE_UNAVAILABLE)
-    app.include_router(reference_foods_router(), responses=DATABASE_UNAVAILABLE)
     document_problem_media_type(app)
     return app

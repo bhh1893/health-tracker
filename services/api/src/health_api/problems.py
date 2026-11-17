@@ -21,13 +21,16 @@ PROBLEM_MEDIA_TYPE = "application/problem+json"
 PROBLEM_CONTENT = {"schema": {"$ref": "#/components/schemas/Problem"}}
 NO_BODY_STATUSES = frozenset({204, 304})
 
-# `type` is how a client tells one 409 from another without parsing `detail`. These are names,
-# not links: RFC 9457 allows a URI nobody can fetch, and a URN cannot look like a broken URL.
+# `type` is how a client tells one 409 or 403 from another without parsing `detail`. These are
+# names, not links: RFC 9457 allows a URI nobody can fetch, and a URN cannot look like a broken
+# URL.
 EXACT_DUPLICATE = "urn:health-tracker:problem:exact-duplicate"
 NEAR_DUPLICATE = "urn:health-tracker:problem:near-duplicate"
 ITEM_IN_USE = "urn:health-tracker:problem:item-in-use"
 LAST_FOOD_ENTRY = "urn:health-tracker:problem:last-food-entry"
 KIND_IMMUTABLE = "urn:health-tracker:problem:kind-immutable"
+# A 403: the caller is known but may not do this yet (ADR 0021).
+PENDING_APPROVAL = "urn:health-tracker:problem:pending-approval"
 
 
 class FieldError(BaseModel):

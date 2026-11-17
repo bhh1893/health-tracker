@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from identities import MEMBER_HEADERS
 from sqlalchemy import URL, create_engine, text
 
 from health_api.main import create_app
@@ -51,7 +52,8 @@ def test_route_is_a_503_problem_when_the_database_is_unreachable(
 ) -> None:
     monkeypatch.setenv("DATABASE_URL", NOWHERE)
 
-    with TestClient(create_app()) as client:
+    # Signed in, so the first database call is the identity lookup itself.
+    with TestClient(create_app(), headers=MEMBER_HEADERS) as client:
         response = client.get("/api/v1/foods")
 
     assert response.status_code == 503

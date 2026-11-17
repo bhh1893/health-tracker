@@ -12,7 +12,6 @@ Every secret value lives in `~/.config/health-tracker/` on the dev VM, and `iac/
 | `cloudflare-tunnel-token` | Cloudflare dashboard, then `enter-secret` (`cloudflare.md`) | `cloudflared` (key `token`) | `edge` | `cloudflared`, as `TUNNEL_TOKEN` (ADR 0029) |
 | `google-client-secret` | Google Cloud console, then `enter-secret` (`google-oauth.md`) | `auth-proxy` (key `client-secret`) | `health-tracker` | oauth2-proxy sidecars in `api` and `web` |
 | `auth-cookie-secret` | `dev.yml` | `auth-proxy` (key `cookie-secret`) | `health-tracker` | oauth2-proxy sidecars in `api` and `web` |
-| `auth-allowed-emails` (temporary, until #151) | You, by hand (first install, step 2) | `auth-proxy-allowlist` (key `emails`) | `health-tracker` | oauth2-proxy sidecars: the only emails allowed to sign in |
 | `health-tls.json` (optional) | cert-manager, then `save-tls` | `health-tls` | `edge` | Gateway `https` listener |
 | `cloudflare-terraform-token` | Cloudflare dashboard, then `enter-secret` (`cloudflare.md`) | none: `CLOUDFLARE_API_TOKEN` at apply time | - | Terraform, through `cloudflare-terraform` (ADR 0029) |
 
@@ -50,13 +49,7 @@ Two credentials are the exception: they live only in GitHub Actions secrets and 
    ansible-playbook iac/ansible/dev.yml -e dotfiles_repo=git@github.com:bhh1893/dotfiles.git
    ```
 
-2. Enter the values made in a web console: the DNS-01 token and the tunnel token (`cloudflare.md`), and the Google client secret (`google-oauth.md`). Then write the sign-in allowlist, one email per line, your own Google account only. `apply-secrets` stops until all four exist.
-
-   ```
-   (umask 077 && printf '%s\n' 'you@gmail.com' > ~/.config/health-tracker/auth-allowed-emails)
-   ```
-
-   Replace `you@gmail.com` with your address. **Temporary:** until `api` tells Users apart ([#151](https://github.com/bhh1893/health-tracker/issues/151)), every signed-in request is the seeded User, so this list is what keeps other Google accounts out of your data. #151 deletes the file, this step and the Secret. To change the list later, edit the file and run `apply-secrets`; the sidecars notice the change by themselves within a minute or so, with no restart.
+2. Enter the values made in a web console: the DNS-01 token and the tunnel token (`cloudflare.md`), and the Google client secret (`google-oauth.md`). `apply-secrets` stops until all three exist.
 
 3. Register the deploy key on GitHub, from a Windows terminal. Read-only is the default; never add `--allow-write` to this key. The key is tied to your `gh` login, so de-authorizing `gh` removes it.
 
