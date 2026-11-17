@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from health_api import health
+from health_api.access import AccessLogMiddleware
 from health_api.catalogs import CATALOGS, catalog_router
 from health_api.days import days_router
 from health_api.db import create_db_engine
@@ -36,6 +37,9 @@ def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title="Health Tracker API", version="1", lifespan=lifespan)
     register_problem_handlers(app)
+    # Inside ServerErrorMiddleware, which add_middleware always keeps outermost: an
+    # unhandled exception passes through here first, so its line says 500.
+    app.add_middleware(AccessLogMiddleware)
     app.include_router(health.router)
     # Every data route needs an approved User (ADR 0021). /api/me declares its own: GET is
     # open to Pending.

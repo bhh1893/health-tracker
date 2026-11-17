@@ -619,3 +619,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Gateway `Programmed` condition**: the Gateway API status saying the data plane is set up and the Gateway has an address; with no outside address on purpose, it stays `False` while Envoy still serves.
 - **Auth gate (SPA)**: a check at the top of the app that decides what the person may see (here the Role from `GET /api/me`) before any screen renders and fires its own requests.
 - **Module mock (`vi.mock`)**: Vitest swaps a whole module for a fake in one test file, so code that would do something tests cannot (here, reload the page) is recorded instead.
+- **ASGI middleware**: a wrapper around the whole Python web app that sees every request on the way in and every response on the way out; "pure" ASGI means it works on the raw `scope`/`send` messages rather than Starlette's `BaseHTTPMiddleware`.
+- **Path template**: the route as declared (`/api/v1/meals/{meal_id}`) rather than as requested (`/api/v1/meals/0197...`); logging it keeps ids and other values out of logs and groups requests per route.

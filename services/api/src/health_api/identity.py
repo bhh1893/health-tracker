@@ -13,6 +13,7 @@ from fastapi import Depends, Request
 from sqlalchemy import RowMapping, text
 from sqlalchemy.orm import Session
 
+from health_api.access import record_user
 from health_api.db import DbSession
 from health_api.problems import PENDING_APPROVAL, Problem, ProblemError
 
@@ -92,6 +93,13 @@ def _sign_up(
 
 def signed_in_user(request: Request, session: DbSession) -> User:
     """Any signed-in User, Pending included. Only `GET /api/me` uses it directly (ADR 0021)."""
+    user = _identify(request, session)
+    # Here, before any route decides anything, so a Pending User's 403 is attributed too.
+    record_user(request, user.id)
+    return user
+
+
+def _identify(request: Request, session: Session) -> User:
     issuer = _header(request, ISSUER_HEADER)
     subject = _header(request, SUBJECT_HEADER)
     if issuer is None or subject is None:

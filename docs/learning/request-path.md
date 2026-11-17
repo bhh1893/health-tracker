@@ -140,7 +140,7 @@ phone <──redirect──> accounts.google.com            proxy ──code for
 
 ### 7. `api` (reads proxy headers since #151)
 
-- **What:** uvicorn binds `127.0.0.1:8000` (`services/api/Dockerfile:34`), so only containers in the same pod can reach it. Localhost is the trust boundary: anything that gets here came through the sidecar, which set the `X-Auth-*` headers.
+- **What:** uvicorn binds `127.0.0.1:8000` (`services/api/Dockerfile:37`), so only containers in the same pod can reach it. Localhost is the trust boundary: anything that gets here came through the sidecar, which set the `X-Auth-*` headers.
 - **Decides:** who is calling, in `signed_in_user` (`services/api/src/health_api/identity.py`), before any route code runs.
   - No `X-Auth-Issuer` or `X-Auth-Subject`: `401` Problem. Never a fallback to the seeded User.
   - Known `(issuer, sub)`: one indexed `SELECT` on `users_issuer_subject_key`. `name`/`email` are written only if the headers differ from what is stored.
@@ -151,7 +151,7 @@ phone <──redirect──> accounts.google.com            proxy ──code for
 - **Watch:**
   - The browser's network tab: `GET /api/me` returns `role` and `name`.
   - `iac/scripts/users list`: a first sign-in shows up as a Pending row with name and email.
-  - `kubectl logs -n health-tracker deploy/api -c api` (no per-request identity yet; that is #191)
+  - `kubectl logs -n health-tracker deploy/api -c api | jq 'select(.logger == "health_api.access")'`: one line per request with `user_id`, `method`, the route template as `path`, `status` and the visitor's `client_ip` from `CF-Connecting-IP` (#191). Passing probes are left out.
 - **Fails:**
   - Database unreachable: `503` Problem, from the identity lookup itself, since it is the first query of every request.
   - Proxy stops sending `X-Auth-Issuer`/`X-Auth-Subject` (alpha config regression): every request is `401`, and `web` reloads into sign-in in a loop. Fails closed.
