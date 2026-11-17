@@ -847,6 +847,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -916,6 +927,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -969,6 +991,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1037,6 +1070,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -1098,6 +1142,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1193,6 +1248,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -1243,6 +1309,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1303,6 +1380,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1380,6 +1468,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -1441,6 +1540,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1545,6 +1655,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -1604,6 +1725,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1699,6 +1831,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -1753,6 +1896,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1820,6 +1974,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1924,6 +2089,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -1983,6 +2159,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2078,6 +2265,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -2134,6 +2332,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2201,6 +2410,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2305,6 +2525,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -2355,6 +2586,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2420,6 +2662,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -2474,6 +2727,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2541,6 +2805,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2645,6 +2920,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description The database is unavailable. Safe to retry. */
             503: {
                 headers: {
@@ -2704,6 +2990,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2793,6 +3090,17 @@ export interface operations {
             /** @description Validation Error */
             422: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {

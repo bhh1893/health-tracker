@@ -47,6 +47,17 @@ def test_every_api_route_documents_the_outage_status() -> None:
     assert not missing, "include the router with responses=DATABASE_UNAVAILABLE"
 
 
+def test_every_api_route_documents_the_rate_limit() -> None:
+    missing = [
+        name
+        for name, operation in operations()
+        if " /api/" in name
+        and "Retry-After" not in operation["responses"].get("429", {}).get("headers", {})
+    ]
+
+    assert not missing, "include the router with responses=TOO_MANY_REQUESTS"
+
+
 def test_conflicts_document_the_problem_extensions() -> None:
     schema = json.loads(OPENAPI_PATH.read_text())
 

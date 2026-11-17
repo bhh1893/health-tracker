@@ -12,6 +12,10 @@ describe("shouldRetry", () => {
     expect(shouldRetry(0, failure(422))).toBe(false);
   });
 
+  it("does not retry a 429: asking again only extends the wait (ADR 0027)", () => {
+    expect(shouldRetry(0, failure(429))).toBe(false);
+  });
+
   it("retries a 5xx and a network failure, up to the limit", () => {
     expect(shouldRetry(0, failure(503))).toBe(true);
     expect(shouldRetry(1, new TypeError("Failed to fetch"))).toBe(true);

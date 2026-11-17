@@ -45,6 +45,14 @@ spec:
                 secretKeyRef:
                   name: db-api
                   key: DATABASE_URL
+            # Per User, per pod, over a moving minute (ADR 0027). With 2 replicas a User
+            # can reach up to twice these. A value that does not parse stops the pod at boot.
+            - name: RATE_LIMIT
+              value: 300/minute
+            # Writes (POST, PUT, PATCH, DELETE) also count here, so a stolen session cannot
+            # fill the database fast (ADR 0030).
+            - name: WRITE_RATE_LIMIT
+              value: 60/minute
           # All three go through the auth-proxy sidecar (k8s/components/auth-proxy/),
           # which passes /healthz and /readyz through with no session: `api` listens
           # only on localhost and the kubelet calls the pod IP (ADR 0021). A number, not
