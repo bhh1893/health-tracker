@@ -3,35 +3,22 @@ import { http, HttpResponse } from "msw";
 import type { Problem } from "./api/client";
 import type { components, paths } from "./api/schema";
 
-export const GOOD_TOKEN = "good-token";
-
 type ExerciseSuggestions =
   paths["/api/v1/exercises"]["get"]["responses"][200]["content"]["application/json"];
+type Me = components["schemas"]["Me"];
 
-const unauthorized: Problem = {
-  type: "about:blank",
-  title: "Unauthorized",
-  status: 401,
-};
+// The signed-in User the app shell asks about on load (ADR 0021). Typed from the
+// contract, so a schema change breaks compilation here (ADR 0014).
+export function signedInAs(role: Me["role"]) {
+  return http.get<never, never, Me>("*/api/me", () =>
+    HttpResponse.json({ role, name: "Owner", restaurant_day_kcal: 2500 }),
+  );
+}
 
-// Stands in for the sidecar in front of `api` (ADR 0010). Typed from the contract,
-// so a schema change breaks compilation here (ADR 0014).
-export const exercisesBehindEdge = http.get<
-  never,
-  never,
-  ExerciseSuggestions | Problem
->("*/api/v1/exercises", ({ request }) => {
-  if (request.headers.get("Authorization") !== `Bearer ${GOOD_TOKEN}`) {
-    return HttpResponse.json(unauthorized, {
-      status: 401,
-      headers: {
-        "Content-Type": "application/problem+json",
-        "WWW-Authenticate": "Bearer",
-      },
-    });
-  }
-  return HttpResponse.json([]);
-});
+export const noSuggestions = http.get<never, never, ExerciseSuggestions>(
+  "*/api/v1/exercises",
+  () => HttpResponse.json([]),
+);
 
 type CatalogRef = components["schemas"]["CatalogRef"];
 type ExerciseEntry = components["schemas"]["ExerciseEntry"];

@@ -1,36 +1,28 @@
 import createClient, { type Middleware } from "openapi-fetch";
 
-import { getAuthState, rejectToken } from "../auth/token";
+import { reloadIntoSignIn } from "../auth/reload";
 import type { components, paths } from "./schema";
 
 export type Problem = components["schemas"]["Problem"];
 
-const BEARER_PREFIX = "Bearer ";
-
-// Every API call passes through here, so no screen handles the token itself.
-const authMiddleware: Middleware = {
-  onRequest({ request }) {
-    const { token } = getAuthState();
-    if (token !== null) {
-      request.headers.set("Authorization", `${BEARER_PREFIX}${token}`);
-    }
-    return request;
-  },
-  onResponse({ request, response }) {
-    const sent = request.headers.get("Authorization");
-    if (response.status === 401 && sent?.startsWith(BEARER_PREFIX)) {
-      rejectToken(sent.slice(BEARER_PREFIX.length));
+// Every API call passes through here, so no screen handles an expired session.
+// The browser sends the session cookie by itself (same origin), so requests carry
+// no credential this code can see or leak (ADR 0021).
+const sessionMiddleware: Middleware = {
+  onResponse({ response }) {
+    if (response.status === 401) {
+      reloadIntoSignIn();
     }
     return response;
   },
 };
 
-// The origin alone: the paths in schema.d.ts already start with /api/v1. It is
+// The origin alone: the paths in schema.d.ts already start with /api. It is
 // resolved at run time, never configured, because the page and the API share one
 // origin (ADR 0001), so one image runs in every environment (ADR 0007). A browser
 // would accept an empty base, but Node's fetch (under Vitest) rejects relative URLs.
 export const api = createClient<paths>({ baseUrl: window.location.origin });
-api.use(authMiddleware);
+api.use(sessionMiddleware);
 
 // An API call that failed, always carrying Problem Details so screens have one
 // shape to display and branch on, whatever produced the error.

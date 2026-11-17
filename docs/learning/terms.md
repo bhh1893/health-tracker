@@ -617,3 +617,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`loadBalancerClass`**: a Service field naming which load balancer implementation may give it an outside IP; one that no implementation claims leaves the Service without one.
 - **`CiliumClusterwideNetworkPolicy`**: a `CiliumNetworkPolicy` without a namespace; needed when the endpoint selected is not a pod, such as Envoy's `reserved:ingress` identity.
 - **Gateway `Programmed` condition**: the Gateway API status saying the data plane is set up and the Gateway has an address; with no outside address on purpose, it stays `False` while Envoy still serves.
+- **Auth gate (SPA)**: a check at the top of the app that decides what the person may see (here the Role from `GET /api/me`) before any screen renders and fires its own requests.
+- **Module mock (`vi.mock`)**: Vitest swaps a whole module for a fake in one test file, so code that would do something tests cannot (here, reload the page) is recorded instead.

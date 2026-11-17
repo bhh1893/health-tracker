@@ -1,21 +1,24 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createQueryClient } from "./api/query-client";
 import { App } from "./App";
-import { forgetToken, saveToken } from "./auth/token";
+import { reloadIntoSignIn } from "./auth/reload";
 import { toDay } from "./lib/day";
 import { CurrentUrl } from "./test-current-url";
-import { emptyDay, exercisesBehindEdge, GOOD_TOKEN } from "./test-handlers";
+import { emptyDay, noSuggestions, signedInAs } from "./test-handlers";
 import { server } from "./test-server";
 
-function renderAt(path: string) {
+// jsdom cannot navigate, so the tests check that a reload was asked for.
+vi.mock("./auth/reload");
+
+function renderAt(path: string, client = createQueryClient()) {
   render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}>
         <App />
         <CurrentUrl />
@@ -24,69 +27,54 @@ function renderAt(path: string) {
   );
 }
 
-const secretHeading = () =>
-  screen.findByRole("heading", { name: "Enter secret" });
+const pendingHeading = () =>
+  screen.findByRole("heading", { name: "Waiting for approval" });
 
-async function submitSecret(secret: string) {
-  await userEvent.type(screen.getByLabelText("Secret"), secret);
-  await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-}
+const unauthorized = () => new HttpResponse(null, { status: 401 });
 
 beforeEach(() => {
-  forgetToken();
-  server.use(exercisesBehindEdge, emptyDay);
+  vi.mocked(reloadIntoSignIn).mockClear();
+  server.use(noSuggestions, emptyDay);
 });
 
-describe("the 401 flow", () => {
-  it("asks for the secret when none is saved", async () => {
-    renderAt("/");
-    expect(await secretHeading()).toBeInTheDocument();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+describe("a Pending User", () => {
+  beforeEach(() => {
+    server.use(signedInAs("pending"));
   });
 
-  it("loads the shell after a good secret, and stays there", async () => {
-    renderAt("/");
-    await submitSecret(GOOD_TOKEN);
-
-    expect(
-      await screen.findByRole("heading", { name: /^Exercise on/ }),
-    ).toBeInTheDocument();
-    await waitFor(() => {
-      expect(
-        screen.queryByRole("heading", { name: "Enter secret" }),
-      ).not.toBeInTheDocument();
-    });
-  });
-
-  it("returns to the secret screen and says why after a bad secret", async () => {
-    renderAt("/");
-    await submitSecret("bad-token");
-
-    expect(await secretHeading()).toBeInTheDocument();
-    expect(await screen.findByRole("alert")).toHaveTextContent("not accepted");
-  });
-
-  it("recovers: a good secret after a bad one loads the shell", async () => {
-    renderAt("/");
-    await submitSecret("bad-token");
-    await screen.findByRole("alert");
-    await submitSecret(GOOD_TOKEN);
-
-    expect(
-      await screen.findByRole("heading", { name: /^Exercise on/ }),
-    ).toBeInTheDocument();
-  });
-
-  it("returns to the secret screen when a saved secret stops working", async () => {
-    saveToken("rotated-away");
+  it("sees only the waiting screen", async () => {
     renderAt("/exercise");
 
-    expect(await secretHeading()).toBeInTheDocument();
+    expect(await pendingHeading()).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Meals" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign out" })).toHaveAttribute(
+      "href",
+      "/oauth2/sign_out",
+    );
   });
 
-  it("keeps the deep link through the secret screen", async () => {
+  it("stays on the waiting screen when checking before approval", async () => {
+    renderAt("/exercise");
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Check again" }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Check again" }),
+    ).toBeEnabled();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Waiting for approval",
+    );
+  });
+
+  it("opens the app at the same link after approval", async () => {
     renderAt("/meals?day=2026-11-02");
-    await submitSecret(GOOD_TOKEN);
+    await pendingHeading();
+
+    server.use(signedInAs("member"));
+    await userEvent.click(screen.getByRole("button", { name: "Check again" }));
 
     expect(
       await screen.findByRole("heading", { name: "Meals on 2026-11-02" }),
@@ -94,9 +82,64 @@ describe("the 401 flow", () => {
   });
 });
 
+describe("the signed-in check", () => {
+  it("shows the failure and recovers on Try again", async () => {
+    server.use(
+      http.get("*/api/me", () =>
+        HttpResponse.json(
+          {
+            type: "about:blank",
+            title: "Service Unavailable",
+            status: 503,
+          },
+          { status: 503 },
+        ),
+      ),
+    );
+    // Retries are shouldRetry's own test; here they would only add 3 s of backoff.
+    const client = createQueryClient();
+    client.setDefaultOptions({ queries: { retry: false } });
+    renderAt("/exercise", client);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Service Unavailable",
+    );
+
+    server.use(signedInAs("member"));
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(
+      await screen.findByRole("heading", { name: /^Exercise on/ }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("a 401", () => {
+  it("on load reloads the page into sign-in", async () => {
+    server.use(http.get("*/api/me", unauthorized));
+    renderAt("/exercise");
+
+    await vi.waitFor(() => {
+      expect(reloadIntoSignIn).toHaveBeenCalled();
+    });
+  });
+
+  it("from any later call reloads the page into sign-in", async () => {
+    server.use(
+      signedInAs("member"),
+      http.get("*/api/v1/exercise-entries", unauthorized),
+    );
+    renderAt("/exercise");
+
+    await vi.waitFor(() => {
+      expect(reloadIntoSignIn).toHaveBeenCalled();
+    });
+  });
+});
+
 describe("the shell", () => {
   beforeEach(() => {
-    saveToken(GOOD_TOKEN);
+    server.use(signedInAs("member"));
   });
 
   it("starts on the Exercise window, viewing today", async () => {
@@ -113,7 +156,7 @@ describe("the shell", () => {
   it("keeps the viewed Day when switching windows", async () => {
     renderAt("/exercise?day=2026-11-02");
 
-    await userEvent.click(screen.getByRole("link", { name: "Meals" }));
+    await userEvent.click(await screen.findByRole("link", { name: "Meals" }));
 
     expect(
       await screen.findByRole("heading", { name: "Meals on 2026-11-02" }),
@@ -127,7 +170,7 @@ describe("the shell", () => {
   it("reaches Search from the header icon", async () => {
     renderAt("/exercise");
 
-    await userEvent.click(screen.getByRole("link", { name: "Search" }));
+    await userEvent.click(await screen.findByRole("link", { name: "Search" }));
 
     expect(
       await screen.findByRole("heading", { name: "Search" }),
@@ -137,7 +180,9 @@ describe("the shell", () => {
   it("reaches Dashboards from the header icon, and comes back to the same Day", async () => {
     renderAt("/meals?day=2026-11-02");
 
-    await userEvent.click(screen.getByRole("link", { name: "Dashboards" }));
+    await userEvent.click(
+      await screen.findByRole("link", { name: "Dashboards" }),
+    );
 
     // The screen is its own chunk, loaded on this first visit.
     expect(
@@ -171,10 +216,10 @@ describe("the shell", () => {
     expect(alert).toHaveTextContent("limit: Too large.");
   });
 
-  it("shows not found on an unknown path", () => {
+  it("shows not found on an unknown path", async () => {
     renderAt("/no-such-page");
     expect(
-      screen.getByRole("heading", { name: "Page not found" }),
+      await screen.findByRole("heading", { name: "Page not found" }),
     ).toBeInTheDocument();
   });
 });

@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, unwrap } from "../api/client";
+import { ME_KEY } from "../auth/me";
 import { addDays } from "../lib/day";
 import { DAY_TOTALS_KEY } from "../nutrition/queries";
 import type { ExerciseSession } from "../search/days";
 
 // The API's cap on `limit` for Sessions (ADR 0006).
 const MAX_SESSIONS = 200;
-const ME_KEY = ["me"];
 
 // Every Session of one Exercise from `from` (null: the beginning) to `to`, newest
 // first. A full page may not be the end, so the next request asks for Sessions
@@ -46,13 +46,6 @@ export function useExerciseHistory(
   return useQuery({
     queryKey: ["dashboards", "sessions", exerciseId, from, to],
     queryFn: () => fetchSessions(exerciseId, from, to),
-  });
-}
-
-export function useMe() {
-  return useQuery({
-    queryKey: ME_KEY,
-    queryFn: () => unwrap(api.GET("/api/me")),
   });
 }
 

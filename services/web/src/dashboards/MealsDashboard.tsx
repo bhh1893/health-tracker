@@ -1,7 +1,7 @@
+import { useMe } from "../auth/me";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { useDayTotals } from "../nutrition/queries";
 import { formatKcal, formatMacros } from "../nutrition/totals";
-import { useMe } from "./queries";
 import { RestaurantDaySetting } from "./RestaurantDaySetting";
 import { StatTiles } from "./StatTiles";
 import { historyStart, summarizeMeals } from "./stats";

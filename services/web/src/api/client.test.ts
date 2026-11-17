@@ -1,10 +1,12 @@
 import { http, HttpResponse } from "msw";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { forgetToken, getAuthState, saveToken } from "../auth/token";
-import { GOOD_TOKEN } from "../test-handlers";
+import { reloadIntoSignIn } from "../auth/reload";
 import { server } from "../test-server";
 import { api, ApiError, unwrap } from "./client";
+
+// jsdom cannot navigate, so the tests check that a reload was asked for.
+vi.mock("../auth/reload");
 
 const listExercises = () => api.GET("/api/v1/exercises");
 
@@ -15,7 +17,7 @@ function respondWith(body: string | null, init: ResponseInit) {
 }
 
 beforeEach(() => {
-  forgetToken();
+  vi.mocked(reloadIntoSignIn).mockClear();
 });
 
 describe("requests", () => {
@@ -33,9 +35,8 @@ describe("requests", () => {
     expect(requested).toBe(`${window.location.origin}/api/v1/exercises`);
   });
 
-  it("attaches the saved token as a bearer token", async () => {
-    saveToken(GOOD_TOKEN);
-    let header: string | null = null;
+  it("carries no credential of its own", async () => {
+    let header: string | null = "unset";
     server.use(
       http.get("*/api/v1/exercises", ({ request }) => {
         header = request.headers.get("Authorization");
@@ -45,32 +46,25 @@ describe("requests", () => {
 
     await listExercises();
 
-    expect(header).toBe(`Bearer ${GOOD_TOKEN}`);
+    expect(header).toBeNull();
   });
 });
 
-describe("a 401", () => {
-  it("forgets the token that was refused", async () => {
-    saveToken("bad-token");
+describe("an expired session", () => {
+  it("reloads the page into sign-in on a 401", async () => {
     respondWith(null, { status: 401 });
 
     await listExercises();
 
-    expect(getAuthState()).toEqual({ token: null, rejected: true });
+    expect(reloadIntoSignIn).toHaveBeenCalledOnce();
   });
 
-  it("keeps a newer token when a slow 401 arrives for an old one", async () => {
-    saveToken("old-token");
-    server.use(
-      http.get("*/api/v1/exercises", () => {
-        saveToken("new-token");
-        return new HttpResponse(null, { status: 401 });
-      }),
-    );
+  it("does not reload on a 403, which is a signed-in User refused", async () => {
+    respondWith(null, { status: 403 });
 
     await listExercises();
 
-    expect(getAuthState()).toEqual({ token: "new-token", rejected: false });
+    expect(reloadIntoSignIn).not.toHaveBeenCalled();
   });
 });
 
