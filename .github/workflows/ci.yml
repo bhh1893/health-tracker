@@ -512,6 +512,9 @@ jobs:
     needs: [changes, publish]
     if: ${{ !cancelled() && needs.publish.result == 'success' }}
     runs-on: ubuntu-24.04
+    # The key lives in this Environment, which only `main` may use (ADR 0028). A run on
+    # any other ref is refused before its first step, so a branch cannot read the key.
+    environment: tag-bump
     steps:
       - uses: actions/checkout@v7
         with:
