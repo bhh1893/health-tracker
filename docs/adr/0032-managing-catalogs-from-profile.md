@@ -19,7 +19,7 @@ Logging a Meal and fixing a Food become two separate jobs done in two places. Ad
 
 - **Foods** open the existing Food sheet (ADR 0023): name, Fill from reference, Nutrition, Piece Weight.
 - **Restaurants and Exercises** share one Catalog item sheet: the name and nothing else to edit.
-- **Archive, Unarchive, Delete.** Every sheet offers Archive, or Unarchive for an archived item. Delete appears only for an item never used, which the client already knows from the item's last-use fields; the API still refuses to delete a used item (`409`).
+- **Archive, Unarchive, Delete.** Every sheet offers Archive, or Unarchive for an archived item. Delete appears only for an item never used, which the client reads from the item's `last_used_day` (null when no Entry uses it); the API still refuses to delete a used item (`409`).
 - **"+" creates** through an empty sheet. Save sends one `PUT` with a client-made id, the same create path logging uses, so a Food can be set up from its label before it is first eaten.
 - **Name clashes**, on create and on rename, reuse the logging combobox's flow: an exact match blocks the save and links to the existing item; a close match lists the similar names with "Save anyway", which resends with `allow_similar`.
 
@@ -32,6 +32,7 @@ Logging a Meal and fixing a Food become two separate jobs done in two places. Ad
 ### API (additive within `/api/v1`, ADR 0006)
 
 - The maximum `limit` on `GET /foods`, `/restaurants` and `/exercises` rises from 50 to 1000. The default (10) and the typeahead's own `limit` are unchanged.
+- Every item those three Catalogs return from their own endpoints gains `last_used_day`: the Day of the newest Entry that uses it, or null. Found while building [Catalog pages on Profile](https://github.com/bhh1893/health-tracker/issues/233): only a Food said whether it was used (`last_quantity`), so Exercises and Restaurants could not hide Delete. The server already computed the Day to sort recents. Entries keep embedding the plain `CatalogRef` (`id`, `name`, `archived`).
 
 ## Considered Options
 

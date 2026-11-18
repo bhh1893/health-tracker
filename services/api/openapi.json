@@ -1,6 +1,43 @@
 {
   "components": {
     "schemas": {
+      "CatalogItem": {
+        "description": "A Catalog item as its own endpoints return it: the reference plus what its use says.\n\nEntries embed the plain CatalogRef: a Meal has no use for when its Food was last eaten.",
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_day": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used Day"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived"
+        ],
+        "title": "CatalogItem",
+        "type": "object"
+      },
       "CatalogRef": {
         "description": "How any response points at a Catalog item (ADR 0006).",
         "properties": {
@@ -252,6 +289,18 @@
               }
             ],
             "title": "Last Unit"
+          },
+          "last_used_day": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used Day"
           },
           "name": {
             "title": "Name",
@@ -1910,7 +1959,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/CatalogRef"
+                    "$ref": "#/components/schemas/CatalogItem"
                   },
                   "title": "Response Suggest Exercises",
                   "type": "array"
@@ -2250,7 +2299,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogRef"
+                  "$ref": "#/components/schemas/CatalogItem"
                 }
               }
             },
@@ -2360,7 +2409,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogRef"
+                  "$ref": "#/components/schemas/CatalogItem"
                 }
               }
             },
@@ -2490,7 +2539,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogRef"
+                  "$ref": "#/components/schemas/CatalogItem"
                 }
               }
             },
@@ -2500,7 +2549,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogRef"
+                  "$ref": "#/components/schemas/CatalogItem"
                 }
               }
             },
@@ -3888,7 +3937,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/CatalogRef"
+                    "$ref": "#/components/schemas/CatalogItem"
                   },
                   "title": "Response Suggest Restaurants",
                   "type": "array"
@@ -4076,7 +4125,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogRef"
+                  "$ref": "#/components/schemas/CatalogItem"
                 }
               }
             },
@@ -4186,7 +4235,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogRef"
+                  "$ref": "#/components/schemas/CatalogItem"
                 }
               }
             },
@@ -4316,7 +4365,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogRef"
+                  "$ref": "#/components/schemas/CatalogItem"
                 }
               }
             },
@@ -4326,7 +4375,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogRef"
+                  "$ref": "#/components/schemas/CatalogItem"
                 }
               }
             },
