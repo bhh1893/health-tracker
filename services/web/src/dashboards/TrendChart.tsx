@@ -30,12 +30,13 @@ const MAX_DOTTED_POINTS = 45;
 const X_TICKS = 4;
 const MS_PER_DAY = 86_400_000;
 
-// One Day on the chart. A point holds `value`, drawn on the line, or `flat`, drawn
-// off the line as its own marker: a Restaurant Day, which is not part of the trend.
+// One Day on the chart, drawn on the line at `value`.
 export interface TrendPoint {
   day: string;
   value: number | null;
-  flat?: number | null;
+  // Drawn in orange: a Day of another kind on the same line, such as a Restaurant
+  // Day. Its kind is a property of the point, not a second series (ADR 0033).
+  accent?: boolean;
   // Drawn as a ring instead of a filled dot: the value under-reports.
   hollow?: boolean;
   // Extra lines for the tooltip and the table, such as the Sets or the macros.
@@ -52,8 +53,10 @@ interface TrendChartProps {
   // Calories are an amount, read against zero. A top Set or a Session's volume is
   // read by its change, which a zero baseline would flatten into a straight line.
   fromZero: boolean;
+  // Names an accent point in the tooltip and the table. The legend leaves it out:
+  // the screen around the chart explains the orange (ADR 0033).
+  accentLabel?: string;
   // Named in the legend only when the chart has such points.
-  flatLabel?: string;
   hollowLabel?: string;
 }
 
@@ -92,24 +95,7 @@ const COMPACT = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
-function Diamond({ cx, cy, r = 6 }: { cx: number; cy: number; r?: number }) {
-  return (
-    <path
-      d={`M${String(cx)} ${String(cy - r)}L${String(cx + r)} ${String(cy)}L${String(cx)} ${String(cy + r)}L${String(cx - r)} ${String(cy)}Z`}
-      fill={ORANGE}
-      stroke={SURFACE}
-      strokeWidth={r / 3}
-    />
-  );
-}
-
-function LegendKey({
-  kind,
-  label,
-}: {
-  kind: "line" | "ring" | "diamond";
-  label: string;
-}) {
+function LegendKey({ kind, label }: { kind: "line" | "ring"; label: string }) {
   return (
     <li className="flex items-center gap-1.5">
       <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 shrink-0">
@@ -131,7 +117,6 @@ function LegendKey({
             strokeWidth={2}
           />
         )}
-        {kind === "diamond" && <Diamond cx={8} cy={8} />}
       </svg>
       {label}
     </li>
@@ -148,21 +133,19 @@ export function TrendChart({
   to,
   formatValue,
   fromZero,
-  flatLabel,
+  accentLabel,
   hollowLabel,
 }: TrendChartProps) {
   const data = points.map((point) => ({ ...point, t: dayNumber(point.day) }));
   const byT = new Map(data.map((point) => [point.t, point]));
   const dense = data.length > MAX_DOTTED_POINTS;
-  const hasFlat = data.some((point) => point.flat != null);
   const hasHollow = data.some((point) => point.hollow === true);
   const start = dayNumber(from);
   const end = dayNumber(to);
   // Over a long range the day of the month is noise; the year is what orients.
   const tickFormat = end - start > 180 ? MONTH_YEAR : MONTH_DAY;
-  const shown = (point: TrendPoint) => point.value ?? point.flat ?? null;
   const yTicks = niceTicks(
-    data.flatMap((point) => shown(point) ?? []),
+    data.flatMap((point) => point.value ?? []),
     fromZero,
   );
   // Markers shrink when there are many, so a year of them does not smear together.
@@ -171,20 +154,19 @@ export function TrendChart({
   return (
     <figure className="flex flex-col gap-2 rounded-2xl border border-gray-200 bg-white p-3">
       <figcaption className="font-semibold">{title}</figcaption>
-      {(hasFlat || hasHollow) && (
+      {hasHollow && hollowLabel !== undefined && (
         <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
           <LegendKey kind="line" label={title} />
-          {hasFlat && flatLabel !== undefined && (
-            <LegendKey kind="diamond" label={flatLabel} />
-          )}
-          {hasHollow && hollowLabel !== undefined && (
-            <LegendKey kind="ring" label={hollowLabel} />
-          )}
+          <LegendKey kind="ring" label={hollowLabel} />
         </ul>
       )}
       {/* The picture is for sighted readers; the table below carries the same data. */}
       <div aria-hidden="true" className="h-56 select-none">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+          initialDimension={{ width: 320, height: 224 }}
+        >
           <ComposedChart
             data={data}
             margin={{ top: 8, right: 12, bottom: 0, left: 0 }}
@@ -217,18 +199,17 @@ export function TrendChart({
               isAnimationActive={false}
               content={({ active, label }) => {
                 const point = active ? byT.get(Number(label)) : undefined;
-                const value = point && shown(point);
-                if (point === undefined || value == null) {
+                if (point?.value == null) {
                   return null;
                 }
                 return (
                   <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-md">
                     <p className="font-semibold text-gray-900">
-                      {formatValue(value)}
+                      {formatValue(point.value)}
                     </p>
                     <p className="text-gray-600">{formatDay(point.day)}</p>
-                    {point.flat != null && flatLabel !== undefined && (
-                      <p className="text-gray-600">{flatLabel}</p>
+                    {point.accent === true && accentLabel !== undefined && (
+                      <p className="text-gray-600">{accentLabel}</p>
                     )}
                     {point.hollow === true && hollowLabel !== undefined && (
                       <p className="text-gray-600">{hollowLabel}</p>
@@ -246,11 +227,26 @@ export function TrendChart({
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
-              // The line is the trend of ordinary Days: it passes under a Restaurant
-              // Day's marker instead of climbing to it.
+              // A Day with no value is left off, and the line joins its neighbors.
               connectNulls
               isAnimationActive={false}
-              activeDot={{ r: 5, fill: BLUE, stroke: SURFACE, strokeWidth: 2 }}
+              activeDot={({ cx, cy, index }) => {
+                const point = data[index];
+                if (point === undefined || cx == null || cy == null) {
+                  return null;
+                }
+                return (
+                  <circle
+                    key={point.day}
+                    cx={cx}
+                    cy={cy}
+                    r={5}
+                    fill={point.accent === true ? ORANGE : BLUE}
+                    stroke={SURFACE}
+                    strokeWidth={2}
+                  />
+                );
+              }}
               dot={({ cx, cy, index }) => {
                 const point = data[index];
                 if (
@@ -261,7 +257,21 @@ export function TrendChart({
                 ) {
                   return null;
                 }
-                // A ring is always drawn, however dense: it is a warning, not decoration.
+                // An accent point and a ring are always drawn, however dense: each
+                // tells the reader something, so neither is decoration.
+                if (point.accent === true) {
+                  return (
+                    <circle
+                      key={point.day}
+                      cx={cx}
+                      cy={cy}
+                      r={5 * scale}
+                      fill={ORANGE}
+                      stroke={SURFACE}
+                      strokeWidth={2 * scale}
+                    />
+                  );
+                }
                 if (point.hollow === true) {
                   return (
                     <circle
@@ -292,21 +302,6 @@ export function TrendChart({
                 );
               }}
             />
-            <Line
-              dataKey="flat"
-              stroke="none"
-              isAnimationActive={false}
-              activeDot={false}
-              dot={({ cx, cy, index }) => {
-                const point = data[index];
-                if (point?.flat == null || cx == null || cy == null) {
-                  return null;
-                }
-                return (
-                  <Diamond key={point.day} cx={cx} cy={cy} r={6 * scale} />
-                );
-              }}
-            />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -329,9 +324,8 @@ export function TrendChart({
             <tbody>
               {/* Newest first, like every other list of Days in the app. */}
               {points.toReversed().map((point) => {
-                const value = shown(point);
                 const notes = [
-                  point.flat != null ? flatLabel : undefined,
+                  point.accent === true ? accentLabel : undefined,
                   point.hollow === true ? hollowLabel : undefined,
                   point.detail,
                 ].filter((note) => note !== undefined);
@@ -343,7 +337,7 @@ export function TrendChart({
                         ` ${point.day.slice(0, 4)}`}
                     </td>
                     <td className="py-1 pr-2 tabular-nums">
-                      {value === null ? "" : formatValue(value)}
+                      {point.value === null ? "" : formatValue(point.value)}
                     </td>
                     <td className="py-1 text-gray-600">{notes.join(" · ")}</td>
                   </tr>

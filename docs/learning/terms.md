@@ -653,3 +653,6 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Query key prefix matching (TanStack Query)**: `invalidateQueries({ queryKey: ["day-totals"] })` hits every cached query whose key starts with that array, so one call refreshes the Meals window's one-Day total, Search's ranges and Dashboards' windows together.
 - **Mutation testing**: deliberately breaking the code a test claims to cover (here, deleting an invalidation) and checking that the test fails; a test that still passes was not testing that line.
 - **Escaping `LIKE` wildcards**: in SQL `LIKE`, `%` means "any text" and `_` means "any one character", so user text is escaped (`\%`, `\_`, `\\`) before it goes inside a pattern; otherwise typing `%` would match every row.
+- **Series (charts)**: one sequence of values a chart draws as a unit, such as one line; Recharts draws one per `<Line>`, and each `<Line>` connects only its own points.
+- **Per-point encoding**: showing a category by changing how one point of a series is drawn (its color or shape), instead of splitting that category into its own series; the line stays continuous through it.
+- **`initialDimension` (Recharts)**: the size a `ResponsiveContainer` draws at before it has measured its box; it also lets the chart render in jsdom, which never measures anything.
