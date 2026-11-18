@@ -12,7 +12,9 @@ export function WindowLayout() {
   const { search } = useLocation();
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4 p-4">
+    // Fills the screen above the bar, so the Add button can sit at the bottom even on
+    // an empty Day. The bottom padding is the gap between that button and the bar.
+    <div className="mx-auto flex min-h-[calc(100dvh-var(--tab-bar-footprint))] max-w-md flex-col gap-4 px-4 pt-4 pb-(--tab-bar-gap)">
       <header>
         <h1 className="text-xl font-semibold">Health Tracker</h1>
       </header>

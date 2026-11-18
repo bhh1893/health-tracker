@@ -49,46 +49,53 @@ export function AppShell() {
   }
 
   return (
-    // The padding keeps the last card above the bar: the bar's height, its gap from
-    // the edge, and the iPhone home indicator's inset.
-    <div className="pb-[calc(6rem+env(safe-area-inset-bottom))]">
-      <Outlet />
-      <nav
-        aria-label="Tabs"
-        // z-40 sits under BottomSheet's z-50, so sheets and dialogs cover the bar.
-        className="fixed inset-x-0 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 mx-auto flex w-fit gap-1 rounded-full bg-white p-1 shadow-lg ring-1 ring-black/5"
-      >
-        {TABS.map(({ id, label, root }) => {
-          const isActive = id === active;
-          return (
-            <Link
-              key={id}
-              // Tapping the tab you are on resets it to its root.
-              to={isActive ? root : memory[id]}
-              aria-current={isActive ? "page" : undefined}
-              className={`flex w-20 flex-col items-center gap-0.5 rounded-full px-3 py-1.5 text-xs ${
-                isActive
-                  ? "bg-teal-50 font-semibold text-teal-700"
-                  : "text-gray-500"
-              }`}
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="size-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+    // At least one screen tall, so on a short page the bar still sits at the bottom.
+    <div className="flex min-h-dvh flex-col">
+      {/* A block, not a flex item, so each screen lays itself out as before. */}
+      <div className="flex-1">
+        <Outlet />
+      </div>
+      {/* Sticky, not fixed: it keeps its place in the page, so the end of the page
+          scrolls clear of it with no padding that guesses its height. The strip is
+          full width but lets taps through; only the pill takes them. z-40 sits under
+          BottomSheet's z-50, so sheets and dialogs cover the bar. */}
+      <div className="pointer-events-none sticky bottom-0 z-40 flex justify-center pb-[calc(var(--tab-bar-gap)+env(safe-area-inset-bottom))]">
+        <nav
+          aria-label="Tabs"
+          className="pointer-events-auto flex h-(--tab-bar-height) gap-1 rounded-full bg-white p-1 shadow-lg ring-1 ring-black/5"
+        >
+          {TABS.map(({ id, label, root }) => {
+            const isActive = id === active;
+            return (
+              <Link
+                key={id}
+                // Tapping the tab you are on resets it to its root.
+                to={isActive ? root : memory[id]}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex w-20 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1.5 text-xs ${
+                  isActive
+                    ? "bg-teal-50 font-semibold text-teal-700"
+                    : "text-gray-500"
+                }`}
               >
-                {ICONS[id]}
-              </svg>
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="size-6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {ICONS[id]}
+                </svg>
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </div>
   );
 }

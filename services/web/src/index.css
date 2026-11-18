@@ -6,3 +6,14 @@
 html {
   touch-action: pan-x pan-y;
 }
+
+/* The bottom bar's footprint, the one source for everything that must clear it
+   (ADR 0031): the bar's height, its gap above the edge, and the iPhone home
+   indicator's inset. */
+:root {
+  --tab-bar-height: 4rem;
+  --tab-bar-gap: 0.75rem;
+  --tab-bar-footprint: calc(
+    var(--tab-bar-height) + var(--tab-bar-gap) + env(safe-area-inset-bottom)
+  );
+}

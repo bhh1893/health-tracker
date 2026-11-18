@@ -21,7 +21,7 @@ export function MealsWindow() {
   const sorted = sortMeals(meals.data ?? []);
 
   return (
-    <main className="flex flex-col gap-4 pb-24">
+    <main className="flex flex-1 flex-col gap-4">
       <h2 className="sr-only">Meals on {day}</h2>
       <DayPager />
       {meals.error && <ProblemAlert error={meals.error} />}
@@ -40,16 +40,16 @@ export function MealsWindow() {
         />
       ))}
 
-      <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <Button
-          className="w-full rounded-2xl bg-teal-700 p-4 text-lg font-semibold text-white"
-          onPress={() => {
-            setSheet({ saved: null, number: sorted.length + 1 });
-          }}
-        >
-          {isToday ? "Add Meal" : `Add Meal to ${formatDay(day)}`}
-        </Button>
-      </div>
+      {/* Sticky just above the bar, and last in the page, so when scrolled to the end
+          it rests below the last card instead of covering it. */}
+      <Button
+        className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto w-full rounded-2xl bg-teal-700 p-4 text-lg font-semibold text-white"
+        onPress={() => {
+          setSheet({ saved: null, number: sorted.length + 1 });
+        }}
+      >
+        {isToday ? "Add Meal" : `Add Meal to ${formatDay(day)}`}
+      </Button>
 
       {sheet && (
         <MealSheet
