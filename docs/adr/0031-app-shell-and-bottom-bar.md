@@ -6,6 +6,8 @@ status: accepted
 
 `web` moves from one Exercise | Meals window with Search and Dashboards icons in its header to a floating bottom bar with three tabs: **History** (Dashboards and Search), **Add** (the Exercise | Meals window, unchanged apart from losing the header icons) and **Profile**. Every URL that worked before still opens the same screen, because bookmarks, the home-screen shortcut and Search's Day links are a contract. Decided in [Bottom bar navigation and the History tab](https://github.com/bhh1893/health-tracker/issues/219), on the map [Health Tracker v1: bottom navigation and Profile](https://github.com/bhh1893/health-tracker/issues/222). It amends ADR 0008, ADR 0013 and ADR 0024.
 
+**Amended by ADR 0033:** History's layout (H2 with a search box linking to Search) is replaced by Recent Days with a Meals filter and a required Exercise pick; `/history/search` becomes a redirect.
+
 ## Shape
 
 - **Routes.** Add keeps `/exercise` and `/meals`; `/` still lands on `/exercise`. History is `/history` (the dashboard) and `/history/search`. Profile is `/profile` and its sub-pages.

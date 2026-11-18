@@ -10,6 +10,8 @@ Browsing the past has two jobs, and v1 gives each its own surface. The two loggi
 
 **Amended by ADR 0031:** Search moves to `/history/search` under the History tab (`/search` redirects); its Back link goes to `/history`, and `BackState` is removed.
 
+**Amended by ADR 0033:** the Search screen is removed; History's Meals filter and required Exercise pick replace it. `/history/search` and `/search` redirect to `/history`.
+
 ## Day pager (in the Exercise and Meals windows)
 
 - **Header:** `‹ Day ›`. ‹ steps back one Day, › steps forward and is disabled on Today. Tapping the date opens the phone's native date picker (`max` = today; no future Days). A banner, "Viewing a past Day, tap to jump to Today", shows whenever the viewed Day is not Today.

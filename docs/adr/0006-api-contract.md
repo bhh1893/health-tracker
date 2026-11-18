@@ -18,6 +18,8 @@ The v1 API is a JSON REST API under `/api/v1`, described by the generated OpenAP
 
 **Amended by ADR 0032:** the maximum `limit` on `GET /foods`, `/restaurants` and `/exercises` rises from 50 to 1000, so Profile's Catalog pages can load a whole Catalog.
 
+**Amended by ADR 0033:** new `GET /meal-days?from&to&q&cursor&limit`, a page of whole Days with their Meals, newest first, filtered by Food or Restaurant name.
+
 ## Shape
 
 - **Resources:**
