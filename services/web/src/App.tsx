@@ -2,6 +2,7 @@ import { Button } from "react-aria-components";
 import { Link, Navigate, Route, Routes } from "react-router";
 
 import { isSignupClosed, useMe } from "./auth/me";
+import { CATALOGS } from "./catalog/catalogs";
 import { PendingScreen } from "./auth/PendingScreen";
 import { SignupClosedScreen } from "./auth/SignupClosedScreen";
 import { ProblemAlert } from "./components/ProblemAlert";
@@ -9,6 +10,7 @@ import { ExerciseWindow } from "./exercise/ExerciseWindow";
 import { HistoryScreen } from "./history/HistoryScreen";
 import { SearchRedirect } from "./history/SearchRedirect";
 import { MealsWindow } from "./meals/MealsWindow";
+import { CatalogPage } from "./profile/CatalogPage";
 import { ProfileScreen } from "./profile/ProfileScreen";
 import { WindowLayout } from "./screens/WindowLayout";
 import { AppShell } from "./shell/AppShell";
@@ -98,6 +100,15 @@ export function App() {
         <Route path="/history" element={<HistoryScreen />} />
         {/* Profile */}
         <Route path="/profile" element={<ProfileScreen />} />
+        {CATALOGS.map((catalog) => (
+          <Route
+            key={catalog.key}
+            path={catalog.page}
+            // Keyed too, so moving between two Catalog pages never carries an
+            // open sheet from one to the other.
+            element={<CatalogPage key={catalog.key} catalog={catalog} />}
+          />
+        ))}
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode, type SyntheticEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
 import {
   Button,
   ComboBox,
@@ -10,16 +10,25 @@ import {
   type Key,
 } from "react-aria-components";
 
-import { ApiError } from "../api/client";
+import {
+  foodCatalog,
+  MAX_NAME_LENGTH,
+  type CatalogRef,
+} from "../catalog/catalogs";
+import { ItemActions } from "../catalog/ItemActions";
+import { NameClash } from "../catalog/NameClash";
+import { nameClashOf } from "../catalog/nameClash";
 import { BottomSheet } from "../components/BottomSheet";
-import { fieldClass, labelClass } from "../components/formStyles";
+import { NumberField, TextField } from "../components/Fields";
+import { fieldClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
+import { uuidv7 } from "../lib/uuidv7";
 import {
   checkFood,
   draftOf,
+  EMPTY_FOOD_DRAFT,
   fillFrom,
-  MAX_NAME_LENGTH,
   NUTRITION_FIELDS,
   type Food,
   type FoodDraft,
@@ -27,10 +36,14 @@ import {
   type NutritionField,
   type ReferenceFood,
 } from "./foodForm";
-import { useFood, usePatchFood, useReferenceFoods } from "./queries";
+import {
+  useFood,
+  usePatchFood,
+  usePutFood,
+  useReferenceFoods,
+} from "./queries";
 
 const DEBOUNCE_MS = 150;
-const NEAR_DUPLICATE = "urn:health-tracker:problem:near-duplicate";
 
 const NUTRITION_LABELS: Record<NutritionField, string> = {
   basis_g: "Basis (g)",
@@ -41,20 +54,50 @@ const NUTRITION_LABELS: Record<NutritionField, string> = {
 };
 
 interface FoodSheetProps {
-  foodId: string;
+  // null opens an empty sheet whose Save creates the Food (Profile's "+").
+  foodId: string | null;
   onClose: () => void;
   // The Food as the server saved it, so the caller can show a new name at once.
-  onSaved: (food: Food) => void;
+  onSaved?: (food: Food) => void;
+  // Profile's sheet (ADR 0032) adds Archive, Unarchive and Delete.
+  manage?: boolean | undefined;
+  // Opens a Food whose name clashes, in place of this one.
+  onOpen?: (food: CatalogRef) => void;
 }
 
 // ADR 0023's Food sheet: a Food's name, Nutrition and Piece Weight, saved as one
-// PATCH. It reads the Food first, because a Meal embeds only the Food's name.
-export function FoodSheet({ foodId, onClose, onSaved }: FoodSheetProps) {
+// write. An existing Food is read first, because a Meal embeds only its name.
+export function FoodSheet({ foodId, manage, ...form }: FoodSheetProps) {
+  if (foodId === null) {
+    // Nothing to archive or delete before the Food exists.
+    return (
+      <BottomSheet title="New Food" onClose={form.onClose}>
+        <FoodForm food={null} {...form} />
+      </BottomSheet>
+    );
+  }
+  return <SavedFoodSheet foodId={foodId} manage={manage} {...form} />;
+}
+
+function SavedFoodSheet({
+  foodId,
+  manage,
+  ...form
+}: FoodSheetProps & { foodId: string }) {
   const food = useFood(foodId);
   return (
-    <BottomSheet title={food.data?.name ?? "Food"} onClose={onClose}>
+    <BottomSheet title={food.data?.name ?? "Food"} onClose={form.onClose}>
       {food.data ? (
-        <FoodForm food={food.data} onClose={onClose} onSaved={onSaved} />
+        <>
+          <FoodForm food={food.data} {...form} />
+          {manage && (
+            <ItemActions
+              catalog={foodCatalog}
+              item={food.data}
+              onDone={form.onClose}
+            />
+          )}
+        </>
       ) : food.error ? (
         <ProblemAlert error={food.error} />
       ) : (
@@ -66,16 +109,16 @@ export function FoodSheet({ foodId, onClose, onSaved }: FoodSheetProps) {
   );
 }
 
-interface FoodFormProps {
-  food: Food;
-  onClose: () => void;
-  onSaved: (food: Food) => void;
-}
+type FoodFormProps = Omit<FoodSheetProps, "foodId" | "manage"> & {
+  food: Food | null;
+};
 
 // Mounted only once the Food has loaded, so the draft starts from the server's
 // values without an effect copying them in.
-function FoodForm({ food, onClose, onSaved }: FoodFormProps) {
-  const [draft, setDraft] = useState<FoodDraft>(() => draftOf(food));
+function FoodForm({ food, onClose, onSaved, onOpen }: FoodFormProps) {
+  const [draft, setDraft] = useState<FoodDraft>(() =>
+    food ? draftOf(food) : EMPTY_FOOD_DRAFT,
+  );
   const [filledFrom, setFilledFrom] = useState<string | null>(null);
   // Remounts the search after each pick, so it starts closed and empty, as the Meal
   // sheet's Add search does.
@@ -83,13 +126,16 @@ function FoodForm({ food, onClose, onSaved }: FoodFormProps) {
   // Errors show from the first Save on, not while the user is still typing the
   // first of five fields.
   const [triedSave, setTriedSave] = useState(false);
-  const patchFood = usePatchFood(food.id);
+  // Made once per sheet, so "Save anyway" after a clash writes the same new Food.
+  const [newId] = useState(uuidv7);
+  const id = food?.id ?? newId;
+  const patchFood = usePatchFood(id);
+  const putFood = usePutFood(id);
+  const write = food ? patchFood : putFood;
 
   const check = checkFood(draft);
   const errors: FoodErrors = triedSave && !check.ok ? check.errors : {};
-  const nearDuplicate =
-    patchFood.error instanceof ApiError &&
-    patchFood.error.problem.type === NEAR_DUPLICATE;
+  const clash = nameClashOf(write.error);
 
   function change(next: Partial<FoodDraft>) {
     setDraft((current) => ({ ...current, ...next }));
@@ -100,15 +146,18 @@ function FoodForm({ food, onClose, onSaved }: FoodFormProps) {
     if (!check.ok) {
       return;
     }
-    patchFood.mutate(
-      { ...check.body, allow_similar: allowSimilar },
-      {
-        onSuccess: (saved) => {
-          onSaved(saved);
-          onClose();
-        },
+    const body = { ...check.body, allow_similar: allowSimilar };
+    const done = {
+      onSuccess: (saved: Food) => {
+        onSaved?.(saved);
+        onClose();
       },
-    );
+    };
+    if (food) {
+      patchFood.mutate(body, done);
+    } else {
+      putFood.mutate(body, done);
+    }
   }
 
   function save(event: SyntheticEvent) {
@@ -125,6 +174,9 @@ function FoodForm({ food, onClose, onSaved }: FoodFormProps) {
         maxLength={MAX_NAME_LENGTH}
         onChange={(name) => {
           change({ name });
+          // A clash was about the name as sent. Once it changes, "Save anyway"
+          // would vouch for a name the server never checked.
+          write.reset();
         }}
       />
 
@@ -184,134 +236,36 @@ function FoodForm({ food, onClose, onSaved }: FoodFormProps) {
         }}
       />
 
-      {patchFood.error && <ProblemAlert error={patchFood.error} />}
+      {clash ? (
+        <NameClash
+          clash={clash}
+          name={draft.name.trim()}
+          pending={write.isPending}
+          onSaveAnyway={() => {
+            send(true);
+          }}
+          onOpen={onOpen}
+        />
+      ) : (
+        write.error && <ProblemAlert error={write.error} />
+      )}
 
-      <div className="sticky bottom-0 flex flex-col gap-3 bg-white py-2">
-        {nearDuplicate && (
-          <Button
-            className="rounded-xl border border-gray-300 p-3 text-base"
-            isDisabled={patchFood.isPending}
-            onPress={() => {
-              send(true);
-            }}
-          >
-            Save "{draft.name.trim()}" anyway
-          </Button>
-        )}
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            className="rounded-xl p-3 text-base text-gray-600"
-            onPress={onClose}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
-            isDisabled={patchFood.isPending}
-          >
-            Save
-          </Button>
-        </div>
+      <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white py-2">
+        <Button
+          className="rounded-xl p-3 text-base text-gray-600"
+          onPress={onClose}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+          isDisabled={write.isPending}
+        >
+          Save
+        </Button>
       </div>
     </form>
-  );
-}
-
-interface FieldProps {
-  label: string;
-  value: string;
-  error: string | undefined;
-  hint?: string;
-  onChange: (value: string) => void;
-}
-
-// One labelled input with its hint and error. Those two sit outside the <label>, or
-// a screen reader would read them as part of the field's name; aria-describedby reads
-// them after it instead.
-function Field({
-  label,
-  hint,
-  error,
-  input,
-}: Omit<FieldProps, "value" | "onChange"> & {
-  input: (a11y: {
-    id: string;
-    "aria-invalid": boolean;
-    "aria-describedby": string | undefined;
-  }) => ReactNode;
-}) {
-  const id = useId();
-  const hintId = `${id}-hint`;
-  const errorId = `${id}-error`;
-  const describedBy = [hint && hintId, error && errorId]
-    .filter(Boolean)
-    .join(" ");
-  return (
-    <div className={labelClass}>
-      <label htmlFor={id}>{label}</label>
-      {input({
-        id,
-        "aria-invalid": error !== undefined,
-        "aria-describedby": describedBy === "" ? undefined : describedBy,
-      })}
-      {hint && (
-        <span id={hintId} className="text-sm font-normal text-gray-500">
-          {hint}
-        </span>
-      )}
-      {error && (
-        <span id={errorId} className="text-sm font-normal text-red-800">
-          {error}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function TextField({
-  value,
-  maxLength,
-  onChange,
-  ...field
-}: FieldProps & { maxLength: number }) {
-  return (
-    <Field
-      {...field}
-      input={(a11y) => (
-        <input
-          {...a11y}
-          type="text"
-          maxLength={maxLength}
-          className={fieldClass}
-          value={value}
-          onChange={({ target }) => {
-            onChange(target.value);
-          }}
-        />
-      )}
-    />
-  );
-}
-
-function NumberField({ value, onChange, ...field }: FieldProps) {
-  return (
-    <Field
-      {...field}
-      input={(a11y) => (
-        <input
-          {...a11y}
-          type="number"
-          inputMode="decimal"
-          step="any"
-          className={fieldClass}
-          value={value}
-          onChange={({ target }) => {
-            onChange(target.value);
-          }}
-        />
-      )}
-    />
   );
 }
 

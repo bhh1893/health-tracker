@@ -678,3 +678,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`SearchField` (React Aria)**: a text field with `type="search"` whose inner `Button` is wired as a clear button and whose Escape key empties it, calling `onClear`.
 - **Translating redirect**: a redirect route that rewrites the old URL's query into the new screen's params instead of passing it through, used when the new screen reads the same param names differently (`/history/search?what=food&id=…` becomes `/history?q=<name>`).
 - **Canonical URL**: the one URL a screen writes for a given view, so a redirect, a reload and a tap all land on identical addresses; built here by reusing the screen's own writer (`toHistoryParams`).
+- **Log vs manage split**: the frequent job (logging a Meal) stays fast and never stops for upkeep; the rare job (fixing a Food's label, archiving, deleting) gets its own screens, here Profile's Catalog pages.
+- **Placeholder data (`keepPreviousData`)**: TanStack Query keeps showing the last answer while a query with a new key loads, so flipping a filter swaps the rows in place instead of flashing "Loading...".
+- **`setQueryData`**: writes a mutation's answer straight into the cache under a query key, so an open screen shows the saved value at once without asking the server again.
+- **Mutation reset (`mutation.reset()`)**: clears a finished mutation's error and data; done here when the name changes, so a clash about the old name stops showing.
+- **Client-made id**: the browser picks the new item's id (a UUIDv7) before the first request, so a retried or "Save anyway" PUT writes the same item instead of a second one.
