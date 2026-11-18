@@ -3,7 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { aMeal, banana, cafe, fakeMealApi, oats } from "../test-handlers";
+import {
+  aMeal,
+  banana,
+  cafe,
+  fakeMealApi,
+  oats,
+  RESTAURANT_DAY_KCAL,
+} from "../test-handlers";
 import { renderAt } from "../test-render";
 import { server } from "../test-server";
 import type { Meal } from "./meals";
@@ -72,6 +79,80 @@ describe("the Day feed", () => {
     expect(
       await screen.findByText("No Meals on this Day."),
     ).toBeInTheDocument();
+  });
+});
+
+describe("the Day total", () => {
+  const dayTotal = () => screen.findByRole("region", { name: "Day total" });
+
+  it("shows a complete Day's calories and macros, with no badge", async () => {
+    seedApi(
+      aMeal({
+        total: {
+          kcal: 2130,
+          protein_g: 120,
+          carbs_g: 250,
+          fat_g: 70,
+          incomplete: false,
+        },
+      }),
+    );
+    renderAt(PAST_URL, <MealsWindow />);
+
+    const total = await dayTotal();
+    expect(total).toHaveTextContent("2,130 kcal");
+    expect(total).toHaveTextContent("P 120 g · C 250 g · F 70 g");
+    expect(total).not.toHaveTextContent("Incomplete");
+    expect(total).not.toHaveTextContent("Restaurant Day");
+  });
+
+  it("badges an Incomplete Day and says the real total is higher", async () => {
+    // aMeal's Oats has no Nutrition yet.
+    seedApi(aMeal());
+    renderAt(PAST_URL, <MealsWindow />);
+
+    const total = await dayTotal();
+    expect(within(total).getByText("Incomplete")).toBeInTheDocument();
+    expect(total).toHaveTextContent("the real total is higher");
+  });
+
+  it("marks a Restaurant Day, with the flat value and no macros", async () => {
+    seedApi(
+      aMeal({ id: "a" }),
+      aMeal({ id: "b", kind: "restaurant", restaurant: cafe }),
+    );
+    renderAt(PAST_URL, <MealsWindow />);
+
+    const total = await dayTotal();
+    expect(within(total).getByText("Restaurant Day")).toBeInTheDocument();
+    expect(total).toHaveTextContent(
+      `${RESTAURANT_DAY_KCAL.toLocaleString("en-US")} kcal`,
+    );
+    expect(total).toHaveTextContent("Macros: no data");
+    // Not "0 g": unknown macros are not zero.
+    expect(total).not.toHaveTextContent("0 g");
+    expect(total).not.toHaveTextContent("Incomplete");
+  });
+
+  it("shows nothing for a Day with no Meals", async () => {
+    renderAt(PAST_URL, <MealsWindow />);
+
+    await screen.findByText("No Meals on this Day.");
+    expect(
+      screen.queryByRole("region", { name: "Day total" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("refetches after a Meal is logged", async () => {
+    renderAt(PAST_URL, <MealsWindow />);
+    await openNewMeal();
+    await searchAndAdd("Oats");
+    await userEvent.click(
+      within(sheet()).getByRole("button", { name: "Save" }),
+    );
+
+    // Only the server knows the total: it appears once GET /days answers again.
+    expect(await dayTotal()).toHaveTextContent("Incomplete");
   });
 });
 

@@ -650,3 +650,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`dvh` (dynamic viewport height)**: 1% of the screen height as it is right now, which changes as a phone's browser toolbar shows and hides; `100dvh` means "exactly one screen tall".
 - **`pointer-events: none`**: makes an element let taps and clicks pass through to whatever is under it, while still being drawn.
 - **CSS custom property (`--name`)**: a variable defined in CSS and read with `var(--name)`; one value that several rules share, so they cannot drift apart.
+- **Query key prefix matching (TanStack Query)**: `invalidateQueries({ queryKey: ["day-totals"] })` hits every cached query whose key starts with that array, so one call refreshes the Meals window's one-Day total, Search's ranges and Dashboards' windows together.
+- **Mutation testing**: deliberately breaking the code a test claims to cover (here, deleting an invalidation) and checking that the test fails; a test that still passes was not testing that line.
