@@ -7,6 +7,8 @@ import {
 
 import { api, unwrap } from "../api/client";
 import { exerciseCatalog } from "../catalog/catalogs";
+import { DASHBOARD_SESSIONS_KEY } from "../dashboards/queries";
+import { EXERCISE_DAYS_KEY } from "../history/queries";
 import { currentTimeZone, toRfc3339 } from "../lib/occurred";
 import type { CatalogRef, ExerciseEntry, ExerciseEntryPage } from "./sessions";
 
@@ -94,6 +96,9 @@ function refreshWhenIdle(queryClient: QueryClient, day: string) {
     void queryClient.invalidateQueries({ queryKey: dayKey(day) });
     // Logging a Set changes which Exercises are most recent (ADR 0008).
     void queryClient.invalidateQueries({ queryKey: EXERCISES_KEY });
+    // And what History shows for its Exercise: its Recent Days and charts.
+    void queryClient.invalidateQueries({ queryKey: [EXERCISE_DAYS_KEY] });
+    void queryClient.invalidateQueries({ queryKey: DASHBOARD_SESSIONS_KEY });
   }
 }
 

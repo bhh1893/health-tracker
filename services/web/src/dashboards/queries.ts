@@ -38,13 +38,16 @@ export async function fetchSessions(
   return sessions;
 }
 
+// Every Set write marks these stale: any Set can change a Session's top Set.
+export const DASHBOARD_SESSIONS_KEY = ["dashboards", "sessions"];
+
 export function useExerciseHistory(
   exerciseId: string,
   from: string | null,
   to: string,
 ) {
   return useQuery({
-    queryKey: ["dashboards", "sessions", exerciseId, from, to],
+    queryKey: [...DASHBOARD_SESSIONS_KEY, exerciseId, from, to],
     queryFn: () => fetchSessions(exerciseId, from, to),
   });
 }

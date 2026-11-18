@@ -203,7 +203,7 @@ describe("the History frame", () => {
     renderAt("/history?tab=exercise&dash=open", <HistoryScreen />);
 
     expect(
-      screen.getByText("Pick an Exercise to see its progress."),
+      screen.getByText("Pick an Exercise to see its Sessions."),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /^Dashboard/ }),
@@ -338,7 +338,7 @@ describe("the Exercise Dashboard", () => {
     });
     renderAt("/history?tab=exercise&range=90d&dash=open", <HistoryScreen />);
     expect(
-      screen.getByText("Pick an Exercise to see its progress."),
+      screen.getByText("Pick an Exercise to see its Sessions."),
     ).toBeInTheDocument();
 
     await userEvent.type(
@@ -385,8 +385,9 @@ describe("the Exercise Dashboard", () => {
     fakeDashboardApi({ sessions: [aSession(daysAgo(50), 135)] });
     renderAt(`/history?${benchUrl}&dash=open`, <HistoryScreen />);
 
+    // Recent Days below says so too.
     expect(
-      await screen.findByText("No Sessions in this range."),
+      await within(dashboardPanel()).findByText("No Sessions in this range."),
     ).toBeInTheDocument();
   });
 

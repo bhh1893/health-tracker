@@ -5,10 +5,9 @@ import { CatalogComboBox } from "../catalog/CatalogComboBox";
 import {
   foodCatalog,
   restaurantCatalog,
-  type Catalog,
   type CatalogItem,
 } from "../catalog/catalogs";
-import { useSuggestions } from "../catalog/queries";
+import { RecentChips } from "../catalog/RecentChips";
 import { BottomSheet } from "../components/BottomSheet";
 import { fieldClass, labelClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
@@ -30,7 +29,6 @@ import {
 } from "./meals";
 import { useDeleteMeal, usePutMeal } from "./queries";
 
-const RECENT_CHIPS = 6;
 const LAST_FOOD_MESSAGE =
   "A Meal keeps at least one Food. To remove it, delete the Meal.";
 
@@ -415,39 +413,5 @@ function RestaurantPart({ value, onChange }: RestaurantPartProps) {
         }}
       />
     </>
-  );
-}
-
-interface RecentChipsProps {
-  catalog: Catalog;
-  onPick: (item: CatalogItem) => void;
-}
-
-// The most recently used items, one tap each. An empty q is the API's "recent"
-// list (ADR 0008), and the same cache entry the search shows on focus.
-function RecentChips({ catalog, onPick }: RecentChipsProps) {
-  const recent = useSuggestions(catalog, "", false);
-  const items = (recent.data ?? []).slice(0, RECENT_CHIPS);
-  if (items.length === 0) {
-    return null;
-  }
-  return (
-    <div
-      role="group"
-      aria-label={`Recent ${catalog.label}s`}
-      className="flex gap-2 overflow-x-auto pb-1"
-    >
-      {items.map((item) => (
-        <Button
-          key={item.id}
-          className="shrink-0 rounded-full border border-gray-300 px-3 py-1 text-base whitespace-nowrap data-pressed:bg-gray-100"
-          onPress={() => {
-            onPick(item);
-          }}
-        >
-          {item.name}
-        </Button>
-      ))}
-    </div>
   );
 }

@@ -1,11 +1,13 @@
 import { useSearchParams } from "react-router";
 
 import { CatalogComboBox } from "../catalog/CatalogComboBox";
-import { exerciseCatalog } from "../catalog/catalogs";
+import { exerciseCatalog, type CatalogItem } from "../catalog/catalogs";
+import { RecentChips } from "../catalog/RecentChips";
 import { useToday } from "../lib/useToday";
 import { Segments } from "../search/Segments";
 import { DashboardSection } from "./DashboardSection";
-import { RecentDays } from "./RecentDays";
+import { ExerciseDays } from "./ExerciseDays";
+import { MealDays } from "./MealDays";
 import {
   parseHistory,
   rangeStart,
@@ -29,8 +31,8 @@ const RANGES = [
 ] as const satisfies readonly { id: RangeName; label: string }[];
 
 // ADR 0033's History frame: Meals | Exercise and the Range on one row, then the
-// Dashboard section, then Recent Days. Every choice lives in the URL, so this
-// screen holds no state of its own.
+// kind's search field, the Dashboard section, then Recent Days. Every choice
+// lives in the URL, so this screen holds no state of its own.
 export function HistoryScreen() {
   const [params, setParams] = useSearchParams();
   const today = useToday();
@@ -40,6 +42,10 @@ export function HistoryScreen() {
   // Replace, not push: the phone's Back should leave History, not undo each tap.
   function update(change: Partial<HistoryQuery>) {
     setParams(toHistoryParams({ ...query, ...change }), { replace: true });
+  }
+
+  function pickExercise(item: CatalogItem | null) {
+    update({ exercise: item && { id: item.id, name: item.name } });
   }
 
   const section = (exercise: HistoryQuery["exercise"]) => (
@@ -93,7 +99,7 @@ export function HistoryScreen() {
           {section(null)}
           {/* Keyed on the Range, so a new Range also starts with its newest Day
               open, like a first visit. */}
-          <RecentDays key={from ?? "all"} from={from} to={today} />
+          <MealDays key={from ?? "all"} from={from} to={today} />
         </>
       ) : (
         <>
@@ -102,17 +108,36 @@ export function HistoryScreen() {
           <CatalogComboBox
             catalog={exerciseCatalog}
             canCreate={false}
+            clearable
             value={query.exercise && { ...query.exercise, archived: false }}
-            onChange={(item) => {
-              update({ exercise: item && { id: item.id, name: item.name } });
-            }}
+            onChange={pickExercise}
           />
+          {/* The pick is required (ADR 0033): with no `id` in the URL, the
+              screen is this empty state and asks the API for no Sessions. */}
           {query.exercise === null ? (
-            <p className="text-gray-500">
-              Pick an Exercise to see its progress.
-            </p>
+            <>
+              <RecentChips
+                catalog={exerciseCatalog}
+                title="Recent"
+                includeArchived
+                onPick={pickExercise}
+              />
+              <p className="mt-6 text-center text-gray-600">
+                Pick an Exercise to see its Sessions.
+              </p>
+            </>
           ) : (
-            section(query.exercise)
+            <>
+              {section(query.exercise)}
+              {/* Keyed like Meals, and per Exercise too, so a new pick starts
+                  with its own newest Day open. */}
+              <ExerciseDays
+                key={`${query.exercise.id} ${from ?? "all"}`}
+                exerciseId={query.exercise.id}
+                from={from}
+                to={today}
+              />
+            </>
           )}
         </>
       )}
