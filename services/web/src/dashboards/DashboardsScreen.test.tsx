@@ -106,8 +106,8 @@ const tile = (label: string) => {
   return term.parentElement ?? term;
 };
 
-// The chart is an SVG drawn to a measured size, which jsdom does not have. The
-// table under it holds the same points, so that is what these tests read.
+// The table under the chart holds the same points as its SVG, and reads as text, so
+// that is what these tests read. TrendChart.test.tsx checks the marks themselves.
 async function tableRows(title: string) {
   await userEvent.click(
     await screen.findByRole("button", { name: `${title} as a table` }),
@@ -147,7 +147,7 @@ describe("the Meals dashboard", () => {
     expect(request?.searchParams.get("to")).toBe(today);
   });
 
-  it("sets a Restaurant Day apart at the flat value, and marks an Incomplete Day", async () => {
+  it("charts a Restaurant Day at the flat value, and marks an Incomplete Day", async () => {
     fakeDashboardApi({
       totals: [
         aTotal(daysAgo(1), {
@@ -177,10 +177,11 @@ describe("the Meals dashboard", () => {
     ]);
     expect(tile("Restaurant Days")).toHaveTextContent("1");
     expect(tile("Incomplete Days")).toHaveTextContent("1");
-    // The legend names both kinds of mark, so neither depends on its color.
+    // The legend names the ring. A Restaurant Day's orange is explained by the
+    // Ate out pills around the chart, not by a legend (ADR 0033).
     const legend = screen.getAllByRole("list")[0];
-    expect(legend).toHaveTextContent("Restaurant Day");
     expect(legend).toHaveTextContent("Incomplete Day");
+    expect(legend).not.toHaveTextContent("Restaurant Day");
   });
 
   it("asks for the range the chip names, and all of history without a start", async () => {

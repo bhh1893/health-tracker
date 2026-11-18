@@ -12,7 +12,7 @@ Proposed, not accepted: it was written during the build, with the owner away, an
 
 **Amended by ADR 0032:** the Restaurant Day calories field moves from the Meals tab to Profile's Settings.
 
-**Amended by ADR 0033:** the dashboard moves into a collapsed Dashboard section above Recent Days, opened on demand; History's default tab becomes Meals.
+**Amended by ADR 0033:** the dashboard moves into a collapsed Dashboard section above Recent Days, opened on demand; History's default tab becomes Meals. A Restaurant Day becomes an orange point on the calories line, with no legend, instead of a diamond off it.
 
 ## Shape
 
