@@ -9,8 +9,8 @@ import type { ExerciseSession } from "../search/days";
 import { aMeal, bench } from "../test-handlers";
 import { renderAt } from "../test-render";
 import { server } from "../test-server";
-import DashboardsScreen from "./DashboardsScreen";
-import { fetchSessions } from "./queries";
+import { fetchSessions } from "../dashboards/queries";
+import { HistoryScreen } from "./HistoryScreen";
 
 const today = toDay(new Date());
 const daysAgo = (n: number) => addDays(today, -n);
@@ -100,6 +100,7 @@ function fakeDashboardApi({
 }
 
 const url = () => screen.getByLabelText("url");
+const range = () => screen.getByRole("combobox", { name: "Range" });
 const tile = (label: string) => {
   const term = screen.getByText(label, { selector: "dt" });
   // The tile is the <div> holding the label and its value.
@@ -125,7 +126,85 @@ async function tableRows(title: string) {
 
 const benchUrl = `id=${bench.id}&name=Bench+Press`;
 
-describe("the Meals dashboard", () => {
+const dashboard = () => screen.getByRole("button", { name: /^Dashboard/ });
+
+describe("the History frame", () => {
+  it("opens on Meals with the Dashboard closed, its average in the row", async () => {
+    fakeDashboardApi({
+      totals: [aTotal(daysAgo(1), { kcal: 2400 }), aTotal(daysAgo(2))],
+    });
+    renderAt("/history", <HistoryScreen />);
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "History" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Meals" })).toBeChecked();
+    expect(range()).toHaveValue("30d");
+    expect(dashboard()).toHaveAttribute("aria-expanded", "false");
+    await waitFor(() => {
+      expect(dashboard()).toHaveAccessibleName("Dashboard, Avg 2,200 kcal");
+    });
+    expect(
+      screen.queryByRole("button", { name: "Calories per Day as a table" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens Exercise for a link with an Exercise and no tab, naming it in the row", () => {
+    fakeDashboardApi({});
+    renderAt(`/history?${benchUrl}`, <HistoryScreen />);
+
+    expect(screen.getByRole("radio", { name: "Exercise" })).toBeChecked();
+    expect(screen.getByRole("combobox", { name: "Exercise" })).toHaveValue(
+      "Bench Press",
+    );
+    expect(dashboard()).toHaveAccessibleName("Dashboard, Bench Press");
+  });
+
+  it("writes dash=open on opening, and drops it on closing", async () => {
+    fakeDashboardApi({ totals: [aTotal(daysAgo(1))] });
+    renderAt("/history", <HistoryScreen />);
+
+    await userEvent.click(dashboard());
+
+    expect(url()).toHaveTextContent(/^\/history\?dash=open$/);
+    expect(dashboard()).toHaveAttribute("aria-expanded", "true");
+    expect(
+      await screen.findByRole("button", {
+        name: "Calories per Day as a table",
+      }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(dashboard());
+
+    expect(url()).toHaveTextContent(/^\/history$/);
+  });
+
+  it("keeps the Dashboard open when switching kinds", async () => {
+    fakeDashboardApi({ sessions: [aSession(daysAgo(1), 135)] });
+    renderAt(`/history?tab=meals&${benchUrl}&dash=open`, <HistoryScreen />);
+
+    await userEvent.click(screen.getByRole("radio", { name: "Exercise" }));
+
+    expect(url()).toHaveTextContent(`/history?${benchUrl}&dash=open`);
+    expect(
+      await screen.findByRole("button", { name: "Top Set weight as a table" }),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the Dashboard on Exercise until one is picked", () => {
+    fakeDashboardApi({});
+    renderAt("/history?tab=exercise&dash=open", <HistoryScreen />);
+
+    expect(
+      screen.getByText("Pick an Exercise to see its progress."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^Dashboard/ }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("the Meals Dashboard", () => {
   it("charts calories per Day over the last 30 days", async () => {
     const api = fakeDashboardApi({
       totals: [
@@ -134,7 +213,7 @@ describe("the Meals dashboard", () => {
         aTotal(daysAgo(40)),
       ],
     });
-    renderAt("/history?tab=meals", <DashboardsScreen />);
+    renderAt("/history?dash=open", <HistoryScreen />);
 
     expect(await tableRows("Calories per Day")).toEqual([
       [formatDay(daysAgo(1)), "2,400 kcal", "P 150 g · C 200 g · F 60 g"],
@@ -161,7 +240,7 @@ describe("the Meals dashboard", () => {
         aTotal(daysAgo(3), { kcal: 2100 }),
       ],
     });
-    renderAt("/history?tab=meals", <DashboardsScreen />);
+    renderAt("/history?dash=open", <HistoryScreen />);
 
     const rows = await tableRows("Calories per Day");
 
@@ -186,18 +265,18 @@ describe("the Meals dashboard", () => {
 
   it("asks for the range the chip names, and all of history without a start", async () => {
     const api = fakeDashboardApi({ totals: [aTotal(daysAgo(400))] });
-    renderAt("/history?tab=meals", <DashboardsScreen />);
+    renderAt("/history?dash=open", <HistoryScreen />);
     await screen.findByText("No Meals in this range.");
 
-    await userEvent.click(screen.getByRole("radio", { name: "90 days" }));
+    await userEvent.selectOptions(range(), "90 days");
     await waitFor(() => {
       expect(api.calls("/days").at(-1)?.searchParams.get("from")).toBe(
         daysAgo(89),
       );
     });
-    expect(url()).toHaveTextContent("/history?tab=meals&range=90d");
+    expect(url()).toHaveTextContent("/history?range=90d&dash=open");
 
-    await userEvent.click(screen.getByRole("radio", { name: "All" }));
+    await userEvent.selectOptions(range(), "All");
 
     const [row] = await tableRows("Calories per Day");
     // An older year is written out, or two Novembers would look the same.
@@ -218,7 +297,7 @@ describe("the Meals dashboard", () => {
     const api = fakeDashboardApi({
       totals: [aTotal(daysAgo(1), { kcal: 5000, restaurant_day: true })],
     });
-    renderAt("/history?tab=meals", <DashboardsScreen />);
+    renderAt("/history?dash=open", <HistoryScreen />);
     const field = await screen.findByRole("textbox", {
       name: "Restaurant Day calories",
     });
@@ -237,7 +316,7 @@ describe("the Meals dashboard", () => {
 
   it("says when nothing was logged", async () => {
     fakeDashboardApi({});
-    renderAt("/history?tab=meals", <DashboardsScreen />);
+    renderAt("/history?dash=open", <HistoryScreen />);
 
     expect(
       await screen.findByText("No Meals in this range."),
@@ -245,12 +324,12 @@ describe("the Meals dashboard", () => {
   });
 });
 
-describe("the Exercise dashboard", () => {
+describe("the Exercise Dashboard", () => {
   it("asks for an Exercise first, then charts its top Set and volume", async () => {
     const api = fakeDashboardApi({
       sessions: [aSession(daysAgo(2), 145), aSession(daysAgo(9), 135)],
     });
-    renderAt("/history?range=90d", <DashboardsScreen />);
+    renderAt("/history?tab=exercise&range=90d&dash=open", <HistoryScreen />);
     expect(
       screen.getByText("Pick an Exercise to see its progress."),
     ).toBeInTheDocument();
@@ -274,7 +353,7 @@ describe("the Exercise dashboard", () => {
     expect(tile("Sessions")).toHaveTextContent("2");
     expect(tile("Best top Set")).toHaveTextContent("145 lb × 5");
     expect(tile("Change")).toHaveTextContent("+10 lb");
-    expect(url()).toHaveTextContent(`/history?range=90d&${benchUrl}`);
+    expect(url()).toHaveTextContent(`/history?range=90d&${benchUrl}&dash=open`);
     const request = api.calls("/sessions").at(-1);
     expect(request?.searchParams.get("from")).toBe(daysAgo(89));
     expect(request?.searchParams.get("to")).toBe(today);
@@ -284,7 +363,7 @@ describe("the Exercise dashboard", () => {
     fakeDashboardApi({
       sessions: [aSession(daysAgo(1), null), aSession(daysAgo(5), null)],
     });
-    renderAt(`/history?${benchUrl}`, <DashboardsScreen />);
+    renderAt(`/history?${benchUrl}&dash=open`, <HistoryScreen />);
 
     expect(await tableRows("Top Set reps")).toEqual([
       [formatDay(daysAgo(1)), "5 reps", "BW × 5, 2 Sets"],
@@ -297,7 +376,7 @@ describe("the Exercise dashboard", () => {
 
   it("says when the range has no Sessions", async () => {
     fakeDashboardApi({ sessions: [aSession(daysAgo(50), 135)] });
-    renderAt(`/history?${benchUrl}`, <DashboardsScreen />);
+    renderAt(`/history?${benchUrl}&dash=open`, <HistoryScreen />);
 
     expect(
       await screen.findByText("No Sessions in this range."),
@@ -306,10 +385,12 @@ describe("the Exercise dashboard", () => {
 
   it("keeps the Exercise and range when switching tabs", async () => {
     fakeDashboardApi({ sessions: [aSession(daysAgo(1), 135)] });
-    renderAt(`/history?range=60d&${benchUrl}`, <DashboardsScreen />);
+    renderAt(`/history?range=60d&${benchUrl}&dash=open`, <HistoryScreen />);
 
     await userEvent.click(screen.getByRole("radio", { name: "Meals" }));
-    expect(url()).toHaveTextContent(`/history?tab=meals&range=60d&${benchUrl}`);
+    expect(url()).toHaveTextContent(
+      `/history?tab=meals&range=60d&${benchUrl}&dash=open`,
+    );
     await userEvent.click(screen.getByRole("radio", { name: "Exercise" }));
 
     expect(screen.getByRole("combobox", { name: "Exercise" })).toHaveValue(
@@ -327,7 +408,7 @@ describe("the Exercise dashboard", () => {
         HttpResponse.json({ title: "Not Found", status: 404 }, { status: 404 }),
       ),
     );
-    renderAt(`/history?${benchUrl}`, <DashboardsScreen />);
+    renderAt(`/history?${benchUrl}&dash=open`, <HistoryScreen />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Not Found");
   });

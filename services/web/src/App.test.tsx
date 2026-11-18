@@ -231,14 +231,13 @@ describe("the shell", () => {
     );
   });
 
-  it("opens History from the bar, loading the dashboard on first visit", async () => {
+  it("opens History from the bar", async () => {
     renderAt("/exercise");
 
     await userEvent.click(await findTab("History"));
 
-    // The screen is its own chunk, loaded on this first visit (ADR 0024).
     expect(
-      await screen.findByRole("heading", { name: "Dashboards" }),
+      await screen.findByRole("heading", { level: 1, name: "History" }),
     ).toBeInTheDocument();
     expect(tab("History")).toHaveAttribute("aria-current", "page");
     expect(tab("Add")).not.toHaveAttribute("aria-current");
@@ -270,7 +269,7 @@ describe("the shell", () => {
     await screen.findByRole("heading", { name: "Meals on 2026-11-02" });
 
     await userEvent.click(tab("History"));
-    await screen.findByRole("heading", { name: "Dashboards" });
+    await screen.findByRole("heading", { level: 1, name: "History" });
     await userEvent.click(tab("Add"));
 
     expect(
@@ -285,6 +284,24 @@ describe("the shell", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("url")).toHaveTextContent(/^\/exercise$/);
+  });
+
+  it("returns History with its Dashboard still open", async () => {
+    server.use(http.get("*/api/v1/days", () => HttpResponse.json([])));
+    renderAt("/history");
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^Dashboard/ }),
+    );
+    await userEvent.click(tab("Add"));
+    await userEvent.click(await findTab("History"));
+
+    expect(screen.getByLabelText("url")).toHaveTextContent(
+      /^\/history\?dash=open$/,
+    );
+    expect(
+      await screen.findByRole("button", { name: /^Dashboard/ }),
+    ).toHaveAttribute("aria-expanded", "true");
   });
 
   it("shows Problem Details when the API refuses a call", async () => {

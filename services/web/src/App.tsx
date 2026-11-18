@@ -1,4 +1,3 @@
-import { lazy, Suspense } from "react";
 import { Button } from "react-aria-components";
 import { Link, Navigate, Route, Routes } from "react-router";
 
@@ -7,16 +6,13 @@ import { PendingScreen } from "./auth/PendingScreen";
 import { SignupClosedScreen } from "./auth/SignupClosedScreen";
 import { ProblemAlert } from "./components/ProblemAlert";
 import { ExerciseWindow } from "./exercise/ExerciseWindow";
+import { HistoryScreen } from "./history/HistoryScreen";
 import { MealsWindow } from "./meals/MealsWindow";
 import { ProfileScreen } from "./profile/ProfileScreen";
 import { SearchScreen } from "./search/SearchScreen";
 import { WindowLayout } from "./screens/WindowLayout";
 import { AppShell } from "./shell/AppShell";
 import { RedirectKeepingQuery } from "./shell/RedirectKeepingQuery";
-
-// Loaded on first visit, not with the app: the chart library is larger than the rest
-// of the bundle, and the daily logging screens never need it (ADR 0024).
-const DashboardsScreen = lazy(() => import("./dashboards/DashboardsScreen"));
 
 function NotFound() {
   return (
@@ -98,15 +94,9 @@ export function App() {
           <Route path="/meals" element={<MealsWindow />} />
         </Route>
         {/* History */}
-        <Route
-          path="/history"
-          element={
-            // Inside the shell, so the bar stays while the chart chunk loads.
-            <Suspense fallback={<Loading />}>
-              <DashboardsScreen />
-            </Suspense>
-          }
-        />
+        {/* The chart library loads only when its Dashboard section opens
+            (ADR 0033), so the screen itself ships with the app. */}
+        <Route path="/history" element={<HistoryScreen />} />
         <Route path="/history/search" element={<SearchScreen />} />
         {/* Profile */}
         <Route path="/profile" element={<ProfileScreen />} />
