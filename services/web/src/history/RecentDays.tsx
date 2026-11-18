@@ -23,6 +23,8 @@ interface RecentDaysProps<T> {
   pages: UseInfiniteQueryResult<InfiniteData<DayPage<T>>>;
   // Said when the Range has no Day, e.g. "No Meals in this range."
   empty: string;
+  // A line under the heading about the Days listed, e.g. how many match a filter.
+  summary?: string | undefined;
   // One row per Day, usually a <DayRow>. The newest row starts open.
   renderDay: (item: T, defaultExpanded: boolean) => ReactNode;
 }
@@ -31,7 +33,12 @@ interface RecentDaysProps<T> {
 // one row each, loaded a page at a time as the list nears its end. The kind
 // supplies the pages and how a Day looks; this owns the paging, the status and
 // the retry, so both kinds load, announce and fail the same way.
-export function RecentDays<T>({ pages, empty, renderDay }: RecentDaysProps<T>) {
+export function RecentDays<T>({
+  pages,
+  empty,
+  summary,
+  renderDay,
+}: RecentDaysProps<T>) {
   const days = pages.data?.pages.flatMap((page) => page.items) ?? [];
   const { error, hasNextPage, isFetchingNextPage } = pages;
 
@@ -46,6 +53,9 @@ export function RecentDays<T>({ pages, empty, renderDay }: RecentDaysProps<T>) {
       >
         Recent Days
       </h2>
+      {summary !== undefined && (
+        <p className="px-3 pb-2 text-sm text-gray-600">{summary}</p>
+      )}
       {/* Which rows are open is not kept in the URL (ADR 0033): opening a Day
           is a quick look, not a setting. */}
       {days.map((day, index) => renderDay(day, index === 0))}

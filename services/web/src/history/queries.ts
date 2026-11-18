@@ -28,14 +28,26 @@ export const DAYS_PER_PAGE = 20;
 // `from` means all of history. pageParam is the cursor (ADR 0006): null for the
 // first page, then each page's opaque next_cursor; a null next_cursor ends the
 // list. A new range is a new key, so it starts over from the first page.
-export function useMealDays(from: string | null, to: string) {
+//
+// `q` keeps only the Days with a Food or Restaurant whose name contains it. The
+// server filters, not the browser: with paging, the browser only ever holds the
+// pages loaded so far and would miss older matches (ADR 0033). Each `q` is its own
+// key, so it is cached on its own and starts from the first page too.
+export function useMealDays(from: string | null, to: string, q: string) {
   return useInfiniteQuery({
-    queryKey: [MEAL_DAYS_KEY, from, to],
+    queryKey: [MEAL_DAYS_KEY, from, to, q],
     queryFn: ({ pageParam }) =>
       unwrap(
         api.GET("/api/v1/meal-days", {
           params: {
-            query: { from, to, cursor: pageParam, limit: DAYS_PER_PAGE },
+            query: {
+              from,
+              to,
+              // Left out when empty, so no filter is no `q` at all.
+              ...(q === "" ? {} : { q }),
+              cursor: pageParam,
+              limit: DAYS_PER_PAGE,
+            },
           },
         }),
       ),

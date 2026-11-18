@@ -1,14 +1,35 @@
 import { formatAmount } from "../meals/meals";
+import { Highlight } from "./Highlight";
 import { useMealDays, type MealDay } from "./queries";
 import { DayRow, RecentDays } from "./RecentDays";
 
-// Recent Days on Meals: every Day in the Range with a Meal (ADR 0033).
-export function MealDays({ from, to }: { from: string | null; to: string }) {
-  const pages = useMealDays(from, to);
+interface MealDaysProps {
+  from: string | null;
+  to: string;
+  // The filter, trimmed. Empty lists every Day.
+  q: string;
+}
+
+// Recent Days on Meals: every Day in the Range with a Meal, or with `q`, only the
+// Days with a Food or Restaurant whose name contains it (ADR 0033). A kept Day
+// shows all of its Meals, with each match marked.
+export function MealDays({ from, to, q }: MealDaysProps) {
+  const pages = useMealDays(from, to, q);
+  const loaded =
+    pages.data?.pages.reduce((sum, page) => sum + page.items.length, 0) ?? 0;
   return (
     <RecentDays
       pages={pages}
-      empty="No Meals in this range."
+      empty={
+        q === ""
+          ? "No Meals in this range."
+          : `No Days with a Food or Restaurant matching "${q}".`
+      }
+      summary={
+        q === "" || loaded === 0
+          ? undefined
+          : matchCount(loaded, pages.hasNextPage, q)
+      }
       renderDay={(day, defaultExpanded) => (
         <DayRow
           key={day.day}
@@ -17,7 +38,7 @@ export function MealDays({ from, to }: { from: string | null; to: string }) {
           // A Restaurant Day is any Day with a Restaurant Meal (ADR 0023).
           pill={isRestaurantDay(day) ? "Ate out" : undefined}
         >
-          <MealList day={day} />
+          <MealList day={day} q={q} />
         </DayRow>
       )}
     />
@@ -27,8 +48,17 @@ export function MealDays({ from, to }: { from: string | null; to: string }) {
 const isRestaurantDay = (day: MealDay) =>
   day.meals.some((meal) => meal.kind === "restaurant");
 
+// e.g. `5 Days with a Food or Restaurant matching "chicken"`. It counts the Days
+// loaded so far, since the total is unknown until the last page: "20+ Days" while
+// more pages remain.
+function matchCount(loaded: number, more: boolean, q: string) {
+  const days = loaded === 1 && !more ? "Day" : "Days";
+  return `${String(loaded)}${more ? "+" : ""} ${days} with a Food or Restaurant matching "${q}"`;
+}
+
 // Each Food with its amount, or on a Restaurant Day, its Restaurants in orange.
-function MealList({ day }: { day: MealDay }) {
+// Only names are marked: they are what the filter matches.
+function MealList({ day, q }: { day: MealDay; q: string }) {
   return (
     <ul className="px-3 pb-2">
       {day.meals.flatMap((meal) =>
@@ -38,7 +68,9 @@ function MealList({ day }: { day: MealDay }) {
             className="flex items-center gap-2 py-1.5 text-orange-800"
           >
             <ForkKnifeIcon />
-            {meal.restaurant.name}
+            <span>
+              <Highlight text={meal.restaurant.name} q={q} />
+            </span>
           </li>
         ) : (
           meal.food_entries.map((entry, index) => (
@@ -48,7 +80,9 @@ function MealList({ day }: { day: MealDay }) {
               key={`${meal.id}-${String(index)}`}
               className="flex justify-between gap-3 py-1.5"
             >
-              <span>{entry.food.name}</span>
+              <span>
+                <Highlight text={entry.food.name} q={q} />
+              </span>
               <span className="whitespace-nowrap text-gray-600">
                 {formatAmount(entry)}
               </span>
