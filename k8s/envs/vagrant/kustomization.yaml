@@ -14,4 +14,4 @@ images:
   - name: ghcr.io/bhh1893/health-tracker-api
     newTag: "bad97c47621f7f6888f12221f5b5272887b31ed3"
   - name: ghcr.io/bhh1893/health-tracker-web
-    newTag: "595c1b3cf63943d9fa8faeb26e4fc37882778706"
+    newTag: "8b46b374da69fe99c7dd6cb28742db3e63f5bef2"
