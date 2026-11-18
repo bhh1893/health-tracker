@@ -80,7 +80,7 @@ describe("a Pending User", () => {
   });
 
   it("shows no account line when the email is unknown", async () => {
-    server.use(signedInAs("pending", null));
+    server.use(signedInAs("pending", { email: null }));
     renderAt("/exercise");
     await pendingHeading();
 
@@ -244,7 +244,7 @@ describe("the shell", () => {
     expect(tab("Add")).not.toHaveAttribute("aria-current");
   });
 
-  it("opens the Profile placeholder from the bar", async () => {
+  it("opens Profile from the bar", async () => {
     renderAt("/exercise");
 
     await userEvent.click(await findTab("Profile"));
