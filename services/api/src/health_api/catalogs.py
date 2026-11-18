@@ -6,6 +6,7 @@ a fix to the duplicate logic cannot reach only two. `Catalog` holds what differs
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from datetime import date
 from typing import Annotated, Any, Literal, Self
 from uuid import UUID
 
@@ -103,7 +104,18 @@ class Nutrition(BaseModel):
         return self
 
 
-class Food(CatalogRef):
+class CatalogItem(CatalogRef):
+    """A Catalog item as its own endpoints return it: the reference plus what its use says.
+
+    Entries embed the plain CatalogRef: a Meal has no use for when its Food was last eaten.
+    """
+
+    # The Day of the newest Entry that uses the item, or null if none does. Null is what lets
+    # Profile offer Delete only where the API would allow it (ADR 0032).
+    last_used_day: date | None = None
+
+
+class Food(CatalogItem):
     last_unit: Literal["g", "count"] | None = None
     last_quantity: float | None = None
     nutrition: Nutrition | None = None
@@ -165,7 +177,7 @@ class Catalog:
     table: str
     item: str
     label: str
-    model: type[CatalogRef]
+    model: type[CatalogItem]
     # Registers PUT and PATCH, whose bodies differ: a Food has more to write than a name.
     add_writes: Callable[[APIRouter, Catalog], None]
     # One row: the item's newest use. `c` is the Catalog row. Sorted by (day, occurred_at),
@@ -173,7 +185,7 @@ class Catalog:
     last_use: str
     # What the table holds beyond the shared columns, and how a row becomes the model.
     columns: tuple[str, ...] = ()
-    from_row: Callable[[Mapping[Any, Any]], CatalogRef] = CatalogRef.model_validate
+    from_row: Callable[[Mapping[Any, Any]], CatalogItem] = CatalogItem.model_validate
 
 
 def select_items(
@@ -184,13 +196,14 @@ def select_items(
     order: str = "c.id",
     limit: int = 1,
     **params: Any,
-) -> list[CatalogRef]:
+) -> list[CatalogItem]:
     """The one read path, so every response carries the same derived fields."""
     extra = "".join(f", c.{column}" for column in catalog.columns)
     rows = session.execute(
         text(
             f"""
-            SELECT c.id, c.name, c.archived_at IS NOT NULL AS archived, u.*{extra}
+            SELECT c.id, c.name, c.archived_at IS NOT NULL AS archived, u.day AS last_used_day,
+                u.*{extra}
             FROM {catalog.table} c
             LEFT JOIN LATERAL ({catalog.last_use}) u ON true
             WHERE c.user_id = :user AND {where}
@@ -203,7 +216,7 @@ def select_items(
     return [catalog.from_row(dict(row)) for row in rows]
 
 
-def load_item(session: Session, catalog: Catalog, user: UUID, item_id: UUID) -> CatalogRef:
+def load_item(session: Session, catalog: Catalog, user: UUID, item_id: UUID) -> CatalogItem:
     items = select_items(session, catalog, user, "c.id = :id", id=item_id)
     if not items:
         raise HTTPException(404, f"{catalog.label} not found.")
@@ -241,7 +254,7 @@ def name_search(session: Session, query: str, name: str) -> tuple[str, str, dict
 
 def suggest_items(
     session: Session, catalog: Catalog, user: UUID, q: str, limit: int, include_archived: bool
-) -> list[CatalogRef]:
+) -> list[CatalogItem]:
     visible = "true" if include_archived else "c.archived_at IS NULL"
     query = normalize_name(q)
     if not query:
@@ -367,7 +380,7 @@ def put_item(
     body: PutItem,
     response: Response,
     values: Mapping[str, Any],
-) -> CatalogRef:
+) -> CatalogItem:
     """PUT for any Catalog. `values` are the columns to set besides the name."""
     current = session.execute(
         text(
@@ -423,7 +436,7 @@ def patch_item(
     item_id: UUID,
     body: PatchItem,
     values: Mapping[str, Any],
-) -> CatalogRef:
+) -> CatalogItem:
     """PATCH for any Catalog. `values` are the columns to set besides name and archived."""
     current = load_item(session, catalog, user, item_id)
     if body.name is not None and body.name != current.name:
@@ -485,7 +498,7 @@ def add_name_writes(router: APIRouter, catalog: Catalog) -> None:
     )
     def put(
         item_id: UUID7, body: PutItem, response: Response, user: CurrentUser, session: DbSession
-    ) -> CatalogRef:
+    ) -> CatalogItem:
         return put_item(session, catalog, user, item_id, body, response, {})
 
     @router.patch(
@@ -495,7 +508,7 @@ def add_name_writes(router: APIRouter, catalog: Catalog) -> None:
         description=f"Rename, archive or unarchive a {label}.",
         responses=problems(404, 409),
     )
-    def patch(item_id: UUID, body: PatchItem, user: CurrentUser, session: DbSession) -> CatalogRef:
+    def patch(item_id: UUID, body: PatchItem, user: CurrentUser, session: DbSession) -> CatalogItem:
         return patch_item(session, catalog, user, item_id, body, {})
 
 
@@ -511,7 +524,7 @@ def add_food_writes(router: APIRouter, catalog: Catalog) -> None:
     )
     def put(
         item_id: UUID7, body: PutFood, response: Response, user: CurrentUser, session: DbSession
-    ) -> CatalogRef:
+    ) -> CatalogItem:
         values = food_values(body, only_sent=False)
         return put_item(session, catalog, user, item_id, body, response, values)
 
@@ -522,7 +535,7 @@ def add_food_writes(router: APIRouter, catalog: Catalog) -> None:
         description="Rename, archive or unarchive a Food, or set its Nutrition and Piece Weight.",
         responses=problems(404, 409),
     )
-    def patch(item_id: UUID, body: PatchFood, user: CurrentUser, session: DbSession) -> CatalogRef:
+    def patch(item_id: UUID, body: PatchFood, user: CurrentUser, session: DbSession) -> CatalogItem:
         values = food_values(body, only_sent=True)
         return patch_item(session, catalog, user, item_id, body, values)
 
@@ -545,7 +558,7 @@ def catalog_router(catalog: Catalog) -> APIRouter:
         q: Annotated[str, Query(max_length=MAX_NAME_LENGTH, pattern=NO_NUL)] = "",
         limit: Annotated[int, Query(ge=1, le=MAX_LIST_LIMIT)] = 10,
         include_archived: bool = False,
-    ) -> list[CatalogRef]:
+    ) -> list[CatalogItem]:
         return suggest_items(session, catalog, user, q, limit, include_archived)
 
     @router.get(
@@ -555,7 +568,7 @@ def catalog_router(catalog: Catalog) -> APIRouter:
         description=f"Read one {label}.",
         responses=problems(404),
     )
-    def get_item(item_id: UUID, user: CurrentUser, session: DbSession) -> CatalogRef:
+    def get_item(item_id: UUID, user: CurrentUser, session: DbSession) -> CatalogItem:
         return load_item(session, catalog, user, item_id)
 
     catalog.add_writes(router, catalog)
@@ -609,7 +622,7 @@ CATALOGS = (
         table="exercises",
         item="exercise",
         label="Exercise",
-        model=CatalogRef,
+        model=CatalogItem,
         add_writes=add_name_writes,
         last_use="""
             SELECT e.day, e.occurred_at
@@ -623,7 +636,7 @@ CATALOGS = (
         table="restaurants",
         item="restaurant",
         label="Restaurant",
-        model=CatalogRef,
+        model=CatalogItem,
         add_writes=add_name_writes,
         last_use="""
             SELECT m.day, m.occurred_at

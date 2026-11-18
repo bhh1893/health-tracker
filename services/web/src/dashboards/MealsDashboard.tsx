@@ -13,9 +13,9 @@ interface MealsDashboardProps {
   to: string;
 }
 
-// Calories per Day (ADR 0024), from GET /days. A Restaurant Day sits at the User's
-// flat value as its own marker, off the line, so it reads as breaking the trend
-// rather than as a real measurement. An Incomplete Day is a ring: it under-reports.
+// Calories per Day (ADR 0024), from GET /days. A Restaurant Day is an orange point
+// on the line at the User's flat value (ADR 0033). An Incomplete Day is a ring: it
+// under-reports.
 export function MealsDashboard({ from, to }: MealsDashboardProps) {
   const totals = useDayTotals(from, to);
   const me = useMe();
@@ -88,13 +88,13 @@ function Charts({
         to={to}
         fromZero
         formatValue={formatKcal}
-        flatLabel="Restaurant Day"
+        accentLabel="Restaurant Day"
         hollowLabel="Incomplete Day"
         // The API answers newest first; a chart reads oldest first.
         points={totals.toReversed().map((total) => ({
           day: total.day,
-          value: total.restaurant_day ? null : total.kcal,
-          flat: total.restaurant_day ? total.kcal : null,
+          value: total.kcal,
+          accent: total.restaurant_day,
           hollow: total.incomplete,
           detail: formatMacros(total) ?? undefined,
         }))}

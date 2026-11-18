@@ -405,6 +405,25 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * CatalogItem
+         * @description A Catalog item as its own endpoints return it: the reference plus what its use says.
+         *
+         *     Entries embed the plain CatalogRef: a Meal has no use for when its Food was last eaten.
+         */
+        CatalogItem: {
+            /** Archived */
+            archived: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Used Day */
+            last_used_day?: string | null;
+            /** Name */
+            name: string;
+        };
+        /**
          * CatalogRef
          * @description How any response points at a Catalog item (ADR 0006).
          */
@@ -503,6 +522,8 @@ export interface components {
             last_quantity?: number | null;
             /** Last Unit */
             last_unit?: ("g" | "count") | null;
+            /** Last Used Day */
+            last_used_day?: string | null;
             /** Name */
             name: string;
             nutrition?: components["schemas"]["Nutrition"] | null;
@@ -1395,7 +1416,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogRef"][];
+                    "application/json": components["schemas"]["CatalogItem"][];
                 };
             };
             /** @description No signed-in User. */
@@ -1546,7 +1567,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogRef"];
+                    "application/json": components["schemas"]["CatalogItem"];
                 };
             };
             /** @description No signed-in User. */
@@ -1628,7 +1649,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogRef"];
+                    "application/json": components["schemas"]["CatalogItem"];
                 };
             };
             /** @description Created. */
@@ -1637,7 +1658,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogRef"];
+                    "application/json": components["schemas"]["CatalogItem"];
                 };
             };
             /** @description The body could not be read as JSON text. */
@@ -1813,7 +1834,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogRef"];
+                    "application/json": components["schemas"]["CatalogItem"];
                 };
             };
             /** @description The body could not be read as JSON text. */
@@ -2815,7 +2836,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogRef"][];
+                    "application/json": components["schemas"]["CatalogItem"][];
                 };
             };
             /** @description No signed-in User. */
@@ -2884,7 +2905,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogRef"];
+                    "application/json": components["schemas"]["CatalogItem"];
                 };
             };
             /** @description No signed-in User. */
@@ -2966,7 +2987,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogRef"];
+                    "application/json": components["schemas"]["CatalogItem"];
                 };
             };
             /** @description Created. */
@@ -2975,7 +2996,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogRef"];
+                    "application/json": components["schemas"]["CatalogItem"];
                 };
             };
             /** @description The body could not be read as JSON text. */
@@ -3151,7 +3172,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogRef"];
+                    "application/json": components["schemas"]["CatalogItem"];
                 };
             };
             /** @description The body could not be read as JSON text. */
