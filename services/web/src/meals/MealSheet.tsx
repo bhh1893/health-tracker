@@ -103,6 +103,39 @@ export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
     putMeal.mutate({ before: saved, after: meal }, { onSuccess: onClose });
   }
 
+  // A Restaurant meal leads with the Restaurant pick; a Foods meal leads with Label and Time.
+  const labelAndTime = (
+    <div className="grid grid-cols-[2fr_1fr] gap-3">
+      <label className={labelClass}>
+        Label
+        <input
+          type="text"
+          maxLength={200}
+          placeholder="Optional, e.g. Breakfast"
+          className={fieldClass}
+          value={draft.label}
+          onChange={({ target }) => {
+            change({ label: target.value });
+          }}
+        />
+      </label>
+      <label className={labelClass}>
+        Time
+        <input
+          type="time"
+          required
+          // iOS draws time inputs natively, wider and taller than the CSS asks.
+          // appearance-none makes it a plain box sized like the fields beside it.
+          className={`${fieldClass} appearance-none`}
+          value={draft.time}
+          onChange={({ target }) => {
+            change({ time: target.value });
+          }}
+        />
+      </label>
+    </div>
+  );
+
   const name = mealName(number, saved?.label ?? null);
   const title =
     saved === null ? `Add Meal to ${formatDay(day)}` : `Edit ${name}`;
@@ -133,54 +166,30 @@ export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
           </ToggleButton>
         </ToggleButtonGroup>
 
-        <div className="grid grid-cols-[2fr_1fr] gap-3">
-          <label className={labelClass}>
-            Label
-            <input
-              type="text"
-              maxLength={200}
-              placeholder="Optional, e.g. Breakfast"
-              className={fieldClass}
-              value={draft.label}
-              onChange={({ target }) => {
-                change({ label: target.value });
-              }}
-            />
-          </label>
-          <label className={labelClass}>
-            Time
-            <input
-              type="time"
-              required
-              // iOS draws time inputs natively, wider and taller than the CSS asks.
-              // appearance-none makes it a plain box sized like the fields beside it.
-              className={`${fieldClass} appearance-none`}
-              value={draft.time}
-              onChange={({ target }) => {
-                change({ time: target.value });
-              }}
-            />
-          </label>
-        </div>
-
         {draft.kind === "foods" ? (
-          <FoodsPart
-            rows={draft.rows}
-            lastFoodLocked={lastFoodLocked}
-            onChangeRow={changeRow}
-            onRemoveRow={(key) => {
-              change({ rows: draft.rows.filter((row) => row.key !== key) });
-            }}
-            onAdd={addFood}
-            onEditFood={setEditingFood}
-          />
+          <>
+            {labelAndTime}
+            <FoodsPart
+              rows={draft.rows}
+              lastFoodLocked={lastFoodLocked}
+              onChangeRow={changeRow}
+              onRemoveRow={(key) => {
+                change({ rows: draft.rows.filter((row) => row.key !== key) });
+              }}
+              onAdd={addFood}
+              onEditFood={setEditingFood}
+            />
+          </>
         ) : (
-          <RestaurantPart
-            value={draft.restaurant}
-            onChange={(restaurant) => {
-              change({ restaurant });
-            }}
-          />
+          <>
+            <RestaurantPart
+              value={draft.restaurant}
+              onChange={(restaurant) => {
+                change({ restaurant });
+              }}
+            />
+            {labelAndTime}
+          </>
         )}
 
         {putMeal.error && <ProblemAlert error={putMeal.error} />}

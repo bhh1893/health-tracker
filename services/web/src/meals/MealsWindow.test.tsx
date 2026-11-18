@@ -236,6 +236,32 @@ describe("adding a Meal", () => {
     });
   });
 
+  it("puts the Restaurant pick above Label and Time for a Restaurant Meal", async () => {
+    renderAt(PAST_URL, <MealsWindow />);
+    await openNewMeal();
+
+    const label = () => within(sheet()).getByRole("textbox", { name: "Label" });
+    const follows = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    expect(
+      follows(
+        label(),
+        within(sheet()).getByRole("combobox", { name: "Add Food" }),
+      ),
+    ).toBe(true);
+
+    await userEvent.click(
+      within(sheet()).getByRole("radio", { name: "Restaurant" }),
+    );
+    expect(
+      follows(
+        within(sheet()).getByRole("combobox", { name: "Restaurant" }),
+        label(),
+      ),
+    ).toBe(true);
+  });
+
   it("stays open and takes the Meal back off the feed when the server refuses the save", async () => {
     server.use(
       http.put("*/api/v1/meals/:id", () =>
