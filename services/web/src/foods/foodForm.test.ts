@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import openapi from "../../../api/openapi.json";
+import { MAX_NAME_LENGTH } from "../catalog/catalogs";
 
 import {
   checkFood,
@@ -9,7 +10,6 @@ import {
   type Food,
   MAX_GRAMS,
   MAX_KCAL,
-  MAX_NAME_LENGTH,
   MIN_BASIS_G,
   type FoodDraft,
   type ReferenceFood,

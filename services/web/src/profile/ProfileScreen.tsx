@@ -1,9 +1,12 @@
+import { Link } from "react-router";
+
 import { useMe } from "../auth/me";
 import { SignOutLink } from "../auth/SignOutLink";
+import { CATALOGS } from "../catalog/catalogs";
 import { avatarLetter, present } from "./identity";
 
-// Profile's menu hub, P1 (ADR 0031): who is signed in at the top, Sign out at the
-// bottom. The Catalogs and Settings sections arrive between them (ADR 0032).
+// Profile's menu hub, P1 (ADR 0031): who is signed in at the top, then the Catalogs
+// (ADR 0032), Sign out at the bottom. Settings arrives above Sign out (ADR 0032).
 export function ProfileScreen() {
   // A cache hit, not a request: App loaded /api/me before any route rendered.
   const me = useMe();
@@ -46,7 +49,32 @@ export function ProfileScreen() {
         </div>
       </section>
 
-      {/* Catalogs and Settings go here (ADR 0032). */}
+      {/* "Catalogs", the glossary's word for what logging builds (ADR 0032). */}
+      <nav aria-labelledby="catalogs-heading" className="flex flex-col gap-2">
+        <h2
+          id="catalogs-heading"
+          className="text-sm font-semibold tracking-wide text-gray-500 uppercase"
+        >
+          Catalogs
+        </h2>
+        <ul className="flex flex-col divide-y divide-gray-200 rounded-xl border border-gray-200">
+          {CATALOGS.map((catalog) => (
+            <li key={catalog.key}>
+              <Link
+                to={catalog.page}
+                className="flex items-center justify-between p-3 text-base"
+              >
+                {catalog.plural}
+                <span aria-hidden="true" className="text-gray-400">
+                  ›
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* Settings goes here (ADR 0032). */}
 
       <SignOutLink className="py-2 text-base font-semibold text-red-700" />
     </main>

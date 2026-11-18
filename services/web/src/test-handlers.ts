@@ -148,6 +148,7 @@ export const oats: Food = {
   archived: false,
   last_quantity: 80,
   last_unit: "g",
+  last_used_day: "2026-11-02",
 };
 
 export const rolledOats: ReferenceFood = {
@@ -169,6 +170,7 @@ export const banana: Food = {
   archived: false,
   last_quantity: null,
   last_unit: null,
+  last_used_day: null,
 };
 
 export const cafe: CatalogRef = {
@@ -403,4 +405,150 @@ export function fakeMealApi(
   ];
 
   return { handlers, meals, foods: foodsById, puts, patches };
+}
+
+type CatalogItem = components["schemas"]["CatalogItem"] &
+  Partial<Pick<Food, "nutrition" | "piece_g">>;
+type CatalogTable = "foods" | "restaurants" | "exercises";
+interface CatalogWrite {
+  name?: string | null;
+  archived?: boolean | null;
+  allow_similar?: boolean;
+  nutrition?: Nutrition | null;
+  piece_g?: number | null;
+}
+
+const EXACT_DUPLICATE = "urn:health-tracker:problem:exact-duplicate";
+const NEAR_DUPLICATE = "urn:health-tracker:problem:near-duplicate";
+const ITEM_IN_USE = "urn:health-tracker:problem:item-in-use";
+
+const conflict = (fields: Partial<Problem>) =>
+  HttpResponse.json(
+    { title: "Conflict", status: 409, ...fields },
+    { status: 409 },
+  );
+
+// Stands in for one Catalog's own endpoints, as Profile's pages use them (ADR 0032),
+// keeping what it is sent. Like the real one, it refuses a taken name (exact, case
+// ignored), and a close one unless allow_similar; `similarTo` decides "close", since
+// the real trigram rule has no place in a fake. It refuses to delete a used item.
+export function fakeCatalogApi(
+  table: CatalogTable,
+  seed: CatalogItem[],
+  similarTo: (name: string) => string[] = () => [],
+) {
+  const items = new Map(seed.map((item) => [item.id, { ...item }]));
+  const lists: URLSearchParams[] = [];
+  const writes: { method: string; id: string; body?: CatalogWrite }[] = [];
+  const ref = ({ id, name, archived }: CatalogItem): CatalogRef => ({
+    id,
+    name,
+    archived,
+  });
+
+  // The 409 for a name, or null when the name is free.
+  function clash(id: string, body: CatalogWrite) {
+    const name = body.name;
+    if (name == null) {
+      return null;
+    }
+    const others = [...items.values()].filter((item) => item.id !== id);
+    const existing = others.find(
+      (item) => item.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (existing) {
+      return conflict({ type: EXACT_DUPLICATE, existing: ref(existing) });
+    }
+    const close = similarTo(name);
+    const similar = others.filter((item) => close.includes(item.name));
+    if (similar.length > 0 && body.allow_similar !== true) {
+      return conflict({ type: NEAR_DUPLICATE, similar: similar.map(ref) });
+    }
+    return null;
+  }
+
+  function write(current: CatalogItem, body: CatalogWrite): CatalogItem {
+    return {
+      ...current,
+      ...(body.name != null && { name: body.name }),
+      ...(body.archived != null && { archived: body.archived }),
+      ...("nutrition" in body && { nutrition: body.nutrition ?? null }),
+      ...("piece_g" in body && { piece_g: body.piece_g ?? null }),
+    };
+  }
+
+  const handlers = [
+    http.get(`*/api/v1/${table}`, ({ request }) => {
+      const params = new URL(request.url).searchParams;
+      lists.push(params);
+      const withArchived = params.get("include_archived") === "true";
+      return HttpResponse.json(
+        [...items.values()].filter((item) => withArchived || !item.archived),
+      );
+    }),
+    http.get<{ id: string }>(`*/api/v1/${table}/:id`, ({ params }) => {
+      const item = items.get(params.id);
+      return item
+        ? HttpResponse.json(item)
+        : HttpResponse.json(
+            { type: "about:blank", title: "Not Found", status: 404 },
+            { status: 404 },
+          );
+    }),
+    http.put<{ id: string }, CatalogWrite>(
+      `*/api/v1/${table}/:id`,
+      async ({ request, params }) => {
+        const body = await request.json();
+        writes.push({ method: "PUT", id: params.id, body });
+        const refused = clash(params.id, body);
+        if (refused) {
+          return refused;
+        }
+        const created = !items.has(params.id);
+        const blank: CatalogItem = {
+          id: params.id,
+          name: "",
+          archived: false,
+          last_used_day: null,
+          ...(table === "foods" && { nutrition: null, piece_g: null }),
+        };
+        const item = write(items.get(params.id) ?? blank, body);
+        items.set(params.id, item);
+        return HttpResponse.json(item, { status: created ? 201 : 200 });
+      },
+    ),
+    http.patch<{ id: string }, CatalogWrite>(
+      `*/api/v1/${table}/:id`,
+      async ({ request, params }) => {
+        const body = await request.json();
+        writes.push({ method: "PATCH", id: params.id, body });
+        const current = items.get(params.id);
+        if (current === undefined) {
+          throw new Error(`Unknown item ${params.id}`);
+        }
+        const refused = clash(params.id, body);
+        if (refused) {
+          return refused;
+        }
+        const item = write(current, body);
+        items.set(params.id, item);
+        return HttpResponse.json(item);
+      },
+    ),
+    http.delete<{ id: string }>(`*/api/v1/${table}/:id`, ({ params }) => {
+      writes.push({ method: "DELETE", id: params.id });
+      if (items.get(params.id)?.last_used_day != null) {
+        return conflict({
+          type: ITEM_IN_USE,
+          detail: "This item is used by Entries. Archive it instead.",
+        });
+      }
+      items.delete(params.id);
+      return new HttpResponse(null, { status: 204 });
+    }),
+    // The Food sheet's "Fill from reference" asks as it opens.
+    http.get("*/api/v1/reference-foods", () => HttpResponse.json([])),
+  ];
+
+  return { handlers, items, lists, writes };
 }
