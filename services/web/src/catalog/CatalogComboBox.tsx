@@ -17,12 +17,11 @@ import { ProblemAlert } from "../components/ProblemAlert";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 import { uuidv7 } from "../lib/uuidv7";
 import type { Catalog, CatalogItem, CatalogRef } from "./catalogs";
+import { EXACT_DUPLICATE, NEAR_DUPLICATE } from "./nameClash";
 import { useCreateItem, useSuggestions, useUnarchiveItem } from "./queries";
 
 const DEBOUNCE_MS = 150;
 const CREATE_ROW = "create";
-const EXACT_DUPLICATE = "urn:health-tracker:problem:exact-duplicate";
-const NEAR_DUPLICATE = "urn:health-tracker:problem:near-duplicate";
 
 // What the server said instead of creating the item. `id` is kept so that
 // "create anyway" retries the same write.

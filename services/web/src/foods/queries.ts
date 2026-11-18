@@ -8,12 +8,14 @@ import {
 import { api, unwrap } from "../api/client";
 import { foodCatalog } from "../catalog/catalogs";
 import { MEAL_DAYS_KEY } from "../history/queries";
+import { itemKey } from "../catalog/queries";
 import { MEAL_WRITES_KEY } from "../meals/queries";
 import { DAY_TOTALS_KEY } from "../nutrition/queries";
-import type { Food, PatchFood } from "./foodForm";
+import type { Food, PatchFood, PutFood } from "./foodForm";
 
 const REFERENCE_LIMIT = 10;
-const foodKey = (id: string) => ["food", id];
+// Under the Foods Catalog's prefix, so an Archive from Profile refreshes it too.
+const foodKey = (id: string) => itemKey(foodCatalog, id);
 
 // The whole Food, with Nutrition. A Meal only embeds its name, so the sheet reads it.
 export function useFood(id: string) {
@@ -64,6 +66,25 @@ export function usePatchFood(id: string) {
     mutationFn: (body: PatchFood) =>
       unwrap(
         api.PATCH("/api/v1/foods/{item_id}", {
+          params: { path: { item_id: id } },
+          body,
+        }),
+      ),
+    onSuccess: (food: Food) => {
+      queryClient.setQueryData(foodKey(id), food);
+      refreshAfterFoodWrite(queryClient);
+    },
+  });
+}
+
+// The "+" sheet on Profile's Foods page: one PUT with a client-made id, the same
+// create path logging uses, so a retry or "Save anyway" writes the same Food.
+export function usePutFood(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: PutFood) =>
+      unwrap(
+        api.PUT("/api/v1/foods/{item_id}", {
           params: { path: { item_id: id } },
           body,
         }),

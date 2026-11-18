@@ -1,13 +1,14 @@
 import type { components } from "../api/schema";
+import { MAX_NAME_LENGTH } from "../catalog/catalogs";
 
 export type Food = components["schemas"]["Food"];
 export type Nutrition = components["schemas"]["Nutrition"];
 export type PatchFood = components["schemas"]["PatchFood"];
+export type PutFood = components["schemas"]["PutFood"];
 export type ReferenceFood = components["schemas"]["ReferenceFood"];
 
 // The server's bounds (ADR 0023, services/api catalogs.py), mirrored so the form
 // refuses what the API would, and says so in the form's own words before any request.
-export const MAX_NAME_LENGTH = 200;
 export const MIN_BASIS_G = 0.001;
 export const MAX_GRAMS = 1_000_000;
 export const MAX_KCAL = 10_000;
@@ -31,6 +32,17 @@ export type FoodDraft = { name: string; piece_g: string } & Record<
 
 const text = (value: number | null | undefined) =>
   value === null || value === undefined ? "" : String(value);
+
+// The "+" sheet on Profile's Foods page starts here (ADR 0032).
+export const EMPTY_FOOD_DRAFT: FoodDraft = {
+  name: "",
+  basis_g: "",
+  kcal: "",
+  protein_g: "",
+  carbs_g: "",
+  fat_g: "",
+  piece_g: "",
+};
 
 export function draftOf(food: Food): FoodDraft {
   const nutrition = food.nutrition ?? null;
@@ -79,7 +91,7 @@ function parse(value: string) {
 export type FoodErrors = Partial<Record<FoodField, string>>;
 
 export type FoodCheck =
-  { ok: true; body: PatchFood } | { ok: false; errors: FoodErrors };
+  { ok: true; body: PutFood } | { ok: false; errors: FoodErrors };
 
 function checkNutrition(
   draft: FoodDraft,
@@ -148,9 +160,10 @@ function checkNutrition(
   };
 }
 
-// The one PATCH the Save button sends, or why the form cannot send it yet. It always
-// names all three fields: the form shows the whole Food, so saving it means "the
-// Food is now what is on screen", and an empty block or Piece Weight clears it.
+// The one write the Save button sends, or why the form cannot send it yet: a PATCH
+// for a Food that exists, a PUT for a new one. It always names all three fields: the
+// form shows the whole Food, so saving it means "the Food is now what is on screen",
+// and an empty block or Piece Weight clears it.
 export function checkFood(draft: FoodDraft): FoodCheck {
   const errors: FoodErrors = {};
 

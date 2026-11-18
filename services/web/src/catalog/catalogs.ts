@@ -4,10 +4,18 @@ import type { components } from "../api/schema";
 export type CatalogRef = components["schemas"]["CatalogRef"];
 export type Food = components["schemas"]["Food"];
 
-// Any row a Catalog search returns. Foods add what was last eaten (ADR 0008); the
-// other Catalogs, and the items inside a duplicate Problem, are plain CatalogRefs.
+// The API's bound on every Catalog name (services/api catalogs.py), so a form refuses
+// a longer one in its own words before any request.
+export const MAX_NAME_LENGTH = 200;
+
+// Any row a Catalog returns. Its own endpoints add the Day it was last used, and Foods
+// add what was last eaten and their Nutrition (ADR 0008, ADR 0032). The items inside a
+// duplicate Problem are plain CatalogRefs, which is why the extras are optional.
 export type CatalogItem = CatalogRef &
-  Partial<Pick<Food, "last_quantity" | "last_unit">>;
+  Partial<
+    Pick<components["schemas"]["CatalogItem"], "last_used_day"> &
+      Pick<Food, "last_quantity" | "last_unit" | "nutrition">
+  >;
 
 interface NewItem {
   id: string;
@@ -15,34 +23,62 @@ interface NewItem {
   allowSimilar: boolean;
 }
 
-// The three Catalogs share one API shape (ADR 0006): suggest, create, unarchive.
-// One object per Catalog lets CatalogComboBox serve all three without knowing which.
-// The paths stay literal, so openapi-fetch still type-checks each call.
+export interface Rename {
+  name: string;
+  allowSimilar: boolean;
+}
+
+// The three Catalogs share one API shape (ADR 0006): list, read, create, rename,
+// archive, delete. One object per Catalog lets the combobox, the Profile pages and the
+// item sheet serve all three without knowing which. The paths stay literal, so
+// openapi-fetch still type-checks each call.
 export interface Catalog {
   // The cache key prefix. Entry writes invalidate it to reorder recents.
   key: string;
   label: string;
+  // The Profile page's title and path (ADR 0032).
+  plural: string;
+  page: string;
   placeholder: string;
-  // Logging hides archived items; Search shows them, since their history is real.
+  // Cache key prefixes of the screens that show this Catalog's names inside Entries,
+  // so a rename or an archive reaches them.
+  shownIn: readonly string[];
+  // Logging hides archived items; Search and Profile show them on request.
   suggest: (
     q: string,
     limit: number,
     includeArchived: boolean,
   ) => Promise<CatalogItem[]>;
+  get: (id: string) => Promise<CatalogItem>;
   create: (item: NewItem) => Promise<CatalogItem>;
-  unarchive: (id: string) => Promise<CatalogItem>;
+  rename: (id: string, change: Rename) => Promise<CatalogItem>;
+  setArchived: (id: string, archived: boolean) => Promise<CatalogItem>;
+  remove: (id: string) => Promise<void>;
 }
 
-const unarchived = { archived: false, allow_similar: false };
+const renameBody = ({ name, allowSimilar }: Rename) => ({
+  name,
+  allow_similar: allowSimilar,
+});
+const archiveBody = (archived: boolean) => ({ archived, allow_similar: false });
 
 export const exerciseCatalog: Catalog = {
   key: "exercises",
   label: "Exercise",
+  plural: "Exercises",
+  page: "/profile/exercises",
   placeholder: "Search Exercises",
+  shownIn: ["exercise-entries", "search"],
   suggest: (q, limit, includeArchived) =>
     unwrap(
       api.GET("/api/v1/exercises", {
         params: { query: { q, limit, include_archived: includeArchived } },
+      }),
+    ),
+  get: (id) =>
+    unwrap(
+      api.GET("/api/v1/exercises/{item_id}", {
+        params: { path: { item_id: id } },
       }),
     ),
   create: ({ id, name, allowSimilar }) =>
@@ -52,11 +88,24 @@ export const exerciseCatalog: Catalog = {
         body: { name, allow_similar: allowSimilar },
       }),
     ),
-  unarchive: (id) =>
+  rename: (id, change) =>
     unwrap(
       api.PATCH("/api/v1/exercises/{item_id}", {
         params: { path: { item_id: id } },
-        body: unarchived,
+        body: renameBody(change),
+      }),
+    ),
+  setArchived: (id, archived) =>
+    unwrap(
+      api.PATCH("/api/v1/exercises/{item_id}", {
+        params: { path: { item_id: id } },
+        body: archiveBody(archived),
+      }),
+    ),
+  remove: (id) =>
+    unwrap(
+      api.DELETE("/api/v1/exercises/{item_id}", {
+        params: { path: { item_id: id } },
       }),
     ),
 };
@@ -64,11 +113,20 @@ export const exerciseCatalog: Catalog = {
 export const foodCatalog: Catalog = {
   key: "foods",
   label: "Food",
+  plural: "Foods",
+  page: "/profile/foods",
   placeholder: "Search Foods",
+  shownIn: ["meals", "search"],
   suggest: (q, limit, includeArchived) =>
     unwrap(
       api.GET("/api/v1/foods", {
         params: { query: { q, limit, include_archived: includeArchived } },
+      }),
+    ),
+  get: (id) =>
+    unwrap(
+      api.GET("/api/v1/foods/{item_id}", {
+        params: { path: { item_id: id } },
       }),
     ),
   create: ({ id, name, allowSimilar }) =>
@@ -78,11 +136,24 @@ export const foodCatalog: Catalog = {
         body: { name, allow_similar: allowSimilar },
       }),
     ),
-  unarchive: (id) =>
+  rename: (id, change) =>
     unwrap(
       api.PATCH("/api/v1/foods/{item_id}", {
         params: { path: { item_id: id } },
-        body: unarchived,
+        body: renameBody(change),
+      }),
+    ),
+  setArchived: (id, archived) =>
+    unwrap(
+      api.PATCH("/api/v1/foods/{item_id}", {
+        params: { path: { item_id: id } },
+        body: archiveBody(archived),
+      }),
+    ),
+  remove: (id) =>
+    unwrap(
+      api.DELETE("/api/v1/foods/{item_id}", {
+        params: { path: { item_id: id } },
       }),
     ),
 };
@@ -90,11 +161,20 @@ export const foodCatalog: Catalog = {
 export const restaurantCatalog: Catalog = {
   key: "restaurants",
   label: "Restaurant",
+  plural: "Restaurants",
+  page: "/profile/restaurants",
   placeholder: "Search Restaurants",
+  shownIn: ["meals", "search"],
   suggest: (q, limit, includeArchived) =>
     unwrap(
       api.GET("/api/v1/restaurants", {
         params: { query: { q, limit, include_archived: includeArchived } },
+      }),
+    ),
+  get: (id) =>
+    unwrap(
+      api.GET("/api/v1/restaurants/{item_id}", {
+        params: { path: { item_id: id } },
       }),
     ),
   create: ({ id, name, allowSimilar }) =>
@@ -104,11 +184,27 @@ export const restaurantCatalog: Catalog = {
         body: { name, allow_similar: allowSimilar },
       }),
     ),
-  unarchive: (id) =>
+  rename: (id, change) =>
     unwrap(
       api.PATCH("/api/v1/restaurants/{item_id}", {
         params: { path: { item_id: id } },
-        body: unarchived,
+        body: renameBody(change),
+      }),
+    ),
+  setArchived: (id, archived) =>
+    unwrap(
+      api.PATCH("/api/v1/restaurants/{item_id}", {
+        params: { path: { item_id: id } },
+        body: archiveBody(archived),
+      }),
+    ),
+  remove: (id) =>
+    unwrap(
+      api.DELETE("/api/v1/restaurants/{item_id}", {
+        params: { path: { item_id: id } },
       }),
     ),
 };
+
+// In Profile's menu order (ADR 0032).
+export const CATALOGS = [foodCatalog, restaurantCatalog, exerciseCatalog];
