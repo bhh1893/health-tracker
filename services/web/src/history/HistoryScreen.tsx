@@ -5,6 +5,7 @@ import { exerciseCatalog } from "../catalog/catalogs";
 import { useToday } from "../lib/useToday";
 import { Segments } from "../search/Segments";
 import { DashboardSection } from "./DashboardSection";
+import { RecentDays } from "./RecentDays";
 import {
   parseHistory,
   rangeStart,
@@ -28,8 +29,8 @@ const RANGES = [
 ] as const satisfies readonly { id: RangeName; label: string }[];
 
 // ADR 0033's History frame: Meals | Exercise and the Range on one row, then the
-// Dashboard section. Every choice lives in the URL, so this screen holds no state
-// of its own.
+// Dashboard section, then Recent Days. Every choice lives in the URL, so this
+// screen holds no state of its own.
 export function HistoryScreen() {
   const [params, setParams] = useSearchParams();
   const today = useToday();
@@ -88,7 +89,12 @@ export function HistoryScreen() {
       </div>
 
       {query.tab === "meals" ? (
-        section(null)
+        <>
+          {section(null)}
+          {/* Keyed on the Range, so a new Range also starts with its newest Day
+              open, like a first visit. */}
+          <RecentDays key={from ?? "all"} from={from} to={today} />
+        </>
       ) : (
         <>
           {/* Read-only: History never creates an Exercise, and an archived one

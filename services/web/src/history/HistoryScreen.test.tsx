@@ -75,6 +75,11 @@ function fakeDashboardApi({
         next_cursor: null,
       });
     }),
+    // Recent Days, under the Dashboard on Meals. RecentDays.test.tsx covers it;
+    // here it only needs an answer.
+    http.get("*/api/v1/meal-days", () =>
+      HttpResponse.json({ items: [], next_cursor: null }),
+    ),
     http.get("*/api/v1/exercises/:id/sessions", ({ request }) => {
       const url = new URL(request.url);
       requests.push(url);
@@ -127,6 +132,8 @@ async function tableRows(title: string) {
 const benchUrl = `id=${bench.id}&name=Bench+Press`;
 
 const dashboard = () => screen.getByRole("button", { name: /^Dashboard/ });
+// The opened section. Recent Days below it says "No Meals in this range." too.
+const dashboardPanel = () => screen.getByRole("group", { name: /^Dashboard/ });
 
 describe("the History frame", () => {
   it("opens on Meals with the Dashboard closed, its average in the row", async () => {
@@ -266,7 +273,7 @@ describe("the Meals Dashboard", () => {
   it("asks for the range the chip names, and all of history without a start", async () => {
     const api = fakeDashboardApi({ totals: [aTotal(daysAgo(400))] });
     renderAt("/history?dash=open", <HistoryScreen />);
-    await screen.findByText("No Meals in this range.");
+    await within(dashboardPanel()).findByText("No Meals in this range.");
 
     await userEvent.selectOptions(range(), "90 days");
     await waitFor(() => {
@@ -319,7 +326,7 @@ describe("the Meals Dashboard", () => {
     renderAt("/history?dash=open", <HistoryScreen />);
 
     expect(
-      await screen.findByText("No Meals in this range."),
+      await within(dashboardPanel()).findByText("No Meals in this range."),
     ).toBeInTheDocument();
   });
 });

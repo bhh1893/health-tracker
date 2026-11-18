@@ -22,7 +22,7 @@ export function isValidDay(value: string) {
   return toDay(date) === value;
 }
 
-function parseDay(day: string) {
+export function parseDay(day: string) {
   const [year, month, dayOfMonth] = day.split("-").map(Number);
   return new Date(Number(year), Number(month) - 1, Number(dayOfMonth));
 }

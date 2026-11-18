@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { expect, it, vi } from "vitest";
@@ -20,6 +20,9 @@ it("imports the chart chunk on the first open of the Dashboard, not with History
     http.get("*/api/v1/meals", () =>
       HttpResponse.json({ items: [], next_cursor: null }),
     ),
+    http.get("*/api/v1/meal-days", () =>
+      HttpResponse.json({ items: [], next_cursor: null }),
+    ),
     http.get("*/api/me", () =>
       HttpResponse.json({ restaurant_day_kcal: 5000 }),
     ),
@@ -33,6 +36,8 @@ it("imports the chart chunk on the first open of the Dashboard, not with History
 
   expect(loadDashboard).toHaveBeenCalledOnce();
   expect(
-    await screen.findByText("No Meals in this range."),
+    await within(screen.getByRole("group", { name: /^Dashboard/ })).findByText(
+      "No Meals in this range.",
+    ),
   ).toBeInTheDocument();
 });

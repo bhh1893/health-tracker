@@ -6,6 +6,7 @@ import {
   Heading,
 } from "react-aria-components";
 
+import { Chevron } from "../components/Chevron";
 import { summarizeMeals } from "../dashboards/stats";
 import { useDayTotals } from "../nutrition/queries";
 import { formatKcal } from "../nutrition/totals";
@@ -103,25 +104,6 @@ function ChartIcon() {
     >
       <path d="M4 20V4M4 20h16" />
       <path d="m7 15 4-4 3 3 5-6" />
-    </svg>
-  );
-}
-
-function Chevron() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      // Points down when closed and up when open. The Disclosure carries
-      // data-expanded; `group` lets this child read it.
-      className="size-5 shrink-0 text-gray-500 transition-transform group-data-expanded:rotate-180"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m6 9 6 6 6-6" />
     </svg>
   );
 }
