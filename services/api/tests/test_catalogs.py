@@ -539,7 +539,42 @@ def test_a_never_used_food_has_no_last_values(client: TestClient) -> None:
 def test_other_catalogs_have_no_last_values(client: TestClient, table: str) -> None:
     item = create(client, table, "Thing")
 
-    assert set(client.get(url(table, item)).json()) == {"id", "name", "archived"}
+    assert set(client.get(url(table, item)).json()) == {"id", "name", "archived", "last_used_day"}
+
+
+@every_catalog
+def test_items_carry_the_day_they_were_last_used(
+    client: TestClient, session: Session, table: str
+) -> None:
+    item = create(client, table, "Thing")
+    use(session, table, item, "2026-11-01")
+    use(session, table, item, "2026-11-03")
+    use(session, table, item, "2026-10-01")
+
+    read = client.get(url(table, item)).json()
+    suggested = client.get(url(table), params={"q": "thi"}).json()[0]
+    recent = client.get(url(table)).json()[0]
+
+    assert read["last_used_day"] == "2026-11-03"
+    assert suggested == read
+    assert recent == read
+
+
+@every_catalog
+def test_a_never_used_item_has_no_last_used_day(client: TestClient, table: str) -> None:
+    item = create(client, table, "Thing")
+
+    assert client.get(url(table, item)).json()["last_used_day"] is None
+
+
+@every_catalog
+def test_writes_return_the_last_used_day(client: TestClient, session: Session, table: str) -> None:
+    item = create(client, table, "Thing")
+    use(session, table, item, "2026-11-01")
+
+    renamed = client.patch(url(table, item), json={"name": "Other thing", "allow_similar": True})
+
+    assert renamed.json()["last_used_day"] == "2026-11-01"
 
 
 def test_the_fuzzy_operators_use_the_trigram_index(session: Session) -> None:

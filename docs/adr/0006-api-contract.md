@@ -16,7 +16,7 @@ The v1 API is a JSON REST API under `/api/v1`, described by the generated OpenAP
 
 **Amended by [Profile identity, avatar and sign-out](https://github.com/bhh1893/health-tracker/issues/220):** `GET /api/me` gains `email` (nullable), the caller's own address, for Profile and the Pending screen.
 
-**Amended by ADR 0032:** the maximum `limit` on `GET /foods`, `/restaurants` and `/exercises` rises from 50 to 1000, so Profile's Catalog pages can load a whole Catalog.
+**Amended by ADR 0032:** the maximum `limit` on `GET /foods`, `/restaurants` and `/exercises` rises from 50 to 1000, so Profile's Catalog pages can load a whole Catalog; items those endpoints return gain `last_used_day`.
 
 **Amended by ADR 0033:** new `GET /meal-days?from&to&q&cursor&limit`, a page of whole Days with their Meals, newest first, filtered by Food or Restaurant name.
 
