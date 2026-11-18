@@ -220,6 +220,26 @@ export interface paths {
         patch: operations["patch_food"];
         trace?: never;
     };
+    "/api/v1/meal-days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Meal Days
+         * @description List Days with their Meals newest first, one page of whole Days at a time, optionally only Days with a Food or Restaurant whose name contains q.
+         */
+        get: operations["list_meal_days"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/meals": {
         parameters: {
             query?: never;
@@ -554,6 +574,23 @@ export interface components {
              * @enum {string}
              */
             role: "pending" | "member" | "admin";
+        };
+        /** MealDay */
+        MealDay: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Meals */
+            meals: (components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"])[];
+        };
+        /** MealDayPage */
+        MealDayPage: {
+            /** Items */
+            items: components["schemas"]["MealDay"][];
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /** MealPage */
         MealPage: {
@@ -2251,6 +2288,79 @@ export interface operations {
             };
             /** @description Conflicts with the current state. */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User passed a rate limit. Wait Retry-After seconds. */
+            429: {
+                headers: {
+                    /** @description Seconds until the next request can succeed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The database is unavailable. Safe to retry. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_meal_days: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                q?: string;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealDayPage"];
+                };
+            };
+            /** @description No signed-in User. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The User is Pending until the Admin approves them, or the caller is new and Sign-up is closed. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -210,14 +210,22 @@ def load_item(session: Session, catalog: Catalog, user: UUID, item_id: UUID) -> 
     return items[0]
 
 
+def escape_like(query: str) -> str:
+    """Typed text as literal text inside a LIKE pattern, read with ESCAPE '\\'.
+
+    A typed % or _ means itself. Unescaped, "%" would match every name. The backslash goes
+    first, or the next two replaces would have their own backslashes doubled.
+    """
+    return query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def name_search(session: Session, query: str, name: str) -> tuple[str, str, dict[str, str]]:
     """How every typeahead matches and ranks typed text against the SQL column `name`.
 
     Returns the WHERE term, the ORDER BY terms and their parameters: prefix matches first,
     then the closest fuzzy matches, then by name.
     """
-    # A typed % or _ means itself. Unescaped, "%" would match the whole Catalog.
-    escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    escaped = escape_like(query)
     prefix = rf"lower({name}) LIKE lower(:prefix) ESCAPE '\'"
     match = prefix
     if len(query) >= MIN_FUZZY_QUERY_LENGTH:

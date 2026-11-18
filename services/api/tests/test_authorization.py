@@ -162,6 +162,7 @@ COLLECTION_ROUTES: dict[str, dict[str, str]] = {
     "/api/v1/exercises": {"q": "A exercise", "include_archived": "true"},
     "/api/v1/restaurants": {"q": "A restaurant", "include_archived": "true"},
     "/api/v1/meals": {"food_id": FOOD},
+    "/api/v1/meal-days": {"q": "A food"},
     "/api/v1/exercise-entries": {"exercise_id": EXERCISE},
     "/api/v1/days": {"from": A_DAY, "to": A_DAY},
 }

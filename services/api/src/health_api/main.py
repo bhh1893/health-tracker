@@ -12,6 +12,7 @@ from health_api.exercise_entries import exercise_entries_router
 from health_api.identity import NOT_APPROVED, UNAUTHENTICATED, current_user
 from health_api.logs import configure_logging
 from health_api.me import me_router
+from health_api.meal_days import meal_days_router
 from health_api.meals import meals_router
 from health_api.migrations import image_revisions
 from health_api.problems import (
@@ -62,6 +63,7 @@ def create_app() -> FastAPI:
     data_routers = (
         *(catalog_router(catalog) for catalog in CATALOGS),
         meals_router(),
+        meal_days_router(),
         exercise_entries_router(),
         days_router(),
         reference_foods_router(),
