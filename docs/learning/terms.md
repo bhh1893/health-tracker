@@ -654,3 +654,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Mutation testing**: deliberately breaking the code a test claims to cover (here, deleting an invalidation) and checking that the test fails; a test that still passes was not testing that line.
 - **Escaping `LIKE` wildcards**: in SQL `LIKE`, `%` means "any text" and `_` means "any one character", so user text is escaped (`\%`, `\_`, `\\`) before it goes inside a pattern; otherwise typing `%` would match every row.
 - **Embedded reference vs full resource**: an API returns a lean pointer (`CatalogRef`: id, name, archived) where an item sits inside something else, such as a Food inside a Meal, and the fuller shape (`CatalogItem`, plus `last_used_day`) only from the item's own endpoints; each response carries what its readers need.
+- **Log vs manage split**: the frequent job (logging a Meal) stays fast and never stops for upkeep; the rare job (fixing a Food's label, archiving, deleting) gets its own screens, here Profile's Catalog pages.
+- **Placeholder data (`keepPreviousData`)**: TanStack Query keeps showing the last answer while a query with a new key loads, so flipping a filter swaps the rows in place instead of flashing "Loading...".
+- **`setQueryData`**: writes a mutation's answer straight into the cache under a query key, so an open screen shows the saved value at once without asking the server again.
+- **Mutation reset (`mutation.reset()`)**: clears a finished mutation's error and data; done here when the name changes, so a clash about the old name stops showing.
+- **Client-made id**: the browser picks the new item's id (a UUIDv7) before the first request, so a retried or "Save anyway" PUT writes the same item instead of a second one.
