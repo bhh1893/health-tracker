@@ -644,6 +644,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Safe-area inset (`env(safe-area-inset-bottom)`)**: a CSS value the phone fills with the height of hardware or system UI over the page edge, such as the iPhone home indicator; it stays 0 unless the viewport meta tag sets `viewport-fit=cover`.
 - **`aria-current="page"`**: marks the link to the screen you are on, so a screen reader says "current page" and tests can find the active tab without reading colours.
 - **Adjusting state while rendering**: React's pattern for state that must follow a changing input (here the URL): compare and call `setState` during render behind a guard, instead of in an effect that would commit a stale frame first.
+- **Code point vs UTF-16 code unit**: JavaScript strings index by 16-bit units, so `"𝒜"[0]` is half a character; `Array.from(s)` splits by code point (whole characters), which is what "first letter" needs.
 - **`position: fixed` vs `position: sticky`**: a fixed element is pinned to the screen and takes no space in the page, so content can end up under it; a sticky element keeps its place in the page and only pins while its parent is on screen, so the page's end always scrolls clear of it.
 - **`z-index`**: which of two overlapping positioned elements is drawn on top; higher wins (the bar's 40 sits under a sheet's 50).
 - **`dvh` (dynamic viewport height)**: 1% of the screen height as it is right now, which changes as a phone's browser toolbar shows and hides; `100dvh` means "exactly one screen tall".

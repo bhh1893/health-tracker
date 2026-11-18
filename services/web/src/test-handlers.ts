@@ -11,13 +11,14 @@ type Me = components["schemas"]["Me"];
 // contract, so a schema change breaks compilation here (ADR 0014).
 export function signedInAs(
   role: Me["role"],
-  email: Me["email"] = "owner@example.test",
+  identity: Partial<Pick<Me, "name" | "email">> = {},
 ) {
   return http.get<never, never, Me>("*/api/me", () =>
     HttpResponse.json({
       role,
       name: "Owner",
-      email,
+      email: "owner@example.test",
+      ...identity,
       restaurant_day_kcal: 2500,
     }),
   );
