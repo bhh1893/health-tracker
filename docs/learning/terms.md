@@ -652,3 +652,4 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **CSS custom property (`--name`)**: a variable defined in CSS and read with `var(--name)`; one value that several rules share, so they cannot drift apart.
 - **Query key prefix matching (TanStack Query)**: `invalidateQueries({ queryKey: ["day-totals"] })` hits every cached query whose key starts with that array, so one call refreshes the Meals window's one-Day total, Search's ranges and Dashboards' windows together.
 - **Mutation testing**: deliberately breaking the code a test claims to cover (here, deleting an invalidation) and checking that the test fails; a test that still passes was not testing that line.
+- **Escaping `LIKE` wildcards**: in SQL `LIKE`, `%` means "any text" and `_` means "any one character", so user text is escaped (`\%`, `\_`, `\\`) before it goes inside a pattern; otherwise typing `%` would match every row.
