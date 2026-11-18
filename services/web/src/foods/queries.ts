@@ -7,6 +7,7 @@ import {
 
 import { api, unwrap } from "../api/client";
 import { foodCatalog } from "../catalog/catalogs";
+import { MEAL_DAYS_KEY } from "../history/queries";
 import { MEAL_WRITES_KEY } from "../meals/queries";
 import { DAY_TOTALS_KEY } from "../nutrition/queries";
 import type { Food, PatchFood } from "./foodForm";
@@ -46,6 +47,7 @@ function refreshAfterFoodWrite(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: [foodCatalog.key] });
   void queryClient.invalidateQueries({ queryKey: [DAY_TOTALS_KEY] });
   void queryClient.invalidateQueries({ queryKey: ["search"] });
+  void queryClient.invalidateQueries({ queryKey: [MEAL_DAYS_KEY] });
   // A Meal write still in flight refetches its own Day when it settles. Refetching
   // now could briefly drop its optimistic Meal, so only mark the Days stale.
   const mealWritePending =

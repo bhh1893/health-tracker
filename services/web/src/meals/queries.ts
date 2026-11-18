@@ -7,6 +7,7 @@ import {
 
 import { api, unwrap } from "../api/client";
 import { foodCatalog, restaurantCatalog } from "../catalog/catalogs";
+import { MEAL_DAYS_KEY } from "../history/queries";
 import { DAY_TOTALS_KEY } from "../nutrition/queries";
 import { toPutMeal, type Meal, type MealPage } from "./meals";
 
@@ -70,6 +71,8 @@ function refreshWhenIdle(queryClient: QueryClient, day: string) {
     void queryClient.invalidateQueries({ queryKey: [restaurantCatalog.key] });
     // And what the Day adds up to, for Search and Dashboards (ADR 0023).
     void queryClient.invalidateQueries({ queryKey: [DAY_TOTALS_KEY] });
+    // And History's Recent Days, which list each Day's Meals.
+    void queryClient.invalidateQueries({ queryKey: [MEAL_DAYS_KEY] });
   }
 }
 
