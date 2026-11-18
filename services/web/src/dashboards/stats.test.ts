@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DayTotal } from "../nutrition/totals";
-import type { ExerciseSession } from "../search/days";
+import type { ExerciseSession } from "../exercise/sessions";
 import {
   historyStart,
   sessionPoints,

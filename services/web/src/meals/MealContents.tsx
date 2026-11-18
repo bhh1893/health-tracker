@@ -1,7 +1,7 @@
 import { formatAmount, type Meal } from "./meals";
 
-// What a Meal holds: its Foods and amounts, or its Restaurant. Shared by the
-// editable Meal card and Search's read-only view.
+// What a Meal holds: its Foods and amounts, or its Restaurant, as the Meal card
+// lists it.
 export function MealContents({ meal }: { meal: Meal }) {
   return (
     <ul className="mt-1 flex flex-col gap-1">

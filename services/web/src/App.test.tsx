@@ -254,14 +254,34 @@ describe("the shell", () => {
     expect(screen.getByLabelText("url")).toHaveTextContent("/profile");
   });
 
-  it.each([
-    ["/search?what=food&range=7d", "/history/search?what=food&range=7d"],
-    ["/dashboards?tab=meals&range=90d", "/history?tab=meals&range=90d"],
-  ])("sends the old %s to %s, query included", async (from, to) => {
+  it("sends the old /dashboards to /history, query included", async () => {
+    renderAt("/dashboards?tab=meals&range=90d");
+
+    expect(await findTab("History")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByLabelText("url")).toHaveTextContent(
+      "/history?tab=meals&range=90d",
+    );
+  });
+
+  // ADR 0033's redirect table, one row each, from both of Search's paths.
+  it.each(
+    ["/search", "/history/search"].flatMap((path) => [
+      [
+        `${path}?what=food&id=f1&name=Chicken+breast&range=7d`,
+        "/history?q=Chicken+breast",
+      ],
+      [
+        `${path}?what=exercise&id=e1&name=Bench+Press&view=sessions`,
+        "/history?id=e1&name=Bench+Press",
+      ],
+      [`${path}?what=food&range=7d`, "/history"],
+    ]),
+  )("translates the old Search URL %s to %s", async (from, to) => {
     renderAt(from);
 
     expect(await findTab("History")).toHaveAttribute("aria-current", "page");
-    expect(screen.getByLabelText("url")).toHaveTextContent(to);
+    // Exact, not a substring: "/history" must not also pass for a longer URL.
+    expect(screen.getByLabelText("url").textContent).toBe(to);
   });
 
   it("returns each tab to where it was left, and resets it on a second tap", async () => {

@@ -1,10 +1,10 @@
 import { formatSet } from "../exercise/sessions";
 import { addDays } from "../lib/day";
 import type { DayTotal } from "../nutrition/totals";
-import { topSet, volume, type ExerciseSession } from "../search/days";
+import { topSet, volume, type ExerciseSession } from "../exercise/sessions";
 
 // One Session as the Exercise charts plot it. The rules for "top Set" and "volume"
-// are Search's (ADR 0013), imported, so the two screens cannot disagree.
+// live with the Sets (ADR 0013), imported, so every screen agrees on them.
 export interface SessionPoint {
   day: string;
   sets: number;

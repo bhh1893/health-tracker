@@ -4,7 +4,7 @@ import { CatalogComboBox } from "../catalog/CatalogComboBox";
 import { exerciseCatalog, type CatalogItem } from "../catalog/catalogs";
 import { RecentChips } from "../catalog/RecentChips";
 import { useToday } from "../lib/useToday";
-import { Segments } from "../search/Segments";
+import { Segments } from "../components/Segments";
 import { DashboardSection } from "./DashboardSection";
 import { ExerciseDays } from "./ExerciseDays";
 import { MealDays } from "./MealDays";

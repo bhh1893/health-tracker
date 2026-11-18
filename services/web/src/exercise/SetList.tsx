@@ -1,7 +1,7 @@
 import { formatSet, type ExerciseEntry } from "./sessions";
 
 // One Session's Sets, numbered by position. Shared by the editable Session card and
-// Search's read-only view, which both hold every Set of the Session for the Day.
+// History's read-only Day, which both hold every Set of the Session for the Day.
 export function SetList({ sets }: { sets: ExerciseEntry[] }) {
   return (
     <ol className="flex flex-col">

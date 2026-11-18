@@ -4,7 +4,7 @@ import { api, unwrap } from "../api/client";
 import { ME_KEY } from "../auth/me";
 import { addDays } from "../lib/day";
 import { DAY_TOTALS_KEY } from "../nutrition/queries";
-import type { ExerciseSession } from "../search/days";
+import type { ExerciseSession } from "../exercise/sessions";
 
 // The API's cap on `limit` for Sessions (ADR 0006).
 const MAX_SESSIONS = 200;

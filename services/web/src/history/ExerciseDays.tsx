@@ -1,4 +1,4 @@
-import type { ExerciseSession } from "../search/days";
+import type { ExerciseSession } from "../exercise/sessions";
 import { useExerciseDays } from "./queries";
 import { DayRow, RecentDays } from "./RecentDays";
 
