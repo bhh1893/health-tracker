@@ -173,13 +173,16 @@ def load_food_entries(
 
 
 def select_meals(
-    session: Session, user: UUID, where: str, limit: int = 1, **params: Any
+    session: Session, user: UUID, where: str, limit: int | None = 1, **params: Any
 ) -> list[FoodsMeal | RestaurantMeal]:
     """The one read path, newest first, so every response carries the same derived fields.
 
     The inner query picks the page; `number` is computed outside it, so only those rows pay
     for it. It counts the Day's Meals in the table, not in the page, so a filter or a page
     boundary cannot change a Meal's number.
+
+    `limit=None` reads every Meal `where` keeps: Postgres reads LIMIT NULL as no limit. Only
+    a caller whose `where` already bounds the rows may pass it.
     """
     rows = session.execute(
         text(

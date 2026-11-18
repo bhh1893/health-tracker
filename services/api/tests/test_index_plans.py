@@ -57,6 +57,20 @@ CASES = (
     Case("Meals with a common Food", "/meals?food_id={common_food}", ("food_entries_user_food",)),
     Case("Meals with a rare Food", "/meals?food_id={rare_food}", ("food_entries_user_food",)),
     Case("One Meal", "/meals/{meal}", ("food_entries_meal",)),
+    Case("Meal Days newest first", "/meal-days", ("meals_user_day", "food_entries_meal")),
+    Case("Meal Days next page", "/meal-days?cursor={meal_day_cursor}", ("meals_user_day",)),
+    # The seed shares one vocabulary across Users, so many Users own a "... chicken": the
+    # hard case for a trigram index that cannot see user_id.
+    Case(
+        "Meal Days filtered by Food",
+        "/meal-days?q=chicken",
+        ("meals_user_day", "foods_name_trgm", "food_entries_user_food"),
+    ),
+    Case(
+        "Meal Days filtered by Restaurant",
+        "/meal-days?q=diner",
+        ("meals_user_day", "restaurants_name_trgm"),
+    ),
     Case("Sets on a Day", "/exercise-entries?from={day}&to={day}", ("exercise_entries_user_day",)),
     Case("Sets newest first", "/exercise-entries", ("exercise_entries_user_day",)),
     Case(
@@ -183,6 +197,7 @@ def targets(api: TestClient, engine: Engine) -> dict[str, str]:
         "exercise": used("exercise_entries", "exercise_id", "DESC"),
         "meal_cursor": cursor("/meals"),
         "entry_cursor": cursor("/exercise-entries"),
+        "meal_day_cursor": cursor("/meal-days"),
         "near_food": near("foods"),
         "near_exercise": near("exercises"),
         "near_restaurant": near("restaurants"),

@@ -653,6 +653,10 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Query key prefix matching (TanStack Query)**: `invalidateQueries({ queryKey: ["day-totals"] })` hits every cached query whose key starts with that array, so one call refreshes the Meals window's one-Day total, Search's ranges and Dashboards' windows together.
 - **Mutation testing**: deliberately breaking the code a test claims to cover (here, deleting an invalidation) and checking that the test fails; a test that still passes was not testing that line.
 - **Escaping `LIKE` wildcards**: in SQL `LIKE`, `%` means "any text" and `_` means "any one character", so user text is escaped (`\%`, `\_`, `\\`) before it goes inside a pattern; otherwise typing `%` would match every row.
+- **Natural key**: a key that comes from the data itself, like a date, rather than one made up for the row like a UUID; a Day is one, so it alone can order and page a list of Days.
+- **Two-step page read**: first pick the page's keys (here, Days), then load everything under those keys in a second query; the page boundary falls between keys, so nothing under one key is ever split.
+- **Hashed SubPlan**: Postgres runs an `IN (SELECT ...)` subquery once, keeps its rows in a hash table, then checks each outer row against it in constant time.
+- **BitmapAnd**: Postgres reads two indexes separately, marks matching rows in two bitmaps, and keeps only rows in both; here "this User's Foods" AND "names containing the text".
 - **Series (charts)**: one sequence of values a chart draws as a unit, such as one line; Recharts draws one per `<Line>`, and each `<Line>` connects only its own points.
 - **Per-point encoding**: showing a category by changing how one point of a series is drawn (its color or shape), instead of splitting that category into its own series; the line stays continuous through it.
 - **`initialDimension` (Recharts)**: the size a `ResponsiveContainer` draws at before it has measured its box; it also lets the chart render in jsdom, which never measures anything.
