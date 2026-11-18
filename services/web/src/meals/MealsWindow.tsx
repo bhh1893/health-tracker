@@ -5,6 +5,8 @@ import { DayPager } from "../components/DayPager";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDay } from "../lib/day";
 import { useViewedDay } from "../lib/useViewedDay";
+import { DayTotalSummary } from "../nutrition/DayTotalSummary";
+import { useDayTotals } from "../nutrition/queries";
 import { MealCard } from "./MealCard";
 import { sortMeals, type Meal } from "./meals";
 import { MealSheet } from "./MealSheet";
@@ -16,6 +18,11 @@ type Sheet = { saved: Meal | null; number: number } | null;
 export function MealsWindow() {
   const { day, isToday } = useViewedDay();
   const meals = useDayMeals(day);
+  // The same query Search and Dashboards read, narrowed to one Day, so every write
+  // that already refreshes their totals (a Meal, a Food, the Restaurant Day value)
+  // refreshes this one too. Empty for a Day with no Meals.
+  const totals = useDayTotals(day, day);
+  const total = totals.data?.[0];
   const [sheet, setSheet] = useState<Sheet>(null);
 
   const sorted = sortMeals(meals.data ?? []);
@@ -24,7 +31,10 @@ export function MealsWindow() {
     <main className="flex flex-1 flex-col gap-4">
       <h2 className="sr-only">Meals on {day}</h2>
       <DayPager />
+      {total && <DayTotalSummary total={total} />}
       {meals.error && <ProblemAlert error={meals.error} />}
+      {/* One alert is enough when the server is unreachable for both. */}
+      {totals.error && !meals.error && <ProblemAlert error={totals.error} />}
       {meals.isPending && <p className="text-gray-500">Loading...</p>}
       {meals.isSuccess && sorted.length === 0 && (
         <p className="text-gray-500">No Meals on this Day.</p>

@@ -7,6 +7,9 @@ type ExerciseSuggestions =
   paths["/api/v1/exercises"]["get"]["responses"][200]["content"]["application/json"];
 type Me = components["schemas"]["Me"];
 
+// The signed-in User's flat Restaurant Day calories, as `signedInAs` reports them.
+export const RESTAURANT_DAY_KCAL = 2500;
+
 // The signed-in User the app shell asks about on load (ADR 0021). Typed from the
 // contract, so a schema change breaks compilation here (ADR 0014).
 export function signedInAs(
@@ -19,7 +22,7 @@ export function signedInAs(
       name: "Owner",
       email: "owner@example.test",
       ...identity,
-      restaurant_day_kcal: 2500,
+      restaurant_day_kcal: RESTAURANT_DAY_KCAL,
     }),
   );
 }
@@ -132,6 +135,9 @@ type Nutrition = components["schemas"]["Nutrition"];
 type Meal =
   components["schemas"]["FoodsMeal"] | components["schemas"]["RestaurantMeal"];
 type MealPage = components["schemas"]["MealPage"];
+type MealTotal = components["schemas"]["MealTotal"];
+type DayTotal = components["schemas"]["DayTotal"];
+
 type PutMeal =
   | components["schemas"]["PutFoodsMeal"]
   | components["schemas"]["PutRestaurantMeal"];
@@ -347,6 +353,50 @@ export function fakeMealApi(
     http.get("*/api/v1/reference-foods", ({ request }) =>
       HttpResponse.json(search(references, request)),
     ),
+    // ADR 0023's rules over the Meals held here: a Day with a Restaurant Meal is a
+    // Restaurant Day at the flat value; otherwise each Meal's total adds up.
+    http.get<never, never, DayTotal[]>("*/api/v1/days", ({ request }) => {
+      const params = new URL(request.url).searchParams;
+      const [from, to] = [params.get("from") ?? "", params.get("to") ?? ""];
+      const byDay = new Map<string, Meal[]>();
+      for (const meal of meals.values()) {
+        if (meal.day >= from && meal.day <= to) {
+          byDay.set(meal.day, [...(byDay.get(meal.day) ?? []), meal]);
+        }
+      }
+      const totals = [...byDay].map(([day, dayMeals]): DayTotal => {
+        if (dayMeals.some((meal) => meal.kind === "restaurant")) {
+          return {
+            day,
+            kcal: RESTAURANT_DAY_KCAL,
+            protein_g: null,
+            carbs_g: null,
+            fat_g: null,
+            restaurant_day: true,
+            incomplete: false,
+          };
+        }
+        const sum = (pick: (t: MealTotal) => number) =>
+          dayMeals.reduce(
+            (n, m) => n + (m.kind === "foods" ? pick(m.total) : 0),
+            0,
+          );
+        return {
+          day,
+          kcal: sum((t) => t.kcal),
+          protein_g: sum((t) => t.protein_g),
+          carbs_g: sum((t) => t.carbs_g),
+          fat_g: sum((t) => t.fat_g),
+          restaurant_day: false,
+          incomplete: dayMeals.some(
+            (m) => m.kind === "foods" && m.total.incomplete,
+          ),
+        };
+      });
+      return HttpResponse.json(
+        totals.sort((a, b) => b.day.localeCompare(a.day)),
+      );
+    }),
     http.get("*/api/v1/restaurants", ({ request }) =>
       HttpResponse.json(search(restaurants, request)),
     ),
