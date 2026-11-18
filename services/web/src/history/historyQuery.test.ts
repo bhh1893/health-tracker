@@ -15,6 +15,7 @@ describe("History in the URL", () => {
       tab: "meals",
       range: "30d",
       exercise: null,
+      q: "",
       dash: false,
     });
   });
@@ -28,11 +29,12 @@ describe("History in the URL", () => {
 
   it("reads each choice", () => {
     expect(
-      parse("tab=meals&range=1y&id=e1&name=Bench+Press&dash=open"),
+      parse("tab=meals&range=1y&id=e1&name=Bench+Press&q=chicken&dash=open"),
     ).toEqual({
       tab: "meals",
       range: "1y",
       exercise: { id: "e1", name: "Bench Press" },
+      q: "chicken",
       dash: true,
     });
   });
@@ -42,8 +44,14 @@ describe("History in the URL", () => {
       tab: "exercise",
       range: "30d",
       exercise: { id: "e1", name: "" },
+      q: "",
       dash: false,
     });
+  });
+
+  it("trims the filter, so a blank one is no filter", () => {
+    expect(parse("q=+chicken+").q).toBe("chicken");
+    expect(parse("q=+++").q).toBe("");
   });
 
   it("writes only what the reader would not infer", () => {
@@ -51,6 +59,7 @@ describe("History in the URL", () => {
       tab: "meals",
       range: "30d",
       exercise: null,
+      q: "",
       dash: false,
     };
     const bench = { id: "e1", name: "Bench Press" };
@@ -71,9 +80,12 @@ describe("History in the URL", () => {
         tab: "meals",
         range: "all",
         exercise: bench,
+        q: "BBQ & chicken",
         dash: true,
       }).toString(),
-    ).toBe("tab=meals&range=all&id=e1&name=Bench+Press&dash=open");
+    ).toBe(
+      "tab=meals&range=all&id=e1&name=Bench+Press&q=BBQ+%26+chicken&dash=open",
+    );
   });
 
   it.each([
@@ -82,6 +94,8 @@ describe("History in the URL", () => {
     "range=90d&dash=open",
     "id=e1&name=Squat",
     "tab=meals&range=90d&id=e1&name=Squat",
+    "q=chicken",
+    "tab=exercise&q=C%2B%2B",
   ])("round-trips %j", (search) => {
     const query = parse(search);
     expect(parse(toHistoryParams(query).toString())).toEqual(query);

@@ -8,6 +8,7 @@ import { Segments } from "../search/Segments";
 import { DashboardSection } from "./DashboardSection";
 import { ExerciseDays } from "./ExerciseDays";
 import { MealDays } from "./MealDays";
+import { MealFilter } from "./MealFilter";
 import {
   parseHistory,
   rangeStart,
@@ -96,10 +97,23 @@ export function HistoryScreen() {
 
       {query.tab === "meals" ? (
         <>
+          <MealFilter
+            value={query.q}
+            onCommit={(q) => {
+              update({ q });
+            }}
+          />
+          {/* The filter never narrows the Dashboard (ADR 0033): its numbers stay
+              "all eating in the Range". */}
           {section(null)}
-          {/* Keyed on the Range, so a new Range also starts with its newest Day
-              open, like a first visit. */}
-          <MealDays key={from ?? "all"} from={from} to={today} />
+          {/* Keyed on the Range and the filter, so each new list starts with its
+              newest Day open, like a first visit. */}
+          <MealDays
+            key={`${from ?? "all"} ${query.q}`}
+            from={from}
+            to={today}
+            q={query.q}
+          />
         </>
       ) : (
         <>

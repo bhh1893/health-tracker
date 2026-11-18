@@ -13,6 +13,9 @@ export interface HistoryQuery {
   // The picked Exercise. Kept while the Meals tab is shown, so switching back
   // returns to the same chart.
   exercise: Picked | null;
+  // The Meals filter (`q`), already trimmed. Empty when there is none. Kept while
+  // the Exercise tab is shown, like the Exercise pick on Meals.
+  q: string;
   // Whether the Dashboard section is open (`dash=open`).
   dash: boolean;
 }
@@ -50,6 +53,7 @@ export function parseHistory(params: URLSearchParams): HistoryQuery {
     range:
       RANGES.find((range) => range === params.get("range")) ?? DEFAULT_RANGE,
     exercise,
+    q: params.get("q")?.trim() ?? "",
     dash: params.get("dash") === "open",
   };
 }
@@ -68,6 +72,9 @@ export function toHistoryParams(query: HistoryQuery) {
   if (query.exercise !== null) {
     params.set("id", query.exercise.id);
     params.set("name", query.exercise.name);
+  }
+  if (query.q !== "") {
+    params.set("q", query.q);
   }
   if (query.dash) {
     params.set("dash", "open");
