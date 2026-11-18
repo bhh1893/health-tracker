@@ -1,3 +1,8 @@
+import type {
+  InfiniteData,
+  UseInfiniteQueryResult,
+} from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import {
   Button,
   Disclosure,
@@ -8,17 +13,25 @@ import {
 import { Chevron } from "../components/Chevron";
 import { LoadMore } from "../components/LoadMore";
 import { ProblemAlert } from "../components/ProblemAlert";
-import { formatAmount } from "../meals/meals";
 import { formatDayTitle } from "./dayTitle";
-import { useMealDays, type MealDay } from "./queries";
+import type { DayPage } from "./queries";
 
 const buttonClass =
   "m-3 rounded-xl border-2 border-teal-700 p-3 text-base text-teal-700 data-pressed:bg-teal-50";
 
-// ADR 0033's Recent Days on Meals: every Day in the Range with a Meal, newest
-// first, one row each, loaded a page at a time as the list nears its end.
-export function RecentDays({ from, to }: { from: string | null; to: string }) {
-  const pages = useMealDays(from, to);
+interface RecentDaysProps<T> {
+  pages: UseInfiniteQueryResult<InfiniteData<DayPage<T>>>;
+  // Said when the Range has no Day, e.g. "No Meals in this range."
+  empty: string;
+  // One row per Day, usually a <DayRow>. The newest row starts open.
+  renderDay: (item: T, defaultExpanded: boolean) => ReactNode;
+}
+
+// ADR 0033's Recent Days, for either kind: the Days in the Range, newest first,
+// one row each, loaded a page at a time as the list nears its end. The kind
+// supplies the pages and how a Day looks; this owns the paging, the status and
+// the retry, so both kinds load, announce and fail the same way.
+export function RecentDays<T>({ pages, empty, renderDay }: RecentDaysProps<T>) {
   const days = pages.data?.pages.flatMap((page) => page.items) ?? [];
   const { error, hasNextPage, isFetchingNextPage } = pages;
 
@@ -33,13 +46,11 @@ export function RecentDays({ from, to }: { from: string | null; to: string }) {
       >
         Recent Days
       </h2>
-      {days.map((day, index) => (
-        // Which rows are open is not kept in the URL (ADR 0033): opening a Day
-        // is a quick look, not a setting.
-        <DayRow key={day.day} day={day} defaultExpanded={index === 0} />
-      ))}
+      {/* Which rows are open is not kept in the URL (ADR 0033): opening a Day
+          is a quick look, not a setting. */}
+      {days.map((day, index) => renderDay(day, index === 0))}
       {!pages.isPending && error === null && days.length === 0 && (
-        <p className="px-3 pb-3 text-gray-500">No Meals in this range.</p>
+        <p className="px-3 pb-3 text-gray-500">{empty}</p>
       )}
       <Status
         pages={pages.data?.pages}
@@ -81,7 +92,7 @@ export function RecentDays({ from, to }: { from: string | null; to: string }) {
 }
 
 interface StatusProps {
-  pages: { items: MealDay[] }[] | undefined;
+  pages: { items: unknown[] }[] | undefined;
   isPending: boolean;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
@@ -121,16 +132,17 @@ function Status({
   );
 }
 
-function DayRow({
-  day,
-  defaultExpanded,
-}: {
-  day: MealDay;
+interface DayRowProps {
+  day: string;
   defaultExpanded: boolean;
-}) {
-  const title = formatDayTitle(day.day);
-  // A Restaurant Day is any Day with a Restaurant Meal (ADR 0023).
-  const ateOut = day.meals.some((meal) => meal.kind === "restaurant");
+  // An orange pill after the title, e.g. "Ate out" on a Restaurant Day.
+  pill?: string | undefined;
+  children: ReactNode;
+}
+
+// One Day of Recent Days: its title, which opens to the Day's contents.
+export function DayRow({ day, defaultExpanded, pill, children }: DayRowProps) {
+  const title = formatDayTitle(day);
   return (
     <Disclosure
       defaultExpanded={defaultExpanded}
@@ -141,13 +153,13 @@ function DayRow({
           slot="trigger"
           // Spoken as "11-13-26 [Friday], Ate out": the spans alone would run
           // together.
-          aria-label={ateOut ? `${title}, Ate out` : title}
+          aria-label={pill === undefined ? title : `${title}, ${pill}`}
           className="flex min-h-11 w-full items-center gap-2 px-3 text-left font-semibold"
         >
           <span>{title}</span>
-          {ateOut && (
+          {pill !== undefined && (
             <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800">
-              Ate out
+              {pill}
             </span>
           )}
           <span className="ml-auto">
@@ -155,52 +167,7 @@ function DayRow({
           </span>
         </Button>
       </Heading>
-      <DisclosurePanel>
-        <ul className="px-3 pb-2">
-          {day.meals.flatMap((meal) =>
-            meal.kind === "restaurant" ? (
-              <li
-                key={meal.id}
-                className="flex items-center gap-2 py-1.5 text-orange-800"
-              >
-                <ForkKnifeIcon />
-                {meal.restaurant.name}
-              </li>
-            ) : (
-              meal.food_entries.map((entry, index) => (
-                <li
-                  // A Meal may hold the same Food twice, so the Food id cannot
-                  // be the key.
-                  key={`${meal.id}-${String(index)}`}
-                  className="flex justify-between gap-3 py-1.5"
-                >
-                  <span>{entry.food.name}</span>
-                  <span className="whitespace-nowrap text-gray-600">
-                    {formatAmount(entry)}
-                  </span>
-                </li>
-              ))
-            ),
-          )}
-        </ul>
-      </DisclosurePanel>
+      <DisclosurePanel>{children}</DisclosurePanel>
     </Disclosure>
-  );
-}
-
-function ForkKnifeIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="size-4 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2 1-3 4-3 8h3" />
-    </svg>
   );
 }

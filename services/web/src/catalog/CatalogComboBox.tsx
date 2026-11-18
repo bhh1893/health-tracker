@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Button,
+  ButtonContext,
   ComboBox,
   Input,
   Label,
@@ -41,6 +42,8 @@ interface CatalogComboBoxProps {
   // False for Search (ADR 0013): no Create row, archived items included, and text
   // that matches nothing says so.
   canCreate?: boolean;
+  // Shows a × in the box that empties it and un-picks the item.
+  clearable?: boolean;
 }
 
 // ADR 0008. React Aria supplies the combobox's roles, keyboard handling and screen
@@ -54,9 +57,22 @@ export function CatalogComboBox({
   onChange,
   label = catalog.label,
   canCreate = true,
+  clearable = false,
 }: CatalogComboBoxProps) {
   const [text, setText] = useState(value?.name ?? "");
   const [conflict, setConflict] = useState<Conflict | null>(null);
+
+  // An item picked from outside the box (a chip, or Back to an older URL) shows
+  // its name. React's "adjust state when a prop changes": compare with the last
+  // value seen during render, not in an effect, so the stale text never paints.
+  // A value going to null leaves the text alone: that is the user typing over it.
+  const [shownId, setShownId] = useState(value?.id);
+  if (value?.id !== shownId) {
+    setShownId(value?.id);
+    if (value !== null) {
+      setText(value.name);
+    }
+  }
 
   const trimmed = text.trim();
   // A picked item is not a search: keep showing recents, not its own name.
@@ -181,6 +197,35 @@ export function CatalogComboBox({
             className="w-full min-w-0 rounded-xl bg-transparent p-3 text-base outline-none"
             placeholder={catalog.placeholder}
           />
+          {clearable && text !== "" && (
+            // ComboBox hands every Button inside it the menu trigger's props
+            // through ButtonContext. Null opts this one out, so it clears
+            // instead of opening the menu.
+            <ButtonContext.Provider value={null}>
+              <Button
+                aria-label="Clear"
+                className="px-2 text-gray-500"
+                onPress={() => {
+                  setText("");
+                  if (value !== null) {
+                    onChange(null);
+                  }
+                }}
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="size-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                >
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </Button>
+            </ButtonContext.Provider>
+          )}
           <Button aria-label="Show suggestions" className="px-3 text-gray-400">
             ▾
           </Button>

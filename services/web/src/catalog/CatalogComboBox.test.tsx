@@ -62,19 +62,21 @@ describe("CatalogComboBox", () => {
     expect(api.queries).toEqual([""]);
   });
 
-  it("debounces typing into one search", async () => {
+  it("searches for what was typed, once", async () => {
     renderAt("/", <Harness />);
     await userEvent.click(input());
     await screen.findByRole("option", { name: "Squat" });
 
     await userEvent.type(input(), "ben");
 
+    // Waits on the request itself, not on Squat leaving the list: the list
+    // empties as soon as the debounced q changes, before the request lands.
+    // Whether "b" was searched first depends on how fast this machine types;
+    // useDebouncedValue.test.ts checks the skipping with a fake clock.
     await waitFor(() => {
-      expect(
-        screen.queryByRole("option", { name: "Squat" }),
-      ).not.toBeInTheDocument();
+      expect(api.queries.at(-1)).toBe("ben");
     });
-    expect(api.queries).toEqual(["", "ben"]);
+    expect(api.queries.filter((q) => q === "ben")).toHaveLength(1);
   });
 
   it("keeps the server's fuzzy matches the text does not contain", async () => {
@@ -347,6 +349,11 @@ describe("CatalogComboBox", () => {
       await userEvent.click(await createRow("Sq"));
       await screen.findByRole("alert");
       await userEvent.type(input(), "u");
+      // Until the "Squ" search lands, the Squat on screen is the "Sq" one,
+      // about to be replaced: a click then lands on a row already gone.
+      await waitFor(() => {
+        expect(api.queries.at(-1)).toBe("Squ");
+      });
       await userEvent.click(
         await screen.findByRole("option", { name: "Squat" }),
       );
