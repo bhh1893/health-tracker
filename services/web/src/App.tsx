@@ -7,9 +7,9 @@ import { SignupClosedScreen } from "./auth/SignupClosedScreen";
 import { ProblemAlert } from "./components/ProblemAlert";
 import { ExerciseWindow } from "./exercise/ExerciseWindow";
 import { HistoryScreen } from "./history/HistoryScreen";
+import { SearchRedirect } from "./history/SearchRedirect";
 import { MealsWindow } from "./meals/MealsWindow";
 import { ProfileScreen } from "./profile/ProfileScreen";
-import { SearchScreen } from "./search/SearchScreen";
 import { WindowLayout } from "./screens/WindowLayout";
 import { AppShell } from "./shell/AppShell";
 import { RedirectKeepingQuery } from "./shell/RedirectKeepingQuery";
@@ -78,11 +78,10 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/exercise" replace />} />
-      {/* Paths from before the bottom bar, kept forever (ADR 0031). */}
-      <Route
-        path="/search"
-        element={<RedirectKeepingQuery to="/history/search" />}
-      />
+      {/* Old paths, kept forever (ADR 0031). Search's URLs are translated, not
+          passed through, since History reads its params differently (ADR 0033). */}
+      <Route path="/search" element={<SearchRedirect />} />
+      <Route path="/history/search" element={<SearchRedirect />} />
       <Route
         path="/dashboards"
         element={<RedirectKeepingQuery to="/history" />}
@@ -97,7 +96,6 @@ export function App() {
         {/* The chart library loads only when its Dashboard section opens
             (ADR 0033), so the screen itself ships with the app. */}
         <Route path="/history" element={<HistoryScreen />} />
-        <Route path="/history/search" element={<SearchScreen />} />
         {/* Profile */}
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="*" element={<NotFound />} />

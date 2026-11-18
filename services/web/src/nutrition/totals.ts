@@ -33,14 +33,3 @@ export function formatMacros({ protein_g, carbs_g, fat_g }: Macros) {
   const grams = (value: number) => `${WHOLE.format(value)} g`;
   return `P ${grams(protein_g)} · C ${grams(carbs_g)} · F ${grams(fat_g)}`;
 }
-
-// A Day's calories in a few words, for a summary line and for a screen reader. An
-// Incomplete Day says so, because its number under-reports.
-export function describeDay(total: DayTotal) {
-  if (total.restaurant_day) {
-    return `Restaurant Day, ${formatKcal(total.kcal)}`;
-  }
-  return total.incomplete
-    ? `${formatKcal(total.kcal)}, incomplete`
-    : formatKcal(total.kcal);
-}

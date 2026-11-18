@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { components } from "../api/schema";
 import { addDays, toDay } from "../lib/day";
-import type { ExerciseSession } from "../search/days";
+import type { ExerciseSession } from "../exercise/sessions";
 import { bench } from "../test-handlers";
 import { renderAt } from "../test-render";
 import { server } from "../test-server";

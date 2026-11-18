@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { describeDay, formatKcal, formatMacros, type DayTotal } from "./totals";
+import { formatKcal, formatMacros, type DayTotal } from "./totals";
 
 const total = (fields: Partial<DayTotal> = {}): DayTotal => ({
   day: "2026-11-02",
@@ -26,15 +26,5 @@ describe("formatting totals", () => {
   it("has no macros to write for a Restaurant Day, rather than zeros", () => {
     const unknown = { protein_g: null, carbs_g: null, fat_g: null };
     expect(formatMacros(total(unknown))).toBeNull();
-  });
-
-  it("describes a Day by what kind of number its calories are", () => {
-    expect(describeDay(total())).toBe("2,130 kcal");
-    expect(describeDay(total({ incomplete: true }))).toBe(
-      "2,130 kcal, incomplete",
-    );
-    expect(describeDay(total({ kcal: 5000, restaurant_day: true }))).toBe(
-      "Restaurant Day, 5,000 kcal",
-    );
   });
 });

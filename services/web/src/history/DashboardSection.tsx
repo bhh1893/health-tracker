@@ -10,7 +10,7 @@ import { Chevron } from "../components/Chevron";
 import { summarizeMeals } from "../dashboards/stats";
 import { useDayTotals } from "../nutrition/queries";
 import { formatKcal } from "../nutrition/totals";
-import type { Picked } from "../search/searchQuery";
+import type { Picked } from "./historyQuery";
 import { loadDashboard } from "./loadDashboard";
 
 // React.lazy calls loadDashboard on the first render of <Dashboard>, which

@@ -1,10 +1,16 @@
 import { addDays } from "../lib/day";
-import type { Picked } from "../search/searchQuery";
 
 // What the History screen shows, all of it in the URL (ADR 0033): a reload, the
 // Back button and the bar's tab memory (ADR 0031) all return to the same view.
 
 export type Tab = "exercise" | "meals";
+
+// The picked Exercise. The name rides along so a reload can show it without a
+// request.
+export interface Picked {
+  id: string;
+  name: string;
+}
 export type RangeName = "30d" | "60d" | "90d" | "1y" | "all";
 
 export interface HistoryQuery {
@@ -80,4 +86,25 @@ export function toHistoryParams(query: HistoryQuery) {
     params.set("dash", "open");
   }
   return params;
+}
+
+// What an old Search URL (`/history/search`, `/search`) means on History (ADR
+// 0033). A picked Food becomes the Meals filter by its name; a picked Exercise
+// stays picked. Everything else, Search's ranges included, has no match here and
+// falls to the defaults.
+export function fromOldSearch(params: URLSearchParams): HistoryQuery {
+  const query = parseHistory(new URLSearchParams());
+  const what = params.get("what");
+  const id = params.get("id");
+  const name = params.get("name")?.trim() ?? "";
+  if (id === null || name === "") {
+    return query;
+  }
+  if (what === "food") {
+    return { ...query, tab: "meals", q: name };
+  }
+  if (what === "exercise") {
+    return { ...query, tab: "exercise", exercise: { id, name } };
+  }
+  return query;
 }

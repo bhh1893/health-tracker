@@ -2,7 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { api, unwrap } from "../api/client";
 import type { components } from "../api/schema";
-import type { ExerciseSession } from "../search/days";
+import type { ExerciseSession } from "../exercise/sessions";
 
 export type MealDay = components["schemas"]["MealDay"];
 type MealDayPage = components["schemas"]["MealDayPage"];

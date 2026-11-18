@@ -6,7 +6,7 @@ import { useToday } from "./useToday";
 const DAY_PARAM = "day";
 
 // The viewed Day lives in the URL, not component state, so reload, the back
-// button and links from Search all keep it (ADR 0013). No param means Today.
+// button and shared links all keep it (ADR 0013). No param means Today.
 export function useViewedDay() {
   const [searchParams, setSearchParams] = useSearchParams();
   const today = useToday();

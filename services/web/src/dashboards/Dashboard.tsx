@@ -1,4 +1,4 @@
-import type { Picked } from "../search/searchQuery";
+import type { Picked } from "../history/historyQuery";
 import { ExerciseDashboard } from "./ExerciseDashboard";
 import { MealsDashboard } from "./MealsDashboard";
 
