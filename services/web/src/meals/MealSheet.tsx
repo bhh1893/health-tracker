@@ -1,4 +1,4 @@
-import { useState, type SyntheticEvent } from "react";
+import { useState, type ReactNode, type SyntheticEvent } from "react";
 import { Button } from "react-aria-components";
 
 import { CatalogComboBox } from "../catalog/CatalogComboBox";
@@ -155,13 +155,14 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
       : `Edit ${name}`;
 
   return (
-    // Capped at two thirds of the screen: past that the Foods list scrolls on its
-    // own, so the pick, Label and Save stay put. min-h-0 lets the form, and so the
-    // list, shrink to the cap.
+    // A fixed two thirds of the screen, so the sheet keeps its size as Foods are
+    // added. The form fills it (flex-1), and the Foods or Restaurants box takes the
+    // spare height and scrolls on its own, so the pick, Label and Save stay put.
+    // min-h-0 lets the form, and so the box, shrink when the keyboard opens.
     <Sheet
       title={title}
       onClose={onClose}
-      maxHeight="two-thirds"
+      size="two-thirds"
       // Closes without saving, like Cancel, and reachable without scrolling to it.
       actions={
         <Button
@@ -183,7 +184,7 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
         </Button>
       }
     >
-      <form className="flex min-h-0 flex-col gap-4" onSubmit={save}>
+      <form className="flex min-h-0 flex-1 flex-col gap-4" onSubmit={save}>
         {draft.kind === "foods" ? (
           <FoodsPart
             rows={draft.rows}
@@ -318,70 +319,71 @@ function FoodsPart({
         </Button>
       </div>
       <RecentChips catalog={foodCatalog} onPick={add} />
-      {rows.length === 0 ? (
-        <p className="text-gray-500">No Foods yet. Search above to add one.</p>
-      ) : (
-        // min-h-28 keeps about one row in view when the sheet is at its cap.
-        <ul
-          aria-label="Foods"
-          className="min-h-28 divide-y divide-gray-300 overflow-y-auto overscroll-contain rounded-xl border border-gray-300"
-        >
-          {rows.map((row) => (
-            <li
-              key={row.key}
-              aria-label={row.food.name}
-              className="flex flex-col gap-2 px-3 py-3"
-            >
-              <div className="flex items-center justify-between">
-                <span className="py-2 font-medium">{row.food.name}</span>
-                <Button
-                  aria-label={`Remove ${row.food.name}`}
-                  className="rounded-lg p-2 text-base text-teal-700 data-disabled:text-gray-300"
-                  isDisabled={lastFoodLocked}
-                  onPress={() => {
-                    onRemoveRow(row.key);
-                  }}
-                >
-                  Remove
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <label className={labelClass}>
-                  Quantity
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="any"
-                    required
-                    aria-invalid={parseQuantity(row.quantity) === null}
-                    className={fieldClass}
-                    value={row.quantity}
-                    onChange={({ target }) => {
-                      onChangeRow(row.key, { quantity: target.value });
-                    }}
-                  />
-                </label>
-                <label className={labelClass}>
-                  Unit
-                  <select
-                    className={fieldClass}
-                    value={row.unit}
-                    onChange={({ target }) => {
-                      onChangeRow(row.key, {
-                        unit: target.value === "count" ? "count" : "g",
-                      });
+      {/* min-h-28 keeps about one row in view when the keyboard shrinks the sheet. */}
+      <EntryBox className="min-h-28">
+        {rows.length === 0 ? (
+          <p className="p-3 text-gray-500">
+            No Foods yet. Search above to add one.
+          </p>
+        ) : (
+          <ul aria-label="Foods" className="divide-y divide-gray-300">
+            {rows.map((row) => (
+              <li
+                key={row.key}
+                aria-label={row.food.name}
+                className="flex flex-col gap-2 px-3 py-3"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="py-2 font-medium">{row.food.name}</span>
+                  <Button
+                    aria-label={`Remove ${row.food.name}`}
+                    className="rounded-lg p-2 text-base text-teal-700 data-disabled:text-gray-300"
+                    isDisabled={lastFoodLocked}
+                    onPress={() => {
+                      onRemoveRow(row.key);
                     }}
                   >
-                    <option value="g">g</option>
-                    <option value="count">count</option>
-                  </select>
-                </label>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+                    Remove
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className={labelClass}>
+                    Quantity
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="any"
+                      required
+                      aria-invalid={parseQuantity(row.quantity) === null}
+                      className={fieldClass}
+                      value={row.quantity}
+                      onChange={({ target }) => {
+                        onChangeRow(row.key, { quantity: target.value });
+                      }}
+                    />
+                  </label>
+                  <label className={labelClass}>
+                    Unit
+                    <select
+                      className={fieldClass}
+                      value={row.unit}
+                      onChange={({ target }) => {
+                        onChangeRow(row.key, {
+                          unit: target.value === "count" ? "count" : "g",
+                        });
+                      }}
+                    >
+                      <option value="g">g</option>
+                      <option value="count">count</option>
+                    </select>
+                  </label>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </EntryBox>
       {lastFoodLocked && (
         <p className="text-sm text-gray-600">{LAST_FOOD_MESSAGE}</p>
       )}
@@ -439,39 +441,58 @@ function RestaurantPart({ restaurants, onAdd, onRemove }: RestaurantPartProps) {
         onPick={add}
         isDisabled={(restaurant) => !canAdd(restaurant)}
       />
-      {restaurants.length === 0 ? (
-        <p className="text-gray-500">
-          No Restaurants yet. Search above to add one.
-        </p>
-      ) : (
-        <ul
-          aria-label="Restaurants"
-          className="min-h-14 divide-y divide-gray-300 overflow-y-auto overscroll-contain rounded-xl border border-gray-300"
-        >
-          {restaurants.map((restaurant) => (
-            <li
-              key={restaurant.id}
-              aria-label={restaurant.name}
-              className="flex items-center justify-between px-3 py-1"
-            >
-              <span className="flex items-center gap-2 py-2 font-medium text-orange-800">
-                <ForkKnifeIcon />
-                {restaurant.name}
-              </span>
-              <Button
-                aria-label={`Remove ${restaurant.name}`}
-                className="rounded-lg p-2 text-base text-teal-700"
-                onPress={() => {
-                  onRemove(restaurant.id);
-                }}
+      <EntryBox className="min-h-14">
+        {restaurants.length === 0 ? (
+          <p className="p-3 text-gray-500">
+            No Restaurants yet. Search above to add one.
+          </p>
+        ) : (
+          <ul aria-label="Restaurants" className="divide-y divide-gray-300">
+            {restaurants.map((restaurant) => (
+              <li
+                key={restaurant.id}
+                aria-label={restaurant.name}
+                className="flex items-center justify-between px-3 py-1"
               >
-                Remove
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
+                <span className="flex items-center gap-2 py-2 font-medium text-orange-800">
+                  <ForkKnifeIcon />
+                  {restaurant.name}
+                </span>
+                <Button
+                  aria-label={`Remove ${restaurant.name}`}
+                  className="rounded-lg p-2 text-base text-teal-700"
+                  onPress={() => {
+                    onRemove(restaurant.id);
+                  }}
+                >
+                  Remove
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </EntryBox>
       {full && <p className="text-sm text-gray-600">{FULL_MESSAGE}</p>}
     </>
+  );
+}
+
+// The bordered box that holds a Meal's Foods or Restaurants, shown even while empty.
+// flex-1 takes the sheet's spare height, so the box is the part that changes as rows
+// are added, never the sheet; past its height it scrolls on its own.
+// overscroll-contain stops a scroll that hits its end from scrolling the feed behind.
+function EntryBox({
+  className,
+  children,
+}: {
+  className: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={`${className} flex-1 overflow-y-auto overscroll-contain rounded-xl border border-gray-300`}
+    >
+      {children}
+    </div>
   );
 }
