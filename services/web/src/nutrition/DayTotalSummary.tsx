@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 
 import { formatKcal, formatMacros, type DayTotal } from "./totals";
 
@@ -9,6 +10,8 @@ const TONES = {
   orange: "bg-orange-100 text-orange-800",
 };
 
+const badgeClass = "shrink-0 rounded-full px-3 py-1 text-sm font-semibold";
+
 function Badge({
   tone,
   children,
@@ -16,14 +19,12 @@ function Badge({
   tone: keyof typeof TONES;
   children: ReactNode;
 }) {
-  return (
-    <span
-      className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${TONES[tone]}`}
-    >
-      {children}
-    </span>
-  );
+  return <span className={`${badgeClass} ${TONES[tone]}`}>{children}</span>;
 }
+
+// A deep link: the URL carries the filter, so the Foods page opens already showing
+// only the Foods that need a label (ADR 0032). Back returns to this Day.
+const MISSING_FOODS = "/profile/foods?missing=1";
 
 const sectionClass = "flex flex-col gap-1 rounded-2xl bg-gray-50 p-4";
 
@@ -49,7 +50,11 @@ export function DayTotalSummary({ total }: { total: DayTotal }) {
     <section aria-label="Day total" className={sectionClass}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-lg font-semibold">{formatKcal(total.kcal)}</p>
-        {total.incomplete && <Badge tone="amber">Incomplete</Badge>}
+        {total.incomplete && (
+          <Link to={MISSING_FOODS} className={`${badgeClass} ${TONES.amber}`}>
+            Incomplete <span aria-hidden="true">›</span>
+          </Link>
+        )}
       </div>
       {/* Null macros are unknown, not zero: "0 g" would be a false number. */}
       <p className="text-sm text-gray-600">
@@ -58,7 +63,7 @@ export function DayTotalSummary({ total }: { total: DayTotal }) {
       {total.incomplete && (
         <p className="text-sm text-gray-600">
           Some Foods have no Nutrition or Piece Weight yet, so the real total is
-          higher.
+          higher. Tap Incomplete to finish them.
         </p>
       )}
     </section>

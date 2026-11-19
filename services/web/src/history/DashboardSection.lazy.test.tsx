@@ -23,9 +23,6 @@ it("imports the chart chunk on the first open of the Dashboard, not with History
     http.get("*/api/v1/meal-days", () =>
       HttpResponse.json({ items: [], next_cursor: null }),
     ),
-    http.get("*/api/me", () =>
-      HttpResponse.json({ restaurant_day_kcal: 5000 }),
-    ),
   );
   renderAt("/history", <HistoryScreen />);
   // React.lazy calls its loader during the render that first shows the lazy

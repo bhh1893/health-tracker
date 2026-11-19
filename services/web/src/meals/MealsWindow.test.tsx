@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { App } from "../App";
 import {
   aMeal,
   banana,
@@ -10,6 +11,7 @@ import {
   fakeMealApi,
   oats,
   RESTAURANT_DAY_KCAL,
+  signedInAs,
 } from "../test-handlers";
 import { renderAt } from "../test-render";
 import { server } from "../test-server";
@@ -49,7 +51,11 @@ async function searchAndAdd(name: string) {
     name,
   );
   await userEvent.click(await screen.findByRole("option", { name }));
-  await userEvent.click(within(sheet()).getByRole("button", { name: "Add" }));
+  // findBy, not getBy: until the suggestions finish closing, react-aria hides the
+  // rest of the sheet from assistive tech, so Add is briefly not found.
+  await userEvent.click(
+    await within(sheet()).findByRole("button", { name: "Add" }),
+  );
 }
 
 describe("the Day feed", () => {
@@ -112,6 +118,24 @@ describe("the Day total", () => {
     const total = await dayTotal();
     expect(within(total).getByText("Incomplete")).toBeInTheDocument();
     expect(total).toHaveTextContent("the real total is higher");
+  });
+
+  it("links the Incomplete badge to the Foods that still need a label", async () => {
+    seedApi(aMeal());
+    server.use(signedInAs("member"));
+    renderAt(PAST_URL, <App />);
+
+    await userEvent.click(
+      within(await dayTotal()).getByRole("link", { name: "Incomplete" }),
+    );
+
+    // Profile's Foods page, opened with "No nutrition yet" already on (ADR 0032).
+    expect(screen.getByRole("status", { name: "url" })).toHaveTextContent(
+      "/profile/foods?missing=1",
+    );
+    expect(
+      await screen.findByRole("button", { name: "No nutrition yet" }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   it("marks a Restaurant Day, with the flat value and no macros", async () => {

@@ -1,8 +1,6 @@
-import { useMe } from "../auth/me";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { useDayTotals } from "../nutrition/queries";
 import { formatKcal, formatMacros } from "../nutrition/totals";
-import { RestaurantDaySetting } from "./RestaurantDaySetting";
 import { StatTiles } from "./StatTiles";
 import { historyStart, summarizeMeals } from "./stats";
 import { TrendChart } from "./TrendChart";
@@ -15,10 +13,9 @@ interface MealsDashboardProps {
 
 // Calories per Day (ADR 0024), from GET /days. A Restaurant Day is an orange point
 // on the line at the User's flat value (ADR 0033). An Incomplete Day is a ring: it
-// under-reports.
+// under-reports. The flat value is set on Profile (ADR 0032).
 export function MealsDashboard({ from, to }: MealsDashboardProps) {
   const totals = useDayTotals(from, to);
-  const me = useMe();
 
   return (
     <>
@@ -33,14 +30,6 @@ export function MealsDashboard({ from, to }: MealsDashboardProps) {
       )}
       {totals.data !== undefined && totals.data.length > 0 && (
         <Charts totals={totals.data} from={from} to={to} />
-      )}
-      {me.error && <ProblemAlert error={me.error} />}
-      {me.data && (
-        <RestaurantDaySetting
-          // Remounted when the saved value changes, so the field follows it.
-          key={me.data.restaurant_day_kcal}
-          saved={me.data.restaurant_day_kcal}
-        />
       )}
     </>
   );

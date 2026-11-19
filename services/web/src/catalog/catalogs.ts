@@ -1,5 +1,6 @@
 import { api, unwrap } from "../api/client";
 import type { components } from "../api/schema";
+import { EXERCISE_DAYS_KEY, MEAL_DAYS_KEY } from "../history/queries";
 
 export type CatalogRef = components["schemas"]["CatalogRef"];
 export type Food = components["schemas"]["Food"];
@@ -43,7 +44,7 @@ export interface Catalog {
   // Cache key prefixes of the screens that show this Catalog's names inside Entries,
   // so a rename or an archive reaches them.
   shownIn: readonly string[];
-  // Logging hides archived items; Search and Profile show them on request.
+  // Logging hides archived items; History and Profile show them on request.
   suggest: (
     q: string,
     limit: number,
@@ -68,7 +69,7 @@ export const exerciseCatalog: Catalog = {
   plural: "Exercises",
   page: "/profile/exercises",
   placeholder: "Search Exercises",
-  shownIn: ["exercise-entries", "search"],
+  shownIn: ["exercise-entries", EXERCISE_DAYS_KEY],
   suggest: (q, limit, includeArchived) =>
     unwrap(
       api.GET("/api/v1/exercises", {
@@ -116,7 +117,7 @@ export const foodCatalog: Catalog = {
   plural: "Foods",
   page: "/profile/foods",
   placeholder: "Search Foods",
-  shownIn: ["meals", "search"],
+  shownIn: ["meals", MEAL_DAYS_KEY],
   suggest: (q, limit, includeArchived) =>
     unwrap(
       api.GET("/api/v1/foods", {
@@ -164,7 +165,7 @@ export const restaurantCatalog: Catalog = {
   plural: "Restaurants",
   page: "/profile/restaurants",
   placeholder: "Search Restaurants",
-  shownIn: ["meals", "search"],
+  shownIn: ["meals", MEAL_DAYS_KEY],
   suggest: (q, limit, includeArchived) =>
     unwrap(
       api.GET("/api/v1/restaurants", {

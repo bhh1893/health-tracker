@@ -4,9 +4,10 @@ import { useMe } from "../auth/me";
 import { SignOutLink } from "../auth/SignOutLink";
 import { CATALOGS } from "../catalog/catalogs";
 import { avatarLetter, present } from "./identity";
+import { RestaurantDaySetting } from "./RestaurantDaySetting";
 
 // Profile's menu hub, P1 (ADR 0031): who is signed in at the top, then the Catalogs
-// (ADR 0032), Sign out at the bottom. Settings arrives above Sign out (ADR 0032).
+// (ADR 0032), then Settings (ADR 0032), Sign out at the bottom.
 export function ProfileScreen() {
   // A cache hit, not a request: App loaded /api/me before any route rendered.
   const me = useMe();
@@ -74,7 +75,24 @@ export function ProfileScreen() {
         </ul>
       </nav>
 
-      {/* Settings goes here (ADR 0032). */}
+      <section
+        aria-labelledby="settings-heading"
+        className="flex flex-col gap-2"
+      >
+        <h2
+          id="settings-heading"
+          className="text-sm font-semibold tracking-wide text-gray-500 uppercase"
+        >
+          Settings
+        </h2>
+        {me.data && (
+          <RestaurantDaySetting
+            // Remounted when the saved value changes, so the field follows it.
+            key={me.data.restaurant_day_kcal}
+            saved={me.data.restaurant_day_kcal}
+          />
+        )}
+      </section>
 
       <SignOutLink className="py-2 text-base font-semibold text-red-700" />
     </main>

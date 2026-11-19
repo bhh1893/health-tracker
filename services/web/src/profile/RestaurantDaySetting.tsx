@@ -18,7 +18,7 @@ export function RestaurantDaySetting({ saved }: { saved: number }) {
 
   return (
     <form
-      className="flex flex-col gap-2 rounded-2xl border border-gray-200 bg-white p-3"
+      className="flex flex-col gap-2 rounded-xl border border-gray-200 p-3"
       onSubmit={(event) => {
         event.preventDefault();
         if (valid) {

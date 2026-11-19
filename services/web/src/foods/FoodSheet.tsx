@@ -58,8 +58,6 @@ interface FoodSheetProps {
   // null opens an empty sheet whose Save creates the Food (a Profile Catalog page's Add button).
   foodId: string | null;
   onClose: () => void;
-  // The Food as the server saved it, so the caller can show a new name at once.
-  onSaved?: (food: Food) => void;
   // Profile's sheet (ADR 0032) adds Archive, Unarchive and Delete.
   manage?: boolean | undefined;
   // Opens a Food whose name clashes, in place of this one.
@@ -67,7 +65,8 @@ interface FoodSheetProps {
 }
 
 // ADR 0023's Food sheet: a Food's name, Nutrition and Piece Weight, saved as one
-// write. An existing Food is read first, because a Meal embeds only its name.
+// write, opened only from Profile's Foods page (ADR 0032). An existing Food is read
+// first, so the form starts from the server's current values.
 export function FoodSheet({ foodId, manage, ...form }: FoodSheetProps) {
   if (foodId === null) {
     // Nothing to archive or delete before the Food exists.
@@ -120,7 +119,7 @@ type FoodFormProps = Omit<FoodSheetProps, "foodId" | "manage"> & {
 
 // Mounted only once the Food has loaded, so the draft starts from the server's
 // values without an effect copying them in.
-function FoodForm({ food, onClose, onSaved, onOpen }: FoodFormProps) {
+function FoodForm({ food, onClose, onOpen }: FoodFormProps) {
   const [draft, setDraft] = useState<FoodDraft>(() =>
     food ? draftOf(food) : EMPTY_FOOD_DRAFT,
   );
@@ -153,12 +152,7 @@ function FoodForm({ food, onClose, onSaved, onOpen }: FoodFormProps) {
       return;
     }
     const body = { ...check.body, allow_similar: allowSimilar };
-    const done = {
-      onSuccess: (saved: Food) => {
-        onSaved?.(saved);
-        onClose();
-      },
-    };
+    const done = { onSuccess: onClose };
     if (food) {
       patchFood.mutate(body, done);
     } else {
