@@ -75,3 +75,7 @@ A Food gains optional Nutrition: calories, protein, carbs and fat for a Basis am
 - New Reference Food values go live only with a deploy of `api`, and a CSV-only change still builds a new image. Acceptable for a list that changes rarely.
 - A malformed CSV fails the migration Job, which stops the rollout (ADR 0016) with the old pods still serving. CI must validate the CSV (columns, bounds, unique `id`) so this is caught in the PR.
 - The migration Job now changes data as well as schema; keep the loader idempotent and fast, since it runs on every deploy.
+
+## Amendment: a Restaurant Day shows no numbers on Home
+
+Changed 2026-11-19. Home's Day total on a Restaurant Day shows only an orange "ate out" badge and "Not tracking, has become a cheat day.", with no calories or macros: the flat value read like a real count on the Day itself. The API is unchanged, and Dashboards still count the Day at `restaurant_day_kcal` so trends are not skewed low. Calories display as "cal" everywhere; the data stays in kcal, the same quantity.

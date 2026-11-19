@@ -36,3 +36,7 @@ status: accepted
 ## Amendment: Add opens on Meals
 
 Changed 2026-11-18, to match History's Meals | Exercise order (ADR 0033). Add's switch reads Meals | Exercise, `/` lands on `/meals`, and Add's root, where a second tap resets it, is `/meals`. The `/exercise` route is unchanged.
+
+## Amendment: Add is renamed Home
+
+Changed 2026-11-19. The middle tab's label is **Home** and its icon a house: it is where the app opens, and logging is only part of what it shows (the Day Total sits above the Meals). The routes and root are unchanged, so bookmarks and the home-screen shortcut keep working.

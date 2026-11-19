@@ -95,7 +95,7 @@ export function HistoryScreen() {
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-4">
       {/* No Back link: History is the tab's root, and the bar leaves it. */}
-      <h1 className="text-xl font-semibold">History</h1>
+      <h1 className="text-center text-xl font-semibold">History</h1>
 
       <Segments
         label="Kind"
@@ -119,8 +119,8 @@ export function HistoryScreen() {
           {/* The filter never narrows the Dashboard (ADR 0033): its numbers stay
               "all eating in the Range". */}
           {section(null)}
-          {/* Keyed on the Range and the filter, so each new list starts with its
-              newest Day open, like a first visit. */}
+          {/* Keyed on the Range and the filter, so each new list starts with
+              every Day closed, like a first visit. */}
           <MealDays
             key={`${from ?? "all"} ${query.q}`}
             from={from}
@@ -159,7 +159,7 @@ export function HistoryScreen() {
             <>
               {section(query.exercise)}
               {/* Keyed like Meals, and per Exercise too, so a new pick starts
-                  with its own newest Day open. */}
+                  with every Day closed. */}
               <ExerciseDays
                 key={`${query.exercise.id} ${from ?? "all"}`}
                 exerciseId={query.exercise.id}

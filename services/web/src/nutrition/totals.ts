@@ -16,7 +16,8 @@ export const UNKNOWN_TOTAL: MealTotal = {
 const WHOLE = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
 // Whole numbers: a label's own rounding is coarser than a decimal place would claim.
-export const formatKcal = (kcal: number) => `${WHOLE.format(kcal)} kcal`;
+// Shown as "cal", the everyday word; the data stays in kcal, the same quantity.
+export const formatKcal = (kcal: number) => `${WHOLE.format(kcal)} cal`;
 
 interface Macros {
   protein_g: number | null;

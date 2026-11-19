@@ -56,3 +56,7 @@ Changed 2026-11-19 to make the Food sheet easier to scan.
 
 - **Archive, Unarchive and Delete are icons in the sheet's header**, beside the title, on every Profile sheet. Delete still asks once more, on a line under the header. The "Archived items are hidden when logging" note is dropped: Archive is undone with one tap.
 - **The Food sheet is two columns:** Name | Fill from reference, then Basis | Piece Weight, Calories | Protein, Carbs | Fat, then Cancel | Save. Clear sits on the Nutrition header and still leaves Piece Weight alone.
+
+## Amendment: Add button at the bottom, no Back link
+
+Changed 2026-11-19. Each Catalog page drops its Back link: tapping Profile in the bar already returns there. The header "+" becomes an **Add Food / Add Restaurant / Add Exercise** button pinned just above the bar, the same place and style as Home's Add Meal, so creating something is in thumb reach on every screen. It opens the same empty sheet as before.

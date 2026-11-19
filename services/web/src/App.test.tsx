@@ -240,7 +240,7 @@ describe("the shell", () => {
       await screen.findByRole("heading", { level: 1, name: "History" }),
     ).toBeInTheDocument();
     expect(tab("History")).toHaveAttribute("aria-current", "page");
-    expect(tab("Add")).not.toHaveAttribute("aria-current");
+    expect(tab("Home")).not.toHaveAttribute("aria-current");
   });
 
   it("opens Profile from the bar", async () => {
@@ -290,14 +290,14 @@ describe("the shell", () => {
 
     await userEvent.click(tab("History"));
     await screen.findByRole("heading", { level: 1, name: "History" });
-    await userEvent.click(tab("Add"));
+    await userEvent.click(tab("Home"));
 
     expect(
       await screen.findByRole("heading", { name: "Exercise on 2026-11-02" }),
     ).toBeInTheDocument();
 
     // A second tap resets to the root: the Meals window, viewing today.
-    await userEvent.click(tab("Add"));
+    await userEvent.click(tab("Home"));
 
     expect(
       await screen.findByRole("heading", {
@@ -314,7 +314,7 @@ describe("the shell", () => {
     await userEvent.click(
       await screen.findByRole("button", { name: /^Dashboard/ }),
     );
-    await userEvent.click(tab("Add"));
+    await userEvent.click(tab("Home"));
     await userEvent.click(await findTab("History"));
 
     expect(screen.getByLabelText("url")).toHaveTextContent(
@@ -352,7 +352,7 @@ describe("the shell", () => {
     expect(
       await screen.findByRole("heading", { name: "Page not found" }),
     ).toBeInTheDocument();
-    for (const name of ["History", "Add", "Profile"]) {
+    for (const name of ["History", "Home", "Profile"]) {
       expect(tab(name)).not.toHaveAttribute("aria-current");
     }
   });

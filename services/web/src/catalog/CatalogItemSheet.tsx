@@ -18,7 +18,7 @@ import { useCatalogItem, useCreateItem, useRenameItem } from "./queries";
 
 interface CatalogItemSheetProps {
   catalog: Catalog;
-  // null opens an empty sheet whose Save creates the item (Profile's "+").
+  // null opens an empty sheet whose Save creates the item (a Profile Catalog page's Add button).
   itemId: string | null;
   onClose: () => void;
   // Opens an item whose name clashes, in place of this one.

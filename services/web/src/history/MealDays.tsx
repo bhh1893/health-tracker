@@ -30,13 +30,12 @@ export function MealDays({ from, to, q }: MealDaysProps) {
           ? undefined
           : matchCount(loaded, pages.hasNextPage, q)
       }
-      renderDay={(day, defaultExpanded) => (
+      renderDay={(day) => (
         <DayRow
           key={day.day}
           day={day.day}
-          defaultExpanded={defaultExpanded}
           // A Restaurant Day is any Day with a Restaurant Meal (ADR 0023).
-          pill={isRestaurantDay(day) ? "Ate out" : undefined}
+          pill={isRestaurantDay(day) ? "ate out" : undefined}
         >
           <MealList day={day} q={q} />
         </DayRow>

@@ -1,6 +1,6 @@
 {
-  "name": "Health Tracker",
-  "short_name": "Health",
+  "name": "Nibble Jiggle",
+  "short_name": "Nibble Jiggle",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

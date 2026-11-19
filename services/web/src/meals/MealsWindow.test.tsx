@@ -100,10 +100,10 @@ describe("the Day total", () => {
     renderAt(PAST_URL, <MealsWindow />);
 
     const total = await dayTotal();
-    expect(total).toHaveTextContent("2,130 kcal");
+    expect(total).toHaveTextContent("2,130 cal");
     expect(total).toHaveTextContent("P 120 g · C 250 g · F 70 g");
     expect(total).not.toHaveTextContent("Incomplete");
-    expect(total).not.toHaveTextContent("Restaurant Day");
+    expect(total).not.toHaveTextContent("ate out");
   });
 
   it("badges an Incomplete Day and says the real total is higher", async () => {
@@ -124,13 +124,14 @@ describe("the Day total", () => {
     renderAt(PAST_URL, <MealsWindow />);
 
     const total = await dayTotal();
-    expect(within(total).getByText("Restaurant Day")).toBeInTheDocument();
-    expect(total).toHaveTextContent(
-      `${RESTAURANT_DAY_KCAL.toLocaleString("en-US")} kcal`,
+    expect(within(total).getByText("ate out")).toBeInTheDocument();
+    expect(total).toHaveTextContent("Not tracking, has become a cheat day.");
+    // No numbers: the flat value would read like a real count.
+    expect(total).not.toHaveTextContent(
+      RESTAURANT_DAY_KCAL.toLocaleString("en-US"),
     );
-    expect(total).toHaveTextContent("Macros: no data");
-    // Not "0 g": unknown macros are not zero.
-    expect(total).not.toHaveTextContent("0 g");
+    expect(total).not.toHaveTextContent(" cal");
+    expect(total).not.toHaveTextContent("Macros");
     expect(total).not.toHaveTextContent("Incomplete");
   });
 
