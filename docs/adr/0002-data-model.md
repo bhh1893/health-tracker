@@ -8,6 +8,8 @@ Postgres holds one row per fact, owned by a user, with the database (not only th
 
 **Amended by ADR 0023:** `foods` gains optional Nutrition columns and `piece_g`; `users` gains `restaurant_day_kcal`; `reference_foods` is the one table with no `user_id` (read-only to `api`, never referenced by a foreign key).
 
+**Amended by ADR 0034:** `meals.restaurant_id` moves to a `meal_restaurants` table, so a Restaurant Meal holds one to ten Restaurants; "at least one Restaurant" becomes API-only, like "at least one Food Entry".
+
 ## Shape
 
 - Tables: `users`; one table per Catalog (`foods`, `exercises`, `restaurants`); `meals`; `food_entries`; `exercise_entries`. No `sessions` table.
