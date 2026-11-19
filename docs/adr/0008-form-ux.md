@@ -72,3 +72,7 @@ A Meal card and the Meal sheet's title name a Meal by its **Label**, or plain **
 The Label field becomes a native select: None, Breakfast, Lunch, Dinner, Snack, Other. **Other** shows a text field for any Label. A native select opens the phone's picker rather than the keyboard, so the common case never raises it. The presets are client-only: the API's `label` stays free text, and a saved Label that is not a preset reopens under Other.
 
 - **Considered: a combobox with free text.** Not chosen: one field instead of two, but it opens the keyboard on every tap, which is the problem the centered sheet is working around.
+
+## Amendment: fixed-size Meal sheet
+
+Changed 2026-11-19. The Meal sheet opens at its full size, two thirds of the screen (never below 24rem), instead of growing as Foods or Restaurants are added. The bordered list box shows from the start, empty with a hint until the first pick, and takes the sheet's spare height; past that it scrolls on its own. The sheet no longer resizes under the user's thumb as rows are added. The cost: a Meal with one Food leaves blank space inside the box. `Sheet`'s `maxHeight` prop becomes `size` (`fit` | `two-thirds`), since two-thirds is now a height rather than a cap.
