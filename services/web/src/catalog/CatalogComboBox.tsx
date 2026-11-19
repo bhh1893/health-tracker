@@ -13,6 +13,7 @@ import {
 
 import { ApiError } from "../api/client";
 import { BottomSheet } from "../components/BottomSheet";
+import { ClearIcon } from "../components/ClearIcon";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 import { uuidv7 } from "../lib/uuidv7";
@@ -41,8 +42,6 @@ interface CatalogComboBoxProps {
   // False for Search (ADR 0013): no Create row, archived items included, and text
   // that matches nothing says so.
   canCreate?: boolean;
-  // Shows a × in the box that empties it and un-picks the item.
-  clearable?: boolean;
 }
 
 // ADR 0008. React Aria supplies the combobox's roles, keyboard handling and screen
@@ -56,7 +55,6 @@ export function CatalogComboBox({
   onChange,
   label = catalog.label,
   canCreate = true,
-  clearable = false,
 }: CatalogComboBoxProps) {
   const [text, setText] = useState(value?.name ?? "");
   const [conflict, setConflict] = useState<Conflict | null>(null);
@@ -196,14 +194,15 @@ export function CatalogComboBox({
             className="w-full min-w-0 rounded-xl bg-transparent p-3 text-base outline-none"
             placeholder={catalog.placeholder}
           />
-          {clearable && text !== "" && (
+          {text !== "" && (
             // ComboBox hands every Button inside it the menu trigger's props
             // through ButtonContext. Null opts this one out, so it clears
-            // instead of opening the menu.
+            // instead of toggling the menu. Suggestions stay open on focus, so
+            // the box needs no toggle of its own.
             <ButtonContext.Provider value={null}>
               <Button
                 aria-label="Clear"
-                className="px-2 text-gray-500"
+                className="flex size-11 shrink-0 items-center justify-center text-gray-500"
                 onPress={() => {
                   setText("");
                   if (value !== null) {
@@ -211,36 +210,25 @@ export function CatalogComboBox({
                   }
                 }}
               >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className="size-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                >
-                  <path d="M6 6l12 12M18 6 6 18" />
-                </svg>
+                <ClearIcon />
               </Button>
             </ButtonContext.Provider>
           )}
-          <Button aria-label="Show suggestions" className="px-3 text-gray-400">
-            ▾
-          </Button>
         </div>
-        {suggestions.isFetching && (
-          <p role="status" className="text-sm text-gray-500">
-            Searching...
-          </p>
-        )}
-        <Popover className="w-(--trigger-width) overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+        {/* No "Searching..." line: it pushed the form down on every keystroke.
+            Rows from the last search stay until the next arrive, and an empty
+            menu stays hidden until there is something to say. */}
+        <Popover
+          className={
+            rows.length === 0 && suggestions.isFetching
+              ? "hidden"
+              : "w-(--trigger-width) overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+          }
+        >
           <ListBox<CatalogItem>
             className="max-h-72 outline-none"
             renderEmptyState={() => (
-              <p className="p-3 text-base text-gray-500">
-                {suggestions.isFetching ? "Searching..." : "No match"}
-              </p>
+              <p className="p-3 text-base text-gray-500">No match</p>
             )}
           >
             {(row) => (

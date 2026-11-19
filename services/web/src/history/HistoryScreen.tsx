@@ -136,7 +136,6 @@ export function HistoryScreen() {
             <CatalogComboBox
               catalog={exerciseCatalog}
               canCreate={false}
-              clearable
               value={query.exercise && { ...query.exercise, archived: false }}
               onChange={pickExercise}
             />,

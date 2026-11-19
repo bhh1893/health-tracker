@@ -1,6 +1,7 @@
 import { useId, useState, type SyntheticEvent } from "react";
 import {
   Button,
+  ButtonContext,
   ComboBox,
   Input,
   Label,
@@ -19,8 +20,8 @@ import { ItemActions } from "../catalog/ItemActions";
 import { NameClash } from "../catalog/NameClash";
 import { nameClashOf } from "../catalog/nameClash";
 import { BottomSheet } from "../components/BottomSheet";
+import { ClearIcon } from "../components/ClearIcon";
 import { NumberField, TextField } from "../components/Fields";
-import { fieldClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 import { uuidv7 } from "../lib/uuidv7";
@@ -326,14 +327,39 @@ function ReferenceSearch({ onPick }: ReferenceSearchProps) {
         <Label className="text-sm font-medium text-gray-600">
           Fill from reference
         </Label>
-        <Input className={fieldClass} placeholder="Search" />
-        <Popover className="w-(--trigger-width) overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+        <div className="flex rounded-xl border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-teal-600">
+          <Input
+            className="w-full min-w-0 rounded-xl bg-transparent p-3 text-base outline-none"
+            placeholder="Search"
+          />
+          {text !== "" && (
+            // Null ButtonContext: clear the text instead of toggling the menu.
+            <ButtonContext.Provider value={null}>
+              <Button
+                aria-label="Clear"
+                className="flex size-11 shrink-0 items-center justify-center text-gray-500"
+                onPress={() => {
+                  setText("");
+                }}
+              >
+                <ClearIcon />
+              </Button>
+            </ButtonContext.Provider>
+          )}
+        </div>
+        {/* Hidden while a search with nothing to show yet runs: no "Searching..."
+            flash on every keystroke. */}
+        <Popover
+          className={
+            items.length === 0 && references.isFetching
+              ? "hidden"
+              : "w-(--trigger-width) overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+          }
+        >
           <ListBox<ReferenceFood>
             className="max-h-72 outline-none"
             renderEmptyState={() => (
-              <p className="p-3 text-base text-gray-500">
-                {references.isFetching ? "Searching..." : "No match"}
-              </p>
+              <p className="p-3 text-base text-gray-500">No match</p>
             )}
           >
             {(reference) => (
