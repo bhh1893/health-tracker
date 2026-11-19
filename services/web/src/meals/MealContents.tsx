@@ -1,17 +1,13 @@
-import { ForkKnifeIcon } from "../components/ForkKnifeIcon";
 import { formatAmount, type Meal } from "./meals";
+import { RestaurantLine } from "./RestaurantLine";
 
-// What a Meal holds: its Foods and amounts, or its Restaurant in orange with the
+// What a Meal holds: its Foods and amounts, or its Restaurants in orange with the
 // fork and knife, as History shows a Restaurant Meal.
 export function MealContents({ meal }: { meal: Meal }) {
   return (
     <ul className="mt-1 flex flex-col gap-1">
       {meal.kind === "restaurant" ? (
-        <li className="flex items-center gap-2 text-orange-800">
-          <ForkKnifeIcon />
-          {/* eslint-disable-next-line @typescript-eslint/no-deprecated -- the move to `restaurants` is #273 (ADR 0034) */}
-          <span>{meal.restaurant.name}</span>
-        </li>
+        <RestaurantLine restaurants={meal.restaurants} />
       ) : (
         meal.food_entries.map((entry, index) => (
           <li key={index} className="flex justify-between">

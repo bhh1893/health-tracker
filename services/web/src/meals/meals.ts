@@ -18,8 +18,10 @@ export type PutMeal =
   | components["schemas"]["PutRestaurantMeal"];
 export type Unit = components["schemas"]["FoodEntry"]["unit"];
 
-// Mirrors the API's bound (ADR 0006), so the form refuses what the server would.
+// Mirror the API's bounds (ADR 0006, ADR 0034), so the form refuses what the server
+// would.
 const MAX_AMOUNT = 1_000_000;
+export const MAX_RESTAURANTS = 10;
 
 // One Food Entry as the sheet edits it. `quantity` is the input's text: "", "1." and
 // "0" are all things a user passes through while typing, and none is a valid number.
@@ -38,7 +40,8 @@ export interface MealDraft {
   time: string;
   label: string;
   rows: FoodRow[];
-  restaurant: CatalogRef | null;
+  // In the order added, which is the order the API keeps (ADR 0034).
+  restaurants: CatalogRef[];
 }
 
 // occurred_at is written in the Meal's own zone, so these are the clock digits it
@@ -59,13 +62,12 @@ export function draftOf(meal: Meal): MealDraft {
             unit: entry.unit,
           }))
         : [],
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- the move to `restaurants` is #273 (ADR 0034)
-    restaurant: meal.kind === "restaurant" ? meal.restaurant : null,
+    restaurants: meal.kind === "restaurant" ? meal.restaurants : [],
   };
 }
 
 export function emptyDraft(kind: Meal["kind"], time: string): MealDraft {
-  return { kind, time, label: "", rows: [], restaurant: null };
+  return { kind, time, label: "", rows: [], restaurants: [] };
 }
 
 // A Food just added from search, prefilled with what was eaten last time (ADR 0008).
@@ -129,13 +131,15 @@ export function buildMeal(input: BuildMeal): Meal | null {
     ...occurrence(input),
   };
   if (draft.kind === "restaurant") {
-    return draft.restaurant === null
+    const [first, ...rest] = draft.restaurants;
+    return first === undefined
       ? null
       : {
           ...shared,
           kind: "restaurant",
-          restaurants: [draft.restaurant],
-          restaurant: draft.restaurant,
+          restaurants: [first, ...rest],
+          // The read type still requires the deprecated field until /api/v2.
+          restaurant: first,
         };
   }
   const entries = draft.rows.map((row) => ({
@@ -164,10 +168,11 @@ export function toPutMeal(meal: Meal): PutMeal {
     occurred_tz: meal.occurred_tz,
   };
   return meal.kind === "restaurant"
-    ? // Until #273, web sends the old field: an api pod from before ADR 0034
-      // would refuse restaurant_ids mid-rollout.
-      // eslint-disable-next-line @typescript-eslint/no-deprecated -- the move to `restaurants` is #273 (ADR 0034)
-      { ...fields, kind: "restaurant", restaurant_id: meal.restaurant.id }
+    ? {
+        ...fields,
+        kind: "restaurant",
+        restaurant_ids: meal.restaurants.map(({ id }) => id),
+      }
     : {
         ...fields,
         kind: "foods",

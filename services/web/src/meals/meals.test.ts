@@ -14,6 +14,11 @@ import {
 const DAY = "2026-11-02";
 const id = "0190a000-0000-7000-8000-0000000000c9";
 const defaultAt = new Date(2026, 10, 2, 8, 30, 15);
+const other = {
+  ...cafe,
+  id: "0190a000-0000-7000-8000-000000000202",
+  name: "Taco Stand",
+};
 
 describe("parseQuantity", () => {
   it.each(["", " ", "0", "-1", "1000001", "abc"])("refuses %j", (text) => {
@@ -82,13 +87,28 @@ describe("buildMeal", () => {
     const meal = buildMeal({
       id,
       day: DAY,
-      draft: { ...withRows, kind: "restaurant", restaurant: cafe },
+      draft: { ...withRows, kind: "restaurant", restaurants: [cafe, other] },
       saved: null,
       defaultAt,
     });
 
-    expect(meal).toMatchObject({ kind: "restaurant", restaurant: cafe });
+    expect(meal).toMatchObject({
+      kind: "restaurant",
+      restaurants: [cafe, other],
+    });
     expect(meal && "food_entries" in meal).toBe(false);
+  });
+
+  it("is null for a Restaurant Meal with no Restaurants", () => {
+    expect(
+      buildMeal({
+        id,
+        day: DAY,
+        draft: emptyDraft("restaurant", "08:30"),
+        saved: null,
+        defaultAt,
+      }),
+    ).toBeNull();
   });
 
   it("trims the label and stores a blank one as null", () => {

@@ -6,9 +6,11 @@ import {
   foodCatalog,
   restaurantCatalog,
   type CatalogItem,
+  type CatalogRef,
 } from "../catalog/catalogs";
 import { RecentChips } from "../catalog/RecentChips";
 import { BottomSheet } from "../components/BottomSheet";
+import { ForkKnifeIcon } from "../components/ForkKnifeIcon";
 import { fieldClass, labelClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDay } from "../lib/day";
@@ -18,6 +20,7 @@ import {
   buildMeal,
   draftOf,
   emptyDraft,
+  MAX_RESTAURANTS,
   mealName,
   parseQuantity,
   rowFor,
@@ -29,6 +32,7 @@ import { useDeleteMeal, usePutMeal } from "./queries";
 
 const LAST_FOOD_MESSAGE =
   "A Meal keeps at least one Food. To remove it, delete the Meal.";
+const FULL_MESSAGE = `A Meal holds at most ${String(MAX_RESTAURANTS)} Restaurants. Remove one to add another.`;
 
 // Edit a saved Meal, or add a new one of the kind its button picked. The kind is
 // fixed once the sheet opens: the Day feed has an Add button per kind, and a saved
@@ -82,6 +86,13 @@ export function MealSheet({
     }));
   }
 
+  function addRestaurant({ id, name, archived }: CatalogItem) {
+    setDraft((current) => ({
+      ...current,
+      restaurants: [...current.restaurants, { id, name, archived }],
+    }));
+  }
+
   function save(event: SyntheticEvent) {
     event.preventDefault();
     if (meal === null) {
@@ -90,8 +101,8 @@ export function MealSheet({
     putMeal.mutate({ before: saved, after: meal }, { onSuccess: onClose });
   }
 
-  // Last in both kinds: the pick (a Food or the Restaurant) is what a Meal is for,
-  // so it leads, and the Note and Time usually keep their defaults.
+  // Last in both kinds: the picks (Foods or Restaurants) are what a Meal is for,
+  // so they lead, and the Note and Time usually keep their defaults.
   const noteAndTime = (
     <div className="grid grid-cols-[2fr_1fr] gap-3">
       <label className={labelClass}>
@@ -172,9 +183,14 @@ export function MealSheet({
           />
         ) : (
           <RestaurantPart
-            value={draft.restaurant}
-            onChange={(restaurant) => {
-              change({ restaurant });
+            restaurants={draft.restaurants}
+            onAdd={addRestaurant}
+            onRemove={(restaurantId) => {
+              change({
+                restaurants: draft.restaurants.filter(
+                  ({ id }) => id !== restaurantId,
+                ),
+              });
             }}
           />
         )}
@@ -361,29 +377,88 @@ function FoodsPart({
 }
 
 interface RestaurantPartProps {
-  value: CatalogItem | null;
-  onChange: (restaurant: CatalogItem | null) => void;
+  restaurants: CatalogRef[];
+  onAdd: (restaurant: CatalogItem) => void;
+  onRemove: (id: string) => void;
 }
 
-function RestaurantPart({ value, onChange }: RestaurantPartProps) {
-  // A chip sets the value from outside the search box, which keeps its own text, so
-  // remount it to show the chip's name.
+// Like FoodsPart: the search and recent chips add to the Meal's ordered list of
+// Restaurants, each removable (ADR 0034). A Restaurant appears once per Meal and a
+// Meal holds at most ten, so the sheet disables what the API would refuse.
+function RestaurantPart({ restaurants, onAdd, onRemove }: RestaurantPartProps) {
+  const [picked, setPicked] = useState<CatalogItem | null>(null);
+  // Remounts the search after each Add, so it starts empty for the next one.
   const [searchKey, setSearchKey] = useState(0);
+  const full = restaurants.length >= MAX_RESTAURANTS;
+  const canAdd = (restaurant: CatalogItem) =>
+    !full && !restaurants.some(({ id }) => id === restaurant.id);
+
+  function add(restaurant: CatalogItem) {
+    onAdd(restaurant);
+    setPicked(null);
+    setSearchKey((current) => current + 1);
+  }
+
   return (
     <>
-      <CatalogComboBox
-        key={searchKey}
-        catalog={restaurantCatalog}
-        value={value}
-        onChange={onChange}
-      />
+      <div className="grid grid-cols-[2fr_1fr] items-end gap-3">
+        <CatalogComboBox
+          key={searchKey}
+          catalog={restaurantCatalog}
+          label="Add Restaurant"
+          value={picked}
+          onChange={setPicked}
+        />
+        <Button
+          className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+          isDisabled={picked === null || !canAdd(picked)}
+          onPress={() => {
+            if (picked) {
+              add(picked);
+            }
+          }}
+        >
+          Add
+        </Button>
+      </div>
       <RecentChips
         catalog={restaurantCatalog}
-        onPick={(restaurant) => {
-          onChange(restaurant);
-          setSearchKey((current) => current + 1);
-        }}
+        onPick={add}
+        isDisabled={(restaurant) => !canAdd(restaurant)}
       />
+      {restaurants.length === 0 ? (
+        <p className="text-gray-500">
+          No Restaurants yet. Search above to add one.
+        </p>
+      ) : (
+        <ul
+          aria-label="Restaurants"
+          className="min-h-14 divide-y divide-gray-300 overflow-y-auto overscroll-contain rounded-xl border border-gray-300"
+        >
+          {restaurants.map((restaurant) => (
+            <li
+              key={restaurant.id}
+              aria-label={restaurant.name}
+              className="flex items-center justify-between px-3 py-1"
+            >
+              <span className="flex items-center gap-2 py-2 font-medium text-orange-800">
+                <ForkKnifeIcon />
+                {restaurant.name}
+              </span>
+              <Button
+                aria-label={`Remove ${restaurant.name}`}
+                className="rounded-lg p-2 text-base text-teal-700"
+                onPress={() => {
+                  onRemove(restaurant.id);
+                }}
+              >
+                Remove
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {full && <p className="text-sm text-gray-600">{FULL_MESSAGE}</p>}
     </>
   );
 }

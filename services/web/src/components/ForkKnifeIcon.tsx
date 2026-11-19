@@ -1,4 +1,4 @@
-// Marks a Restaurant Meal wherever Meals are listed: Home's Meal cards and History's
+// Marks a Restaurant wherever Meals are listed: Home's Meal cards, the Meal sheet and History's
 // Days. Drawn in currentColor, so it takes the orange of the text beside it.
 export function ForkKnifeIcon() {
   return (

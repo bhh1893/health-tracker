@@ -209,6 +209,20 @@ export function aMeal(fields: Partial<Meal> = {}): Meal {
   } as Meal;
 }
 
+// A Restaurant Meal as the API reads it back: `restaurants` in order, and the
+// deprecated `restaurant` as the first of them (ADR 0034).
+export function aRestaurantMeal(
+  [first, ...rest]: [CatalogRef, ...CatalogRef[]],
+  fields: Partial<Meal> = {},
+): Meal {
+  return aMeal({
+    kind: "restaurant",
+    restaurants: [first, ...rest],
+    restaurant: first,
+    ...fields,
+  });
+}
+
 const LAST_FOOD_ENTRY = "urn:health-tracker:problem:last-food-entry";
 
 // Stands in for `api`'s Meal and Food endpoints, keeping what it is sent. Like the real
