@@ -1,12 +1,6 @@
 import type { components } from "../api/schema";
 import type { CatalogItem, CatalogRef } from "../catalog/catalogs";
-import {
-  currentTimeZone,
-  onDay,
-  timeOfDay,
-  toRfc3339,
-  withClockTime,
-} from "../lib/occurred";
+import { currentTimeZone, toRfc3339 } from "../lib/occurred";
 import { UNKNOWN_TOTAL } from "../nutrition/totals";
 
 export type FoodsMeal = components["schemas"]["FoodsMeal"];
@@ -35,23 +29,18 @@ export interface FoodRow {
 
 // The whole Meal as the sheet holds it while editing. The client owns this state
 // and always sends all of it (ADR 0006): the Meal is an aggregate, written whole.
+// It has no time: the sheet does not edit when a Meal happened (ADR 0008).
 export interface MealDraft {
   kind: Meal["kind"];
-  time: string;
   label: string;
   rows: FoodRow[];
   // In the order added, which is the order the API keeps (ADR 0034).
   restaurants: CatalogRef[];
 }
 
-// occurred_at is written in the Meal's own zone, so these are the clock digits it
-// happened at, wherever the phone is now.
-export const clockTime = (meal: Meal) => meal.occurred_at.slice(11, 16);
-
 export function draftOf(meal: Meal): MealDraft {
   return {
     kind: meal.kind,
-    time: clockTime(meal),
     label: meal.label ?? "",
     rows:
       meal.kind === "foods"
@@ -66,8 +55,8 @@ export function draftOf(meal: Meal): MealDraft {
   };
 }
 
-export function emptyDraft(kind: Meal["kind"], time: string): MealDraft {
-  return { kind, time, label: "", rows: [], restaurants: [] };
+export function emptyDraft(kind: Meal["kind"]): MealDraft {
+  return { kind, label: "", rows: [], restaurants: [] };
 }
 
 // A Food just added from search, prefilled with what was eaten last time (ADR 0008).
@@ -91,28 +80,16 @@ interface BuildMeal {
   draft: MealDraft;
   // The server's version, when editing. Null for a new Meal.
   saved: Meal | null;
-  // When a new Meal happened if the time is left as it was prefilled.
+  // When a new Meal happened: now, moved onto the viewed Day.
   defaultAt: Date;
 }
 
-function occurrence({ day, draft, saved, defaultAt }: BuildMeal) {
-  if (saved === null) {
-    // Untouched, keep the seconds, so Meals logged in the same minute stay in order.
-    const at =
-      draft.time === timeOfDay(defaultAt) ? defaultAt : onDay(day, draft.time);
-    return { occurred_at: toRfc3339(at), occurred_tz: currentTimeZone() };
-  }
-  if (draft.time === clockTime(saved)) {
-    return { occurred_at: saved.occurred_at, occurred_tz: saved.occurred_tz };
-  }
-  return {
-    occurred_at: withClockTime(
-      saved.occurred_at,
-      saved.occurred_tz,
-      draft.time,
-    ),
-    occurred_tz: saved.occurred_tz,
-  };
+// A new Meal happened at defaultAt, seconds kept so Meals logged in the same minute
+// stay in order. A saved Meal keeps its instant and zone: an edit never moves it.
+function occurrence({ saved, defaultAt }: BuildMeal) {
+  return saved === null
+    ? { occurred_at: toRfc3339(defaultAt), occurred_tz: currentTimeZone() }
+    : { occurred_at: saved.occurred_at, occurred_tz: saved.occurred_tz };
 }
 
 // The Meal the draft describes, as the feed will show it before the server answers.
@@ -120,9 +97,6 @@ function occurrence({ day, draft, saved, defaultAt }: BuildMeal) {
 // the feed numbers by position.
 export function buildMeal(input: BuildMeal): Meal | null {
   const { id, day, draft } = input;
-  if (draft.time === "") {
-    return null;
-  }
   const shared = {
     id,
     day,

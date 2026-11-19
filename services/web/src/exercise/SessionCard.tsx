@@ -1,5 +1,7 @@
 import { Button } from "react-aria-components";
 
+import { PencilIcon } from "../components/PencilIcon";
+
 import { formatSet, type ExerciseEntry, type Session } from "./sessions";
 import { SetList } from "./SetList";
 
@@ -34,10 +36,10 @@ export function SessionCard({
         <div className="flex items-center">
           <Button
             aria-label={`Edit ${exercise.name}`}
-            className="rounded-lg p-2 text-base text-teal-700"
+            className="rounded-lg p-2 text-teal-700 data-pressed:bg-teal-50"
             onPress={onEdit}
           >
-            Edit
+            <PencilIcon />
           </Button>
           <Button
             aria-label={`Delete ${exercise.name} for the Day`}

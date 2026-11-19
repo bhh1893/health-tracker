@@ -46,14 +46,14 @@ describe("rowFor", () => {
 
 describe("buildMeal", () => {
   const withRows = {
-    ...emptyDraft("foods", "08:30"),
+    ...emptyDraft("foods"),
     rows: [
       rowFor("a", oats),
       { ...rowFor("b", banana), quantity: "1", unit: "count" as const },
     ],
   };
 
-  it("builds a new Foods Meal, keeping the prefilled time's seconds", () => {
+  it("builds a new Foods Meal at the default instant, seconds kept", () => {
     const meal = buildMeal({
       id,
       day: DAY,
@@ -77,7 +77,7 @@ describe("buildMeal", () => {
     const build = (draft: typeof withRows) =>
       buildMeal({ id, day: DAY, draft, saved: null, defaultAt });
 
-    expect(build(emptyDraft("foods", "08:30"))).toBeNull();
+    expect(build(emptyDraft("foods"))).toBeNull();
     expect(
       build({ ...withRows, rows: [{ ...rowFor("a", oats), quantity: "" }] }),
     ).toBeNull();
@@ -104,7 +104,7 @@ describe("buildMeal", () => {
       buildMeal({
         id,
         day: DAY,
-        draft: emptyDraft("restaurant", "08:30"),
+        draft: emptyDraft("restaurant"),
         saved: null,
         defaultAt,
       }),
@@ -125,33 +125,19 @@ describe("buildMeal", () => {
     expect(build("   ")).toBeNull();
   });
 
-  it("keeps a saved Meal's instant and zone when its time is untouched", () => {
+  it("keeps a saved Meal's instant and zone through an edit", () => {
     const saved = aMeal({ occurred_at: "2026-11-02T08:00:42+13:00" });
 
     const meal = buildMeal({
       id,
       day: DAY,
-      draft: draftOf(saved),
+      draft: { ...draftOf(saved), label: "Brunch" },
       saved,
       defaultAt,
     });
 
     expect(meal?.occurred_at).toBe(saved.occurred_at);
     expect(meal?.occurred_tz).toBe(saved.occurred_tz);
-  });
-
-  it("moves a saved Meal's clock time in its own zone", () => {
-    const saved = aMeal();
-
-    const meal = buildMeal({
-      id,
-      day: DAY,
-      draft: { ...draftOf(saved), time: "09:15" },
-      saved,
-      defaultAt,
-    });
-
-    expect(meal?.occurred_at).toBe("2026-11-02T09:15:00+13:00");
   });
 });
 

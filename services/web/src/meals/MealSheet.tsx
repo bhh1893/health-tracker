@@ -14,7 +14,7 @@ import { ForkKnifeIcon } from "../components/ForkKnifeIcon";
 import { fieldClass, labelClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDay } from "../lib/day";
-import { defaultOccurredAt, timeOfDay } from "../lib/occurred";
+import { defaultOccurredAt } from "../lib/occurred";
 import { uuidv7 } from "../lib/uuidv7";
 import {
   buildMeal,
@@ -55,7 +55,7 @@ export function MealSheet({
   const [id] = useState(() => saved?.id ?? uuidv7());
   const [defaultAt] = useState(() => defaultOccurredAt(day, null));
   const [draft, setDraft] = useState<MealDraft>(() =>
-    saved === null ? emptyDraft(kind, timeOfDay(defaultAt)) : draftOf(saved),
+    saved === null ? emptyDraft(kind) : draftOf(saved),
   );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const putMeal = usePutMeal();
@@ -102,37 +102,22 @@ export function MealSheet({
   }
 
   // Last in both kinds: the picks (Foods or Restaurants) are what a Meal is for,
-  // so they lead, and the Note and Time usually keep their defaults.
-  const noteAndTime = (
-    <div className="grid grid-cols-[2fr_1fr] gap-3">
-      <label className={labelClass}>
-        Note
-        <input
-          type="text"
-          maxLength={200}
-          placeholder="Optional, e.g. Breakfast"
-          className={fieldClass}
-          value={draft.label}
-          onChange={({ target }) => {
-            change({ label: target.value });
-          }}
-        />
-      </label>
-      <label className={labelClass}>
-        Time
-        <input
-          type="time"
-          required
-          // iOS draws time inputs natively, wider and taller than the CSS asks.
-          // appearance-none makes it a plain box sized like the fields beside it.
-          className={`${fieldClass} appearance-none`}
-          value={draft.time}
-          onChange={({ target }) => {
-            change({ time: target.value });
-          }}
-        />
-      </label>
-    </div>
+  // so they lead, and the Label is optional. No time field: a new Meal happens now
+  // and an edit keeps its time (ADR 0008).
+  const labelField = (
+    <label className={labelClass}>
+      Label
+      <input
+        type="text"
+        maxLength={200}
+        placeholder="Optional, e.g. Breakfast"
+        className={fieldClass}
+        value={draft.label}
+        onChange={({ target }) => {
+          change({ label: target.value });
+        }}
+      />
+    </label>
   );
 
   const name = mealName(number, saved?.label ?? null);
@@ -143,7 +128,7 @@ export function MealSheet({
 
   return (
     // Capped at two thirds of the screen: past that the Foods list scrolls on its
-    // own, so the pick, Note and Save stay put. min-h-0 lets the form, and so the
+    // own, so the pick, Label and Save stay put. min-h-0 lets the form, and so the
     // list, shrink to the cap.
     <BottomSheet
       title={title}
@@ -194,7 +179,7 @@ export function MealSheet({
             }}
           />
         )}
-        {noteAndTime}
+        {labelField}
 
         {putMeal.error && <ProblemAlert error={putMeal.error} />}
         {deleteMeal.error && <ProblemAlert error={deleteMeal.error} />}
