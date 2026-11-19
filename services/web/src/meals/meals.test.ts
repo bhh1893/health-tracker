@@ -41,7 +41,7 @@ describe("rowFor", () => {
 
 describe("buildMeal", () => {
   const withRows = {
-    ...emptyDraft("08:30"),
+    ...emptyDraft("foods", "08:30"),
     rows: [
       rowFor("a", oats),
       { ...rowFor("b", banana), quantity: "1", unit: "count" as const },
@@ -72,7 +72,7 @@ describe("buildMeal", () => {
     const build = (draft: typeof withRows) =>
       buildMeal({ id, day: DAY, draft, saved: null, defaultAt });
 
-    expect(build(emptyDraft("08:30"))).toBeNull();
+    expect(build(emptyDraft("foods", "08:30"))).toBeNull();
     expect(
       build({ ...withRows, rows: [{ ...rowFor("a", oats), quantity: "" }] }),
     ).toBeNull();

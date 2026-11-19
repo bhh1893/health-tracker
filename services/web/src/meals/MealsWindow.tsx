@@ -3,7 +3,6 @@ import { Button } from "react-aria-components";
 
 import { DayPager } from "../components/DayPager";
 import { ProblemAlert } from "../components/ProblemAlert";
-import { formatDay } from "../lib/day";
 import { useViewedDay } from "../lib/useViewedDay";
 import { DayTotalSummary } from "../nutrition/DayTotalSummary";
 import { useDayTotals } from "../nutrition/queries";
@@ -12,11 +11,16 @@ import { sortMeals, type Meal } from "./meals";
 import { MealSheet } from "./MealSheet";
 import { useDayMeals } from "./queries";
 
-// Null sheet: closed. `saved` null: adding a new Meal.
-type Sheet = { saved: Meal | null; number: number } | null;
+// Null sheet: closed. `saved` null: adding a new Meal of `kind`.
+type Sheet =
+  | { saved: Meal; number: number }
+  | { saved: null; kind: Meal["kind"]; number: number }
+  | null;
+
+const addClass = "rounded-2xl bg-teal-700 p-4 text-lg font-semibold text-white";
 
 export function MealsWindow() {
-  const { day, isToday } = useViewedDay();
+  const { day } = useViewedDay();
   const meals = useDayMeals(day);
   // The same query Search and Dashboards read, narrowed to one Day, so every write
   // that already refreshes their totals (a Meal, a Food, the Restaurant Day value)
@@ -51,21 +55,36 @@ export function MealsWindow() {
       ))}
 
       {/* Sticky just above the bar, and last in the page, so when scrolled to the end
-          it rests below the last card instead of covering it. */}
-      <Button
-        className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto w-full rounded-2xl bg-teal-700 p-4 text-lg font-semibold text-white"
-        onPress={() => {
-          setSheet({ saved: null, number: sorted.length + 1 });
-        }}
-      >
-        {isToday ? "Add Meal" : `Add Meal to ${formatDay(day)}`}
-      </Button>
+          it rests below the last card instead of covering it. One button per kind,
+          so the sheet needs no Foods | Restaurant switch. The labels stay short to
+          fit side by side; the sheet's title names the Day. */}
+      <div className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto grid grid-cols-2 gap-3">
+        <Button
+          className={addClass}
+          onPress={() => {
+            setSheet({ saved: null, kind: "foods", number: sorted.length + 1 });
+          }}
+        >
+          Add Food
+        </Button>
+        <Button
+          className={addClass}
+          onPress={() => {
+            setSheet({
+              saved: null,
+              kind: "restaurant",
+              number: sorted.length + 1,
+            });
+          }}
+        >
+          Add Restaurant
+        </Button>
+      </div>
 
       {sheet && (
         <MealSheet
+          {...sheet}
           day={day}
-          saved={sheet.saved}
-          number={sheet.number}
           onClose={() => {
             setSheet(null);
           }}

@@ -1,5 +1,5 @@
 import { useState, type SyntheticEvent } from "react";
-import { Button, ToggleButton, ToggleButtonGroup } from "react-aria-components";
+import { Button } from "react-aria-components";
 
 import { CatalogComboBox } from "../catalog/CatalogComboBox";
 import {
@@ -32,24 +32,28 @@ import { useDeleteMeal, usePutMeal } from "./queries";
 const LAST_FOOD_MESSAGE =
   "A Meal keeps at least one Food. To remove it, delete the Meal.";
 
-const kindClass =
-  "flex-1 rounded-lg px-4 py-2 text-base text-gray-600 data-disabled:opacity-50 data-selected:bg-white data-selected:font-semibold data-selected:text-gray-900 data-selected:shadow-sm";
-
-interface MealSheetProps {
+// Edit a saved Meal, or add a new one of the kind its button picked. The kind is
+// fixed once the sheet opens: the Day feed has an Add button per kind, and a saved
+// Meal's kind cannot change (409 kind-immutable, ADR 0006).
+type MealSheetProps = {
   day: string;
-  // The Meal to edit, or null to add a new one.
-  saved: Meal | null;
   number: number;
   onClose: () => void;
-}
+} & ({ saved: Meal; kind?: never } | { saved: null; kind: Meal["kind"] });
 
-export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
+export function MealSheet({
+  day,
+  saved,
+  kind,
+  number,
+  onClose,
+}: MealSheetProps) {
   // One id per opening, as for Sets: if a save fails after the server stored it,
   // saving again replaces that Meal instead of adding a second.
   const [id] = useState(() => saved?.id ?? uuidv7());
   const [defaultAt] = useState(() => defaultOccurredAt(day, null));
   const [draft, setDraft] = useState<MealDraft>(() =>
-    saved === null ? emptyDraft(timeOfDay(defaultAt)) : draftOf(saved),
+    saved === null ? emptyDraft(kind, timeOfDay(defaultAt)) : draftOf(saved),
   );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   // The Food whose sheet is open over this one (ADR 0023), or null.
@@ -137,7 +141,9 @@ export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
 
   const name = mealName(number, saved?.label ?? null);
   const title =
-    saved === null ? `Add Meal to ${formatDay(day)}` : `Edit ${name}`;
+    saved === null
+      ? `Add ${kind === "foods" ? "Food" : "Restaurant"} to ${formatDay(day)}`
+      : `Edit ${name}`;
 
   return (
     // Capped at two thirds of the screen: past that the Foods list scrolls on its
@@ -169,29 +175,6 @@ export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
       }
     >
       <form className="flex min-h-0 flex-col gap-4" onSubmit={save}>
-        {/* A saved Meal's kind is fixed (409 kind-immutable, ADR 0006). */}
-        <ToggleButtonGroup
-          aria-label="Meal kind"
-          className="flex gap-1 rounded-xl bg-gray-100 p-1"
-          selectionMode="single"
-          disallowEmptySelection
-          isDisabled={saved !== null}
-          selectedKeys={[draft.kind]}
-          onSelectionChange={(keys) => {
-            const [kind] = [...keys];
-            if (kind === "foods" || kind === "restaurant") {
-              change({ kind });
-            }
-          }}
-        >
-          <ToggleButton id="foods" className={kindClass}>
-            Foods
-          </ToggleButton>
-          <ToggleButton id="restaurant" className={kindClass}>
-            Restaurant
-          </ToggleButton>
-        </ToggleButtonGroup>
-
         {draft.kind === "foods" ? (
           <FoodsPart
             rows={draft.rows}

@@ -63,8 +63,8 @@ export function draftOf(meal: Meal): MealDraft {
   };
 }
 
-export function emptyDraft(time: string): MealDraft {
-  return { kind: "foods", time, label: "", rows: [], restaurant: null };
+export function emptyDraft(kind: Meal["kind"], time: string): MealDraft {
+  return { kind, time, label: "", rows: [], restaurant: null };
 }
 
 // A Food just added from search, prefilled with what was eaten last time (ADR 0008).
