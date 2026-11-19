@@ -219,6 +219,11 @@ export function CatalogComboBox({
             Rows from the last search stay until the next arrive, and an empty
             menu stays hidden until there is something to say. */}
         <Popover
+          // Always below the box. By default the menu flips above when there
+          // is less room below than it wants, so it jumped sides as the rows
+          // changed. Pinned, it shrinks to the room below and scrolls instead.
+          placement="bottom"
+          shouldFlip={false}
           className={
             rows.length === 0 && suggestions.isFetching
               ? "hidden"

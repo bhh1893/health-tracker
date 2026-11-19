@@ -350,6 +350,11 @@ function ReferenceSearch({ onPick }: ReferenceSearchProps) {
         {/* Hidden while a search with nothing to show yet runs: no "Searching..."
             flash on every keystroke. */}
         <Popover
+          // Always below the box. By default the menu flips above when there
+          // is less room below than it wants, so it jumped sides as the rows
+          // changed. Pinned, it shrinks to the room below and scrolls instead.
+          placement="bottom"
+          shouldFlip={false}
           className={
             items.length === 0 && references.isFetching
               ? "hidden"
