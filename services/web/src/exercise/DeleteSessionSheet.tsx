@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "react-aria-components";
 
-import { BottomSheet } from "../components/BottomSheet";
+import { Sheet } from "../components/Sheet";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDay } from "../lib/day";
 import { useDeleteSet } from "./queries";
@@ -48,7 +48,7 @@ export function DeleteSessionSheet({
   }
 
   return (
-    <BottomSheet
+    <Sheet
       title={`Delete ${session.exercise.name} on ${formatDay(day)}?`}
       onClose={onClose}
     >
@@ -77,6 +77,6 @@ export function DeleteSessionSheet({
           Delete
         </Button>
       </div>
-    </BottomSheet>
+    </Sheet>
   );
 }

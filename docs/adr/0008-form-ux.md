@@ -62,3 +62,13 @@ Changed 2026-11-19. The Day feed's single **Add Meal** button becomes two side b
 ## Amendment: no time on Meals in the UI
 
 Changed 2026-11-19. Meals no longer show or edit a time. The Meal sheet drops its Time field: a new Meal happens now, moved onto the viewed Day, and an edit keeps the saved Meal's `occurred_at` and `occurred_tz`. **Note** is shown as **Label** again, now across the full row. A Meal card no longer shows the clock time, and its **Edit** button becomes a pencil icon beside the title, with the same accessible name ("Edit Meal 1"). The data model and API are unchanged: `occurred_at` is still stored and still orders and numbers the Day's Meals. The cost: a Meal logged after the fact sorts by when it was logged, and nothing in the UI can reorder it. The Session card's **Edit** becomes the same pencil, beside its trash can. Sets keep their Time field.
+
+## Amendment: centered sheets, Meals named by Label, Label presets
+
+Changed 2026-11-19. Every add and edit sheet now opens **centered** over the feed instead of from the bottom. The overlay still tracks the visual viewport, so when the phone's keyboard opens the sheet re-centers in the space above it instead of riding up on the keyboard's edge. The two-thirds cap on the Meal sheet keeps a 24rem floor, so the keyboard cannot squeeze it to a sliver. The component is renamed `BottomSheet` -> `Sheet`.
+
+A Meal card and the Meal sheet's title name a Meal by its **Label**, or plain **Meal** without one ("Edit Breakfast", "Edit Meal"); the number is no longer shown. The feed's order still says which came first, and the API still numbers Meals.
+
+The Label field becomes a native select: None, Breakfast, Lunch, Dinner, Snack, Other. **Other** shows a text field for any Label. A native select opens the phone's picker rather than the keyboard, so the common case never raises it. The presets are client-only: the API's `label` stays free text, and a saved Label that is not a preset reopens under Other.
+
+- **Considered: a combobox with free text.** Not chosen: one field instead of two, but it opens the keyboard on every tap, which is the problem the centered sheet is working around.

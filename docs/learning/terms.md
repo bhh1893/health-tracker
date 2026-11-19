@@ -108,7 +108,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **React Aria Components**: Adobe's headless React library for accessible widgets (combobox, dialog, listbox); exposes state as `data-*` attributes to style against.
 - **Utility-first CSS (Tailwind)**: styling with many small single-purpose classes in the markup (`rounded-xl px-3`) instead of a separate stylesheet per component.
 - **Combobox**: a text input joined to a suggestion list, with a defined keyboard and screen-reader pattern (WAI-ARIA).
-- **Bottom sheet**: a panel that slides up from the bottom of a phone screen over the current page; the mobile form of a dialog.
+- **Bottom sheet**: a panel that slides up from the bottom of a phone screen over the current page; the mobile form of a dialog. This app used them until ADR 0008's centered-sheet amendment.
 - **Secure context**: a page served over HTTPS or from `localhost`; browsers expose some APIs (`crypto.randomUUID`, clipboard, service workers) only there.
 - **HMR (hot module replacement)**: the dev server swaps a changed module into the running page without a full reload; it relies on a file watcher noticing every save.
 - **Out-of-order responses**: a slower, older request answering after a newer one; a search box must discard it or show stale results.
@@ -393,6 +393,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Modal**: a layer that blocks the page behind it until closed, keeping keyboard focus and screen readers inside.
 - **Focus trap**: keeping keyboard focus inside a modal, so Tab cannot reach the hidden page behind it.
 - **Visual viewport**: the part of the page actually visible, which shrinks when a phone's keyboard opens, unlike the layout viewport.
+- **Native `<select>`**: the browser's built-in dropdown; on a phone it opens the OS picker instead of the keyboard, which is why the Meal Label presets use one.
 - **`visibilitychange`**: the browser event fired when a page is hidden or shown again, such as when an app returns from the background.
 - **Planner statistics (`ANALYZE`)**: a random sample of each table that Postgres keeps, so it can estimate row counts and pick a plan; a fresh sample can change a close call between two plans.
 - **Correlation (planner)**: how closely a column's order matches the rows' order on disk; high correlation makes index scans look cheap, so test data must not be loaded more tidily than real data arrives.

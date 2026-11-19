@@ -1,7 +1,7 @@
 import { useState, type SyntheticEvent } from "react";
 import { Button } from "react-aria-components";
 
-import { BottomSheet } from "../components/BottomSheet";
+import { Sheet } from "../components/Sheet";
 import { fieldClass, labelClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDay } from "../lib/day";
@@ -82,7 +82,7 @@ export function EditSessionSheet({
   }
 
   return (
-    <BottomSheet
+    <Sheet
       title={`Edit ${session.exercise.name} on ${formatDay(day)}`}
       onClose={onClose}
     >
@@ -189,6 +189,6 @@ export function EditSessionSheet({
           </Button>
         </div>
       </form>
-    </BottomSheet>
+    </Sheet>
   );
 }

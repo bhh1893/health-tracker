@@ -12,10 +12,7 @@ import { MealSheet } from "./MealSheet";
 import { useDayMeals } from "./queries";
 
 // Null sheet: closed. `saved` null: adding a new Meal of `kind`.
-type Sheet =
-  | { saved: Meal; number: number }
-  | { saved: null; kind: Meal["kind"]; number: number }
-  | null;
+type Sheet = { saved: Meal } | { saved: null; kind: Meal["kind"] } | null;
 
 const addClass = "rounded-2xl bg-teal-700 p-4 text-lg font-semibold text-white";
 
@@ -43,13 +40,12 @@ export function MealsWindow() {
       {meals.isSuccess && sorted.length === 0 && (
         <p className="text-gray-500">No Meals on this Day.</p>
       )}
-      {sorted.map((meal, index) => (
+      {sorted.map((meal) => (
         <MealCard
           key={meal.id}
           meal={meal}
-          number={index + 1}
           onEdit={() => {
-            setSheet({ saved: meal, number: index + 1 });
+            setSheet({ saved: meal });
           }}
         />
       ))}
@@ -62,7 +58,7 @@ export function MealsWindow() {
         <Button
           className={addClass}
           onPress={() => {
-            setSheet({ saved: null, kind: "foods", number: sorted.length + 1 });
+            setSheet({ saved: null, kind: "foods" });
           }}
         >
           Add Food
@@ -70,11 +66,7 @@ export function MealsWindow() {
         <Button
           className={addClass}
           onPress={() => {
-            setSheet({
-              saved: null,
-              kind: "restaurant",
-              number: sorted.length + 1,
-            });
+            setSheet({ saved: null, kind: "restaurant" });
           }}
         >
           Add Restaurant

@@ -20,7 +20,7 @@ beforeEach(() => {
   server.use(signedInAs("member"), ...api.handlers);
 });
 
-const mealSheet = () => screen.getByRole("dialog", { name: "Edit Meal 1" });
+const mealSheet = () => screen.getByRole("dialog", { name: "Edit Meal" });
 const foodSheet = (name = "Oats") => screen.findByRole("dialog", { name });
 const field = (sheet: HTMLElement, name: string) =>
   within(sheet).getByRole("spinbutton", { name });
@@ -217,7 +217,7 @@ describe("Foods in the Meal sheet", () => {
   it("has no route to the Food sheet: a Food Entry's name is plain text", async () => {
     renderAt(PAST_URL, <MealsWindow />);
     await userEvent.click(
-      await screen.findByRole("button", { name: "Edit Meal 1" }),
+      await screen.findByRole("button", { name: "Edit Meal" }),
     );
 
     const row = within(mealSheet()).getByRole("listitem", { name: "Oats" });
@@ -234,7 +234,7 @@ describe("Foods in the Meal sheet", () => {
   it("creates a new Food in one tap and opens no Food sheet", async () => {
     renderAt(PAST_URL, <MealsWindow />);
     await userEvent.click(
-      await screen.findByRole("button", { name: "Edit Meal 1" }),
+      await screen.findByRole("button", { name: "Edit Meal" }),
     );
 
     await userEvent.type(

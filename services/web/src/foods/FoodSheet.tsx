@@ -19,7 +19,7 @@ import {
 import { ItemActions } from "../catalog/ItemActions";
 import { NameClash } from "../catalog/NameClash";
 import { nameClashOf } from "../catalog/nameClash";
-import { BottomSheet } from "../components/BottomSheet";
+import { Sheet } from "../components/Sheet";
 import { ClearIcon } from "../components/ClearIcon";
 import { NumberField, TextField } from "../components/Fields";
 import { ProblemAlert } from "../components/ProblemAlert";
@@ -71,9 +71,9 @@ export function FoodSheet({ foodId, manage, ...form }: FoodSheetProps) {
   if (foodId === null) {
     // Nothing to archive or delete before the Food exists.
     return (
-      <BottomSheet title="New Food" onClose={form.onClose}>
+      <Sheet title="New Food" onClose={form.onClose}>
         <FoodForm food={null} {...form} />
-      </BottomSheet>
+      </Sheet>
     );
   }
   return <SavedFoodSheet foodId={foodId} manage={manage} {...form} />;
@@ -86,7 +86,7 @@ function SavedFoodSheet({
 }: FoodSheetProps & { foodId: string }) {
   const food = useFood(foodId);
   return (
-    <BottomSheet
+    <Sheet
       title={food.data?.name ?? "Food"}
       onClose={form.onClose}
       actions={
@@ -109,7 +109,7 @@ function SavedFoodSheet({
           Loading...
         </p>
       )}
-    </BottomSheet>
+    </Sheet>
   );
 }
 
