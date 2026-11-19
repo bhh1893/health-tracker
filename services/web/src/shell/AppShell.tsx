@@ -60,7 +60,7 @@ export function AppShell() {
           scrolls clear of it with no padding that guesses its height. The strip is
           full width but lets taps through; only the pill takes them. z-40 sits under
           BottomSheet's z-50, so sheets and dialogs cover the bar. */}
-      <div className="pointer-events-none sticky bottom-0 z-40 flex justify-center pb-[calc(var(--tab-bar-gap)+env(safe-area-inset-bottom))]">
+      <div className="pointer-events-none sticky bottom-0 z-40 flex justify-center pb-(--tab-bar-lift)">
         <nav
           aria-label="Tabs"
           className="pointer-events-auto flex h-(--tab-bar-height) gap-1 rounded-full bg-white p-1 shadow-lg ring-1 ring-black/5"

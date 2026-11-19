@@ -237,6 +237,18 @@ describe("adding a Meal", () => {
     });
   });
 
+  it("closes the sheet from the X without saving", async () => {
+    renderAt(PAST_URL, <MealsWindow />);
+    await openNewMeal();
+
+    await userEvent.click(
+      within(sheet()).getByRole("button", { name: "Close" }),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(api.puts).toHaveLength(0);
+  });
+
   it("puts the pick above Note and Time for both kinds of Meal", async () => {
     renderAt(PAST_URL, <MealsWindow />);
     await openNewMeal();

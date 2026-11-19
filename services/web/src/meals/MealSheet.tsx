@@ -143,7 +143,31 @@ export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
     // Capped at two thirds of the screen: past that the Foods list scrolls on its
     // own, so the pick, Note and Save stay put. min-h-0 lets the form, and so the
     // list, shrink to the cap.
-    <BottomSheet title={title} onClose={onClose} maxHeight="two-thirds">
+    <BottomSheet
+      title={title}
+      onClose={onClose}
+      maxHeight="two-thirds"
+      // Closes without saving, like Cancel, and reachable without scrolling to it.
+      actions={
+        <Button
+          aria-label="Close"
+          className="-m-2 rounded-lg p-2 text-gray-500 data-pressed:bg-gray-100"
+          onPress={onClose}
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="size-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+          >
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </Button>
+      }
+    >
       <form className="flex min-h-0 flex-col gap-4" onSubmit={save}>
         {/* A saved Meal's kind is fixed (409 kind-immutable, ADR 0006). */}
         <ToggleButtonGroup
