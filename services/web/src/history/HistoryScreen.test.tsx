@@ -35,15 +35,13 @@ const aSession = (day: string, weight: number | null): ExerciseSession => ({
 });
 
 // Stands in for the endpoints the screen reads. Like the API, it filters by the
-// inclusive Day range, answers newest first, and remembers the saved setting.
+// inclusive Day range and answers newest first.
 function fakeDashboardApi({
   totals = [] as DayTotal[],
   sessions = [] as ExerciseSession[],
   restaurantDayKcal = 5000,
 }) {
   const requests: URL[] = [];
-  const patches: unknown[] = [];
-  let kcal = restaurantDayKcal;
   const inRange = (url: URL) => {
     const from = url.searchParams.get("from") ?? "";
     const to = url.searchParams.get("to") ?? "~";
@@ -61,7 +59,11 @@ function fakeDashboardApi({
           .filter(inRange(url))
           .toSorted(newestFirst)
           // The server applies the User's current value on every read.
-          .map((total) => (total.restaurant_day ? { ...total, kcal } : total)),
+          .map((total) =>
+            total.restaurant_day
+              ? { ...total, kcal: restaurantDayKcal }
+              : total,
+          ),
       );
     }),
     // Asked with limit=1 for the newest Meal on or before a Day: how the screen
@@ -89,19 +91,10 @@ function fakeDashboardApi({
       );
     }),
     http.get("*/api/v1/exercises", () => HttpResponse.json([bench])),
-    http.get("*/api/me", () =>
-      HttpResponse.json({ restaurant_day_kcal: kcal }),
-    ),
-    http.patch("*/api/me", async ({ request }) => {
-      const body = (await request.json()) as { restaurant_day_kcal: number };
-      patches.push(body);
-      kcal = body.restaurant_day_kcal;
-      return HttpResponse.json({ restaurant_day_kcal: kcal });
-    }),
   );
   const calls = (path: string) =>
     requests.filter((url) => url.pathname.endsWith(path));
-  return { calls, patches };
+  return { calls };
 }
 
 const url = () => screen.getByLabelText("url");
@@ -298,27 +291,6 @@ describe("the Meals Dashboard", () => {
         .slice(-2)
         .map((request) => request.searchParams.get("to")),
     ).toEqual([today, daysAgo(400)]);
-  });
-
-  it("saves the Restaurant Day calories and redraws past Days", async () => {
-    const api = fakeDashboardApi({
-      totals: [aTotal(daysAgo(1), { kcal: 5000, restaurant_day: true })],
-    });
-    renderAt("/history?dash=open", <HistoryScreen />);
-    const field = await screen.findByRole("textbox", {
-      name: "Restaurant Day calories",
-    });
-    expect(field).toHaveValue("5,000");
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
-
-    await userEvent.clear(field);
-    await userEvent.type(field, "3500");
-    await userEvent.click(screen.getByRole("button", { name: "Save" }));
-
-    await waitFor(() => {
-      expect(tile("Average")).toHaveTextContent("3,500 cal");
-    });
-    expect(api.patches).toEqual([{ restaurant_day_kcal: 3500 }]);
   });
 
   it("says when nothing was logged", async () => {

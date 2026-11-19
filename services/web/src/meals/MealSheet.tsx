@@ -11,8 +11,6 @@ import { RecentChips } from "../catalog/RecentChips";
 import { BottomSheet } from "../components/BottomSheet";
 import { fieldClass, labelClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
-import type { Food } from "../foods/foodForm";
-import { FoodSheet } from "../foods/FoodSheet";
 import { formatDay } from "../lib/day";
 import { defaultOccurredAt, timeOfDay } from "../lib/occurred";
 import { uuidv7 } from "../lib/uuidv7";
@@ -56,8 +54,6 @@ export function MealSheet({
     saved === null ? emptyDraft(kind, timeOfDay(defaultAt)) : draftOf(saved),
   );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  // The Food whose sheet is open over this one (ADR 0023), or null.
-  const [editingFood, setEditingFood] = useState<string | null>(null);
   const putMeal = usePutMeal();
   const deleteMeal = useDeleteMeal();
 
@@ -75,17 +71,6 @@ export function MealSheet({
       ...current,
       rows: current.rows.map((row) =>
         row.key === key ? { ...row, ...next } : row,
-      ),
-    }));
-  }
-
-  // A renamed Food shows its new name in the rows at once. The Meal sends only Food
-  // ids, so this changes what is on screen, not what Save writes.
-  function foodSaved({ id: foodId, name }: Food) {
-    setDraft((current) => ({
-      ...current,
-      rows: current.rows.map((row) =>
-        row.food.id === foodId ? { ...row, food: { ...row.food, name } } : row,
       ),
     }));
   }
@@ -184,7 +169,6 @@ export function MealSheet({
               change({ rows: draft.rows.filter((row) => row.key !== key) });
             }}
             onAdd={addFood}
-            onEditFood={setEditingFood}
           />
         ) : (
           <RestaurantPart
@@ -249,19 +233,6 @@ export function MealSheet({
           )}
         </div>
       </form>
-
-      {/* Outside the form on purpose. The Food sheet is a portal, so the DOM keeps
-          its form apart, but React bubbles events along the component tree: inside,
-          its submit would also submit this Meal. */}
-      {editingFood && (
-        <FoodSheet
-          foodId={editingFood}
-          onClose={() => {
-            setEditingFood(null);
-          }}
-          onSaved={foodSaved}
-        />
-      )}
     </BottomSheet>
   );
 }
@@ -272,19 +243,18 @@ interface FoodsPartProps {
   onChangeRow: (key: string, next: Partial<FoodRow>) => void;
   onRemoveRow: (key: string) => void;
   onAdd: (food: CatalogItem) => void;
-  onEditFood: (foodId: string) => void;
 }
 
 // The search to add a Food, then the Meal's Food Entries in a bordered list that
 // scrolls on its own. Picking a suggestion only selects it; Add commits it to the
-// Meal (ADR 0008).
+// Meal (ADR 0008). A Food's name is plain text: Nutrition is edited only on Profile,
+// so logging never stops for a label (ADR 0032).
 function FoodsPart({
   rows,
   lastFoodLocked,
   onChangeRow,
   onRemoveRow,
   onAdd,
-  onEditFood,
 }: FoodsPartProps) {
   const [picked, setPicked] = useState<CatalogItem | null>(null);
   // Remounts the search after each Add, so it starts empty for the next Food.
@@ -334,15 +304,7 @@ function FoodsPart({
               className="flex flex-col gap-2 px-3 py-3"
             >
               <div className="flex items-center justify-between">
-                <Button
-                  aria-label={`Edit Food ${row.food.name}`}
-                  className="rounded-lg py-2 text-left font-medium underline decoration-gray-300 underline-offset-4 data-pressed:bg-gray-100"
-                  onPress={() => {
-                    onEditFood(row.food.id);
-                  }}
-                >
-                  {row.food.name}
-                </Button>
+                <span className="py-2 font-medium">{row.food.name}</span>
                 <Button
                   aria-label={`Remove ${row.food.name}`}
                   className="rounded-lg p-2 text-base text-teal-700 data-disabled:text-gray-300"

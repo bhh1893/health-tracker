@@ -3,20 +3,21 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { App } from "../App";
 import { MealsWindow } from "../meals/MealsWindow";
-import { aMeal, banana, fakeMealApi, oats } from "../test-handlers";
+import { aMeal, banana, fakeMealApi, oats, signedInAs } from "../test-handlers";
 import { renderAt } from "../test-render";
 import { server } from "../test-server";
 
-// Driven from the Meals window, the way the user reaches the sheet (ADR 0023): open a
-// Meal, tap a Food Entry's name.
+// Driven from Profile's Foods page, the only place the sheet opens (ADR 0032).
+const FOODS_URL = "/profile/foods";
 const PAST_URL = "/meals?day=2026-11-02";
 
 let api: ReturnType<typeof fakeMealApi>;
 
 beforeEach(() => {
   api = fakeMealApi([aMeal()], [oats, banana]);
-  server.use(...api.handlers);
+  server.use(signedInAs("member"), ...api.handlers);
 });
 
 const mealSheet = () => screen.getByRole("dialog", { name: "Edit Meal 1" });
@@ -25,12 +26,8 @@ const field = (sheet: HTMLElement, name: string) =>
   within(sheet).getByRole("spinbutton", { name });
 
 async function openOats() {
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Edit Meal 1" }),
-  );
-  await userEvent.click(
-    within(mealSheet()).getByRole("button", { name: "Edit Food Oats" }),
-  );
+  const list = await screen.findByRole("list", { name: "Foods" });
+  await userEvent.click(within(list).getByRole("button", { name: /^Oats/ }));
   const sheet = await foodSheet();
   // The form appears once the Food has loaded.
   await within(sheet).findByRole("textbox", { name: "Name" });
@@ -48,7 +45,7 @@ const save = (sheet: HTMLElement) =>
 
 describe("the Food sheet", () => {
   it("fills Nutrition from a Reference Food and saves it in one PATCH", async () => {
-    renderAt(PAST_URL, <MealsWindow />);
+    renderAt(FOODS_URL, <App />);
     const sheet = await openOats();
 
     await userEvent.type(
@@ -97,13 +94,10 @@ describe("the Food sheet", () => {
         },
       },
     ]);
-    // Saving the Food is not saving the Meal, which stays open and unsent.
-    expect(mealSheet()).toBeInTheDocument();
-    expect(api.puts).toHaveLength(0);
   });
 
   it("takes a label typed by hand, and shows it as typed when reopened", async () => {
-    renderAt(PAST_URL, <MealsWindow />);
+    renderAt(FOODS_URL, <App />);
     let sheet = await openOats();
 
     await typeInto(sheet, "Basis (g)", "40");
@@ -116,17 +110,13 @@ describe("the Food sheet", () => {
       expect(api.patches).toHaveLength(1);
     });
 
-    await userEvent.click(
-      within(mealSheet()).getByRole("button", { name: "Edit Food Oats" }),
-    );
-    sheet = await foodSheet();
-    await within(sheet).findByRole("textbox", { name: "Name" });
+    sheet = await openOats();
     expect(field(sheet, "Basis (g)")).toHaveValue(40);
     expect(field(sheet, "Calories (kcal)")).toHaveValue(150);
   });
 
   it("blocks a partial Nutrition block before sending anything", async () => {
-    renderAt(PAST_URL, <MealsWindow />);
+    renderAt(FOODS_URL, <App />);
     const sheet = await openOats();
 
     await typeInto(sheet, "Calories (kcal)", "150");
@@ -147,7 +137,7 @@ describe("the Food sheet", () => {
   });
 
   it("marks a macro heavier than the Basis on its own field", async () => {
-    renderAt(PAST_URL, <MealsWindow />);
+    renderAt(FOODS_URL, <App />);
     const sheet = await openOats();
 
     await typeInto(sheet, "Basis (g)", "40");
@@ -164,22 +154,6 @@ describe("the Food sheet", () => {
     expect(api.patches).toHaveLength(0);
   });
 
-  it("shows a rename in the Meal sheet at once", async () => {
-    renderAt(PAST_URL, <MealsWindow />);
-    const sheet = await openOats();
-
-    const name = within(sheet).getByRole("textbox", { name: "Name" });
-    await userEvent.clear(name);
-    await userEvent.type(name, "Porridge oats");
-    await save(sheet);
-
-    expect(
-      await within(mealSheet()).findByRole("button", {
-        name: "Edit Food Porridge oats",
-      }),
-    ).toBeInTheDocument();
-  });
-
   // A 4xx, which is not retried (query-client.ts), so the answer shows at once.
   it("stays open with the server's answer when the save fails", async () => {
     server.use(
@@ -187,7 +161,7 @@ describe("the Food sheet", () => {
         HttpResponse.json({ title: "Not Found", status: 404 }, { status: 404 }),
       ),
     );
-    renderAt(PAST_URL, <MealsWindow />);
+    renderAt(FOODS_URL, <App />);
     const sheet = await openOats();
 
     await typeInto(sheet, "Piece Weight (g)", "30");
@@ -217,7 +191,7 @@ describe("the Food sheet", () => {
         return HttpResponse.json({ ...oats, name: "Bananas" });
       }),
     );
-    renderAt(PAST_URL, <MealsWindow />);
+    renderAt(FOODS_URL, <App />);
     const sheet = await openOats();
 
     const name = within(sheet).getByRole("textbox", { name: "Name" });
@@ -239,8 +213,25 @@ describe("the Food sheet", () => {
   });
 });
 
-describe("creating a Food from the Meal sheet", () => {
-  it("stays one tap and opens no Food sheet", async () => {
+describe("Foods in the Meal sheet", () => {
+  it("has no route to the Food sheet: a Food Entry's name is plain text", async () => {
+    renderAt(PAST_URL, <MealsWindow />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Edit Meal 1" }),
+    );
+
+    const row = within(mealSheet()).getByRole("listitem", { name: "Oats" });
+    // Remove is the row's only button; the name opens nothing.
+    expect(
+      within(row)
+        .getAllByRole("button")
+        .map((button) => button.getAttribute("aria-label")),
+    ).toEqual(["Remove Oats"]);
+    await userEvent.click(within(row).getByText("Oats"));
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  });
+
+  it("creates a new Food in one tap and opens no Food sheet", async () => {
     renderAt(PAST_URL, <MealsWindow />);
     await userEvent.click(
       await screen.findByRole("button", { name: "Edit Meal 1" }),
@@ -253,8 +244,9 @@ describe("creating a Food from the Meal sheet", () => {
     await userEvent.click(
       await screen.findByRole("option", { name: "Banana" }),
     );
+    // findBy: Add is hidden from assistive tech until the suggestions close.
     await userEvent.click(
-      within(mealSheet()).getByRole("button", { name: "Add" }),
+      await within(mealSheet()).findByRole("button", { name: "Add" }),
     );
 
     expect(screen.getAllByRole("dialog")).toHaveLength(1);

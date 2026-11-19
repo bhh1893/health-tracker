@@ -1,9 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { api, unwrap } from "../api/client";
-import { ME_KEY } from "../auth/me";
 import { addDays } from "../lib/day";
-import { DAY_TOTALS_KEY } from "../nutrition/queries";
 import type { ExerciseSession } from "../exercise/sessions";
 
 // The API's cap on `limit` for Sessions (ADR 0006).
@@ -49,19 +47,5 @@ export function useExerciseHistory(
   return useQuery({
     queryKey: [...DASHBOARD_SESSIONS_KEY, exerciseId, from, to],
     queryFn: () => fetchSessions(exerciseId, from, to),
-  });
-}
-
-export function useSetRestaurantDayKcal() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (kcal: number) =>
-      unwrap(api.PATCH("/api/me", { body: { restaurant_day_kcal: kcal } })),
-    onSuccess: (me) => {
-      queryClient.setQueryData(ME_KEY, me);
-      // The server computes Day Totals on read, so every past Restaurant Day just
-      // changed (ADR 0023). Drop what is cached and read them again.
-      return queryClient.invalidateQueries({ queryKey: [DAY_TOTALS_KEY] });
-    },
   });
 }

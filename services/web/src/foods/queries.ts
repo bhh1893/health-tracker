@@ -43,12 +43,11 @@ export function useReferenceFoods(q: string) {
   });
 }
 
-// A Food's name shows in every Meal and Search result that holds it, and its
+// A Food's name shows in every Meal and History Day that holds it, and its
 // Nutrition feeds every total (ADR 0023: computed on read, so past Days change too).
 function refreshAfterFoodWrite(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: [foodCatalog.key] });
   void queryClient.invalidateQueries({ queryKey: [DAY_TOTALS_KEY] });
-  void queryClient.invalidateQueries({ queryKey: ["search"] });
   void queryClient.invalidateQueries({ queryKey: [MEAL_DAYS_KEY] });
   // A Meal write still in flight refetches its own Day when it settles. Refetching
   // now could briefly drop its optimistic Meal, so only mark the Days stale.
