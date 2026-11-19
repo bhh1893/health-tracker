@@ -54,7 +54,7 @@ const NUTRITION_LABELS: Record<NutritionField, string> = {
 };
 
 interface FoodSheetProps {
-  // null opens an empty sheet whose Save creates the Food (Profile's "+").
+  // null opens an empty sheet whose Save creates the Food (a Profile Catalog page's Add button).
   foodId: string | null;
   onClose: () => void;
   // The Food as the server saved it, so the caller can show a new name at once.
@@ -344,7 +344,7 @@ function ReferenceSearch({ onPick }: ReferenceSearchProps) {
               >
                 <span className="block">{reference.name}</span>
                 <span className="block text-sm text-gray-500">
-                  {String(reference.nutrition.kcal)} kcal per{" "}
+                  {String(reference.nutrition.kcal)} cal per{" "}
                   {String(reference.nutrition.basis_g)} g
                 </span>
               </ListBoxItem>

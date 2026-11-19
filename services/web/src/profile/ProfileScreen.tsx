@@ -16,7 +16,7 @@ export function ProfileScreen() {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-8 p-4">
-      <h1 className="text-xl font-semibold">Profile</h1>
+      <h1 className="text-center text-xl font-semibold">Profile</h1>
 
       <section aria-label="Signed in as" className="flex items-center gap-4">
         {/* Decorative: the name and email beside it say the same thing in words. */}

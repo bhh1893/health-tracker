@@ -25,8 +25,8 @@ interface RecentDaysProps<T> {
   empty: string;
   // A line at the top of the list about the Days listed, e.g. how many match a filter.
   summary?: string | undefined;
-  // One row per Day, usually a <DayRow>. The newest row starts open.
-  renderDay: (item: T, defaultExpanded: boolean) => ReactNode;
+  // One row per Day, usually a <DayRow>. Every row starts closed.
+  renderDay: (item: T) => ReactNode;
 }
 
 // ADR 0033's Recent Days, for either kind: the Days in the Range, newest first,
@@ -54,7 +54,7 @@ export function RecentDays<T>({
       )}
       {/* Which rows are open is not kept in the URL (ADR 0033): opening a Day
           is a quick look, not a setting. */}
-      {days.map((day, index) => renderDay(day, index === 0))}
+      {days.map(renderDay)}
       {!pages.isPending && error === null && days.length === 0 && (
         <p className="px-3 py-3 text-gray-500">{empty}</p>
       )}
@@ -140,26 +140,22 @@ function Status({
 
 interface DayRowProps {
   day: string;
-  defaultExpanded: boolean;
-  // An orange pill after the title, e.g. "Ate out" on a Restaurant Day.
+  // An orange pill after the title, e.g. "ate out" on a Restaurant Day.
   pill?: string | undefined;
   children: ReactNode;
 }
 
 // One Day of Recent Days: its title, which opens to the Day's contents.
-export function DayRow({ day, defaultExpanded, pill, children }: DayRowProps) {
+export function DayRow({ day, pill, children }: DayRowProps) {
   const title = formatDayTitle(day);
   return (
-    <Disclosure
-      defaultExpanded={defaultExpanded}
-      className="group border-t border-gray-100 first:border-t-0"
-    >
+    <Disclosure className="group border-t border-gray-100 first:border-t-0">
       {/* Level 2, a sibling of the Dashboard's heading: the list has no heading
           of its own to sit under. */}
       <Heading level={2}>
         <Button
           slot="trigger"
-          // Spoken as "11-13-26 [Friday], Ate out": the spans alone would run
+          // Spoken as "11-13-26 [Friday], ate out": the spans alone would run
           // together.
           aria-label={pill === undefined ? title : `${title}, ${pill}`}
           className="flex min-h-11 w-full items-center gap-2 px-3 text-left font-semibold"

@@ -2,7 +2,7 @@
 // the label is provisional, so renaming History is a change to this one constant.
 export const HISTORY_LABEL = "History";
 
-export type Tab = "history" | "add" | "profile";
+export type Tab = "history" | "home" | "profile";
 
 export interface TabSpec {
   id: Tab;
@@ -13,8 +13,8 @@ export interface TabSpec {
 
 export const TABS: readonly TabSpec[] = [
   { id: "history", label: HISTORY_LABEL, root: "/history" },
-  // Add's root has no ?day=, so a reset lands on today.
-  { id: "add", label: "Add", root: "/meals" },
+  // Home's root has no ?day=, so a reset lands on today.
+  { id: "home", label: "Home", root: "/meals" },
   { id: "profile", label: "Profile", root: "/profile" },
 ];
 
@@ -29,7 +29,7 @@ export function tabOf(pathname: string): Tab | null {
     return "history";
   }
   if (under(pathname, "/exercise") || under(pathname, "/meals")) {
-    return "add";
+    return "home";
   }
   if (under(pathname, "/profile")) {
     return "profile";

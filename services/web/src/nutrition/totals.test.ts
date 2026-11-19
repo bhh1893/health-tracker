@@ -15,8 +15,8 @@ const total = (fields: Partial<DayTotal> = {}): DayTotal => ({
 
 describe("formatting totals", () => {
   it("rounds calories to whole numbers with thousands separators", () => {
-    expect(formatKcal(2130.4)).toBe("2,130 kcal");
-    expect(formatKcal(0)).toBe("0 kcal");
+    expect(formatKcal(2130.4)).toBe("2,130 cal");
+    expect(formatKcal(0)).toBe("0 cal");
   });
 
   it("writes macros in a fixed order", () => {

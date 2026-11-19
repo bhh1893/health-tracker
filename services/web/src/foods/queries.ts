@@ -77,7 +77,7 @@ export function usePatchFood(id: string) {
   });
 }
 
-// The "+" sheet on Profile's Foods page: one PUT with a client-made id, the same
+// The Add sheet on Profile's Foods page: one PUT with a client-made id, the same
 // create path logging uses, so a retry or "Save anyway" writes the same Food.
 export function usePutFood(id: string) {
   const queryClient = useQueryClient();

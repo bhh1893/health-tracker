@@ -21,7 +21,7 @@ History becomes one screen per kind that answers both "what happened?" and "how 
   | `dash` | `open` when the Dashboard section is open | closed |
 
 - **Default tab flips to Meals.** Exercise now shows nothing until an Exercise is picked, so it is a poor landing. A `/history` URL from before this ADR that has `id` but no `tab` still opens Exercise, so a saved Exercise chart keeps working.
-- **Which Days are open is not in the URL.** Opening a Day is a quick look, not a setting. The most recent Day starts open.
+- **Which Days are open is not in the URL.** Opening a Day is a quick look, not a setting. Every Day starts closed (amended 2026-11-19: the newest Day used to start open, which pushed the rest of the list down on every visit).
 
 ### Layout, top to bottom
 

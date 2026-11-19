@@ -132,7 +132,7 @@ describe("Exercise with nothing picked", () => {
 });
 
 describe("Exercise Recent Days", () => {
-  it("lists each Day with a Session, the newest open with its Sets", async () => {
+  it("lists each Day with a Session, all closed, and opens one to its Sets", async () => {
     fakeExerciseApi([
       aSession(daysAgo(2), [135, 135, null]),
       aSession(daysAgo(6), [125]),
@@ -142,10 +142,12 @@ describe("Exercise Recent Days", () => {
     const newest = await screen.findByRole("button", {
       name: formatDayTitle(daysAgo(2)),
     });
+    for (const row of rowButtons()) {
+      expect(row).toHaveAttribute("aria-expanded", "false");
+    }
+
+    await userEvent.click(newest);
     expect(newest).toHaveAttribute("aria-expanded", "true");
-    expect(
-      screen.getByRole("button", { name: formatDayTitle(daysAgo(6)) }),
-    ).toHaveAttribute("aria-expanded", "false");
     // A closed Day's list is hidden, so these are the open Day's Sets only.
     expect(
       within(recentDays())

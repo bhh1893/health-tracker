@@ -33,7 +33,7 @@ export type FoodDraft = { name: string; piece_g: string } & Record<
 const text = (value: number | null | undefined) =>
   value === null || value === undefined ? "" : String(value);
 
-// The "+" sheet on Profile's Foods page starts here (ADR 0032).
+// The Add sheet on Profile's Foods page starts here (ADR 0032).
 export const EMPTY_FOOD_DRAFT: FoodDraft = {
   name: "",
   basis_g: "",

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, ToggleButton } from "react-aria-components";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 
 import {
   filterItems,
@@ -27,7 +27,7 @@ interface CatalogPageProps {
   catalog: Catalog;
 }
 
-// Which sheet is open: an item's id, or null for the "+" sheet. Not in the URL
+// Which sheet is open: an item's id, or null for the Add sheet. Not in the URL
 // (ADR 0032): Back closes nothing, and a shared link never opens a form.
 type OpenSheet = { id: string | null } | null;
 
@@ -54,23 +54,11 @@ export function CatalogPage({ catalog }: CatalogPageProps) {
   };
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-4">
-      <header className="flex items-center gap-4">
-        {/* The page lives under Profile, so Back goes up to it (ADR 0031). */}
-        <Link className="text-teal-700 underline" to="/profile">
-          Back
-        </Link>
-        <h1 className="flex-1 text-xl font-semibold">{catalog.plural}</h1>
-        <Button
-          aria-label={`New ${catalog.label}`}
-          className="flex size-11 items-center justify-center rounded-full bg-teal-700 text-2xl text-white data-pressed:bg-teal-900"
-          onPress={() => {
-            setOpen({ id: null });
-          }}
-        >
-          +
-        </Button>
-      </header>
+    // Laid out like Home's window: at least a screen tall above the bar, so the Add
+    // button sits at the bottom even on a short list. No Back link: tapping
+    // Profile in the bar returns there.
+    <main className="mx-auto flex min-h-[calc(100dvh-var(--tab-bar-footprint))] max-w-md flex-col gap-4 px-4 pt-4 pb-(--tab-bar-gap)">
+      <h1 className="text-center text-xl font-semibold">{catalog.plural}</h1>
 
       <input
         type="search"
@@ -122,6 +110,17 @@ export function CatalogPage({ catalog }: CatalogPageProps) {
         )
       )}
 
+      {/* Sticky just above the bar, and last in the page, so when scrolled to the end
+          it rests below the last item instead of covering it. */}
+      <Button
+        className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto w-full rounded-2xl bg-teal-700 p-4 text-lg font-semibold text-white data-pressed:bg-teal-900"
+        onPress={() => {
+          setOpen({ id: null });
+        }}
+      >
+        Add {catalog.label}
+      </Button>
+
       {/* Keyed on the item, so opening a clashing item from a sheet starts a fresh
           form instead of keeping this one's draft. */}
       {open &&
@@ -167,7 +166,7 @@ function Results({ catalog, all, filters, onOpen }: ResultsProps) {
       {items.length === 0 ? (
         <p className="text-gray-500">
           {all.length === 0
-            ? `No ${catalog.plural} yet. Tap + to add one.`
+            ? `No ${catalog.plural} yet.`
             : `No ${catalog.plural} match.`}
         </p>
       ) : (
@@ -211,7 +210,7 @@ function NutritionLine({ item }: { item: CatalogItem }) {
   }
   return (
     <span className="text-sm text-gray-600">
-      {String(nutrition.kcal)} kcal per {grams(nutrition.basis_g)} · P{" "}
+      {String(nutrition.kcal)} cal per {grams(nutrition.basis_g)} · P{" "}
       {grams(nutrition.protein_g)} · C {grams(nutrition.carbs_g)} · F{" "}
       {grams(nutrition.fat_g)}
     </span>

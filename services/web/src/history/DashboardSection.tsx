@@ -46,7 +46,7 @@ export function DashboardSection({
       <Heading level={2}>
         <Button
           slot="trigger"
-          // Spoken as "Dashboard, Avg 2,000 kcal": the spans alone would run
+          // Spoken as "Dashboard, Avg 2,000 cal": the spans alone would run
           // together.
           aria-label={hint === null ? "Dashboard" : `Dashboard, ${hint}`}
           className="flex w-full items-center gap-2 p-3 text-left"

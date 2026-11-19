@@ -11,10 +11,11 @@ const ICONS: Record<Tab, ReactNode> = {
       <path d="M12 7v5l3 2" />
     </>
   ),
-  add: (
+  // A house: where the app opens, and where today is logged.
+  home: (
     <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 8v8M8 12h8" />
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5 9v11a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9" />
     </>
   ),
   profile: (
@@ -38,7 +39,7 @@ export function AppShell() {
   const here = `${pathname}${search}`;
   const active = tabOf(pathname);
 
-  // Each tab's last place, so leaving Add on a past Day and coming back returns to
+  // Each tab's last place, so leaving Home on a past Day and coming back returns to
   // it. React state, not storage: a fresh launch opens every tab at its root.
   const [memory, setMemory] = useState<Memory>(ROOTS);
   // Set while rendering, React's pattern for state that follows the URL: an effect

@@ -122,17 +122,19 @@ const rowButtons = () =>
     .map((heading) => within(heading).getByRole("button"));
 
 describe("Meals Recent Days", () => {
-  it("lists each Day under its title, the newest one open with its Foods", async () => {
+  it("lists each Day under its title, all closed, and opens one to its Foods", async () => {
     fakeMealDaysApi([foodsDay(daysAgo(1)), foodsDay(daysAgo(2))]);
     renderAt("/history", <HistoryScreen />);
 
     const newest = await screen.findByRole("button", {
       name: formatDayTitle(daysAgo(1)),
     });
+    for (const row of rowButtons()) {
+      expect(row).toHaveAttribute("aria-expanded", "false");
+    }
+
+    await userEvent.click(newest);
     expect(newest).toHaveAttribute("aria-expanded", "true");
-    expect(
-      screen.getByRole("button", { name: formatDayTitle(daysAgo(2)) }),
-    ).toHaveAttribute("aria-expanded", "false");
     // A closed Day's list is hidden, so these are the open Day's Foods only.
     expect(
       within(recentDays())
@@ -141,19 +143,19 @@ describe("Meals Recent Days", () => {
     ).toEqual(["Oats80 g", "Banana× 1"]);
   });
 
-  it("shows the Ate out pill only on a Restaurant Day, with its Restaurant", async () => {
+  it("shows the ate out pill only on a Restaurant Day, with its Restaurant", async () => {
     fakeMealDaysApi([restaurantDay(daysAgo(1)), foodsDay(daysAgo(2))]);
     renderAt("/history", <HistoryScreen />);
 
     expect(
       await screen.findByRole("button", {
-        name: `${formatDayTitle(daysAgo(1))}, Ate out`,
+        name: `${formatDayTitle(daysAgo(1))}, ate out`,
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: formatDayTitle(daysAgo(2)) }),
     ).toBeInTheDocument();
-    expect(within(recentDays()).getAllByText("Ate out")).toHaveLength(1);
+    expect(within(recentDays()).getAllByText("ate out")).toHaveLength(1);
     expect(within(recentDays()).getByText(cafe.name)).toBeInTheDocument();
   });
 
@@ -328,7 +330,10 @@ describe("the Meals filter", () => {
       expect(rowButtons()).toHaveLength(2);
     });
     expect(filter()).toHaveValue("CHICKEN");
-    // The newest kept Day is open and shows all of its Foods, not only the match.
+    // An opened Day shows all of its Foods, not only the match.
+    await userEvent.click(
+      screen.getByRole("button", { name: formatDayTitle(daysAgo(1)) }),
+    );
     expect(
       within(recentDays())
         .getAllByRole("listitem")
@@ -336,7 +341,7 @@ describe("the Meals filter", () => {
     ).toEqual(["Oats80 g", "Chicken breast200 g"]);
     await userEvent.click(
       screen.getByRole("button", {
-        name: `${formatDayTitle(daysAgo(3))}, Ate out`,
+        name: `${formatDayTitle(daysAgo(3))}, ate out`,
       }),
     );
     expect(marks()).toEqual(["Chicken", "Chicken"]);

@@ -16,7 +16,7 @@ export function WindowLayout() {
     // an empty Day. The bottom padding is the gap between that button and the bar.
     <div className="mx-auto flex min-h-[calc(100dvh-var(--tab-bar-footprint))] max-w-md flex-col gap-4 px-4 pt-4 pb-(--tab-bar-gap)">
       <header>
-        <h1 className="text-xl font-semibold">Health Tracker</h1>
+        <h1 className="text-center text-xl font-semibold">Nibble Jiggle</h1>
       </header>
       <nav
         aria-label="Windows"

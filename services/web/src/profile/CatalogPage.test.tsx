@@ -142,7 +142,7 @@ describe("a Catalog page", () => {
       name: /Chicken breast/,
     });
     expect(withLabel).toHaveTextContent(
-      "165 kcal per 100 g · P 31 g · C 0 g · F 3.6 g",
+      "165 cal per 100 g · P 31 g · C 0 g · F 3.6 g",
     );
     const without = within(list).getByRole("button", { name: /Rice/ });
     expect(without).toHaveTextContent("No nutrition yet");
@@ -237,7 +237,7 @@ describe("a Catalog item sheet", () => {
     renderAt("/profile/exercises", <App />);
     await rows("Exercises");
 
-    await userEvent.click(screen.getByRole("button", { name: "New Exercise" }));
+    await userEvent.click(screen.getByRole("button", { name: "Add Exercise" }));
     const sheet = await screen.findByRole("dialog", { name: "New Exercise" });
     await userEvent.type(
       within(sheet).getByRole("textbox", { name: "Name" }),
@@ -261,7 +261,7 @@ describe("a Catalog item sheet", () => {
     renderAt("/profile/exercises", <App />);
     await rows("Exercises");
 
-    await userEvent.click(screen.getByRole("button", { name: "New Exercise" }));
+    await userEvent.click(screen.getByRole("button", { name: "Add Exercise" }));
     const sheet = await screen.findByRole("dialog", { name: "New Exercise" });
     await userEvent.click(within(sheet).getByRole("button", { name: "Save" }));
 
@@ -467,7 +467,7 @@ describe("the Food sheet on Profile", () => {
     renderAt("/profile/foods", <App />);
     await rows();
 
-    await userEvent.click(screen.getByRole("button", { name: "New Food" }));
+    await userEvent.click(screen.getByRole("button", { name: "Add Food" }));
     const sheet = await screen.findByRole("dialog", { name: "New Food" });
     await userEvent.type(
       within(sheet).getByRole("textbox", { name: "Name" }),

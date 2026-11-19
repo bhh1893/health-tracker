@@ -16,12 +16,8 @@ export function ExerciseDays({ exerciseId, from, to }: ExerciseDaysProps) {
     <RecentDays
       pages={pages}
       empty="No Sessions in this range."
-      renderDay={(session, defaultExpanded) => (
-        <DayRow
-          key={session.day}
-          day={session.day}
-          defaultExpanded={defaultExpanded}
-        >
+      renderDay={(session) => (
+        <DayRow key={session.day} day={session.day}>
           <SetList session={session} />
         </DayRow>
       )}

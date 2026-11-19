@@ -149,7 +149,7 @@ describe("the History frame", () => {
     expect(range()).toHaveValue("30d");
     expect(dashboard()).toHaveAttribute("aria-expanded", "false");
     await waitFor(() => {
-      expect(dashboard()).toHaveAccessibleName("Dashboard, Avg 2,200 kcal");
+      expect(dashboard()).toHaveAccessibleName("Dashboard, Avg 2,200 cal");
     });
     expect(
       screen.queryByRole("button", { name: "Calories per Day as a table" }),
@@ -223,10 +223,10 @@ describe("the Meals Dashboard", () => {
     renderAt("/history?dash=open", <HistoryScreen />);
 
     expect(await tableRows("Calories per Day")).toEqual([
-      [formatDay(daysAgo(1)), "2,400 kcal", "P 150 g · C 200 g · F 60 g"],
-      [formatDay(daysAgo(3)), "1,600 kcal", "P 150 g · C 200 g · F 60 g"],
+      [formatDay(daysAgo(1)), "2,400 cal", "P 150 g · C 200 g · F 60 g"],
+      [formatDay(daysAgo(3)), "1,600 cal", "P 150 g · C 200 g · F 60 g"],
     ]);
-    expect(tile("Average")).toHaveTextContent("2,000 kcal");
+    expect(tile("Average")).toHaveTextContent("2,000 cal");
     expect(tile("Average")).toHaveTextContent("over 2 logged Days");
     const [request] = api.calls("/days");
     expect(request?.searchParams.get("from")).toBe(daysAgo(29));
@@ -253,18 +253,18 @@ describe("the Meals Dashboard", () => {
 
     expect(rows[0]).toEqual([
       formatDay(daysAgo(1)),
-      "5,000 kcal",
+      "5,000 cal",
       "Restaurant Day",
     ]);
     expect(rows[1]).toEqual([
       formatDay(daysAgo(2)),
-      "900 kcal",
+      "900 cal",
       "Incomplete Day · P 150 g · C 200 g · F 60 g",
     ]);
     expect(tile("Restaurant Days")).toHaveTextContent("1");
     expect(tile("Incomplete Days")).toHaveTextContent("1");
     // The legend names the ring. A Restaurant Day's orange is explained by the
-    // Ate out pills around the chart, not by a legend (ADR 0033).
+    // ate out pills around the chart, not by a legend (ADR 0033).
     const legend = screen.getAllByRole("list")[0];
     expect(legend).toHaveTextContent("Incomplete Day");
     expect(legend).not.toHaveTextContent("Restaurant Day");
@@ -316,7 +316,7 @@ describe("the Meals Dashboard", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => {
-      expect(tile("Average")).toHaveTextContent("3,500 kcal");
+      expect(tile("Average")).toHaveTextContent("3,500 cal");
     });
     expect(api.patches).toEqual([{ restaurant_day_kcal: 3500 }]);
   });
