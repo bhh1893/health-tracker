@@ -229,10 +229,6 @@ describe("adding a Meal", () => {
       within(foodRow("Banana")).getByRole("combobox", { name: "Unit" }),
       "count",
     );
-    await userEvent.selectOptions(
-      within(sheet()).getByRole("combobox", { name: "Label" }),
-      "Breakfast",
-    );
     await userEvent.click(save);
 
     await waitFor(() => {
@@ -241,7 +237,7 @@ describe("adding a Meal", () => {
     expect(api.puts).toHaveLength(1);
     expect(api.puts[0]?.body).toMatchObject({
       kind: "foods",
-      label: "Breakfast",
+      label: null,
       food_entries: [
         { food_id: oats.id, quantity: 80, unit: "g" },
         { food_id: banana.id, quantity: 1, unit: "count" },
@@ -251,13 +247,14 @@ describe("adding a Meal", () => {
 
     unmount();
     renderAt(PAST_URL, <MealsWindow />);
-    expect(await card("Breakfast")).toHaveTextContent("Banana× 1");
+    expect(await card("Meal")).toHaveTextContent("Banana× 1");
   });
 
   it("saves a typed Label from Other, and None as no Label", async () => {
+    seedRestaurants([tacos]);
     renderAt(PAST_URL, <MealsWindow />);
-    await openNewMeal();
-    await searchAndAdd("Oats");
+    await openNewMeal("Add Restaurant");
+    await userEvent.click(await recentRestaurant("Taco Stand"));
     const label = within(sheet()).getByRole("combobox", { name: "Label" });
 
     expect(
@@ -380,33 +377,28 @@ describe("adding a Meal", () => {
     expect(api.puts).toHaveLength(0);
   });
 
-  it("puts the pick above the Label, with no Time, for both kinds of Meal", async () => {
+  it("has no Label on a Food Meal, puts it below the pick on a Restaurant Meal, and no Time on either", async () => {
     renderAt(PAST_URL, <MealsWindow />);
     await openNewMeal();
 
-    const label = () =>
-      within(sheet()).getByRole("combobox", { name: "Label" });
-    expect(within(sheet()).queryByLabelText("Time")).not.toBeInTheDocument();
-    const follows = (a: Node, b: Node) =>
-      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-
     expect(
-      follows(
-        within(sheet()).getByRole("combobox", { name: "Add Food" }),
-        label(),
-      ),
-    ).toBe(true);
+      within(sheet()).queryByRole("combobox", { name: "Label" }),
+    ).not.toBeInTheDocument();
+    expect(within(sheet()).queryByLabelText("Time")).not.toBeInTheDocument();
 
     await userEvent.click(
       within(sheet()).getByRole("button", { name: "Close" }),
     );
     await openNewMeal("Add Restaurant");
+    const follows = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
     expect(
       follows(
         within(sheet()).getByRole("combobox", { name: "Add Restaurant" }),
-        label(),
+        within(sheet()).getByRole("combobox", { name: "Label" }),
       ),
     ).toBe(true);
+    expect(within(sheet()).queryByLabelText("Time")).not.toBeInTheDocument();
   });
 
   it("stays open and takes the Meal back off the feed when the server refuses the save", async () => {
@@ -469,6 +461,26 @@ describe("editing a Meal", () => {
         { food_id: banana.id, quantity: 1, unit: "count" },
       ],
     });
+  });
+
+  it("keeps a Food Meal's saved Label, though the sheet no longer shows it", async () => {
+    seedApi(aMeal({ label: "Brunch" }));
+    renderAt(PAST_URL, <MealsWindow />);
+
+    await userEvent.click(
+      within(await card("Brunch")).getByRole("button", { name: "Edit Brunch" }),
+    );
+    expect(
+      within(sheet()).queryByRole("combobox", { name: "Label" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      within(sheet()).getByRole("button", { name: "Save" }),
+    );
+
+    await waitFor(() => {
+      expect(api.puts).toHaveLength(1);
+    });
+    expect(api.puts[0]?.body.label).toBe("Brunch");
   });
 
   it("blocks removing the last Food, and says why", async () => {

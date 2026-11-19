@@ -104,9 +104,11 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
     putMeal.mutate({ before: saved, after: meal }, { onSuccess: onClose });
   }
 
-  // Last in both kinds: the picks (Foods or Restaurants) are what a Meal is for,
-  // so they lead, and the Label is optional. No time field: a new Meal happens now
-  // and an edit keeps its time (ADR 0008). A native select, so on a phone picking a
+  // Restaurant Meals only, after the picks: the Restaurants are what the Meal is
+  // for, so they lead, and the Label is optional. A Food Meal has no Label field, so
+  // a new one saves with none and is called "Meal"; an edit keeps the Label the draft
+  // was loaded with (ADR 0008). No time field: a new Meal happens now and an edit
+  // keeps its time. A native select, so on a phone picking a
   // preset opens the system picker, not the keyboard; Other adds a text field.
   const labelField = (
     <div className="flex flex-col gap-2">
@@ -208,7 +210,7 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
             }}
           />
         )}
-        {labelField}
+        {draft.kind === "restaurant" && labelField}
 
         {putMeal.error && <ProblemAlert error={putMeal.error} />}
         {deleteMeal.error && <ProblemAlert error={deleteMeal.error} />}

@@ -76,3 +76,7 @@ The Label field becomes a native select: None, Breakfast, Lunch, Dinner, Snack, 
 ## Amendment: fixed-size Meal sheet
 
 Changed 2026-11-19. The Meal sheet opens at its full size, two thirds of the screen (never below 24rem), instead of growing as Foods or Restaurants are added. The bordered list box shows from the start, empty with a hint until the first pick, and takes the sheet's spare height; past that it scrolls on its own. The sheet no longer resizes under the user's thumb as rows are added. The cost: a Meal with one Food leaves blank space inside the box. `Sheet`'s `maxHeight` prop becomes `size` (`fit` | `two-thirds`), since two-thirds is now a height rather than a cap.
+
+## Amendment: Label on Restaurant Meals only
+
+Changed 2026-11-19. The Food Meal sheet drops its Label field; the Restaurant Meal sheet keeps it. A new Food Meal saves with no Label and shows as **Meal**. Editing a Food Meal saved earlier with a Label keeps that Label: the sheet sends the whole Meal (ADR 0006), and the hidden field's value rides along unchanged, so nothing is cleared without the user asking. The API and data model are unchanged; `label` stays optional free text for both kinds. The cost: several Food Meals on one Day all read **Meal** and are told apart only by their order and Foods.
