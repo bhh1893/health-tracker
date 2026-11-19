@@ -54,7 +54,7 @@ def names(client: TestClient, table: str, **params: Any) -> list[str]:
 
 
 def insert_meal(session: Session, day: str, restaurant: UUID | None = None) -> UUID:
-    return session.execute(
+    meal = session.execute(
         text(
             """
             INSERT INTO meals (user_id, kind, restaurant_id, occurred_at, occurred_tz, day)
@@ -70,6 +70,21 @@ def insert_meal(session: Session, day: str, restaurant: UUID | None = None) -> U
             "day": day,
         },
     ).scalar_one()
+    if restaurant:
+        list_restaurant(session, meal, restaurant)
+    return meal
+
+
+def list_restaurant(session: Session, meal: UUID, restaurant: UUID) -> None:
+    session.execute(
+        text(
+            """
+            INSERT INTO meal_restaurants (user_id, meal_id, restaurant_id)
+            VALUES (:user, :meal, :restaurant)
+            """
+        ),
+        {"user": MEMBER_ID, "meal": meal, "restaurant": restaurant},
+    )
 
 
 def use_food(
@@ -509,6 +524,18 @@ def test_empty_q_lists_recently_used_then_the_rest_by_name(
 
     assert names(client, table, q=q) == ["Newer", "Older", "Aardvark", "Zebra"]
     assert names(client, table, q=q, limit=1) == ["Newer"]
+
+
+def test_every_restaurant_of_a_meal_counts_as_used(client: TestClient, session: Session) -> None:
+    """ADR 0034: the second stop of a night out is as recent as the first."""
+    first = create(client, "restaurants", "First stop")
+    second = create(client, "restaurants", "Second stop")
+    create(client, "restaurants", "Aardvark")
+    meal = insert_meal(session, "2026-11-01", restaurant=first)
+    list_restaurant(session, meal, second)
+
+    assert names(client, "restaurants")[2] == "Aardvark"
+    assert client.get(url("restaurants", second)).json()["last_used_day"] == "2026-11-01"
 
 
 def test_foods_carry_their_newest_unit_and_quantity(client: TestClient, session: Session) -> None:

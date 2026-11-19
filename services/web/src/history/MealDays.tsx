@@ -69,6 +69,7 @@ function MealList({ day, q }: { day: MealDay; q: string }) {
           >
             <ForkKnifeIcon />
             <span>
+              {/* eslint-disable-next-line @typescript-eslint/no-deprecated -- the move to `restaurants` is #273 (ADR 0034) */}
               <Highlight text={meal.restaurant.name} q={q} />
             </span>
           </li>

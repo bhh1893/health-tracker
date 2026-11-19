@@ -97,3 +97,42 @@ def test_nutrition_migration_keeps_existing_rows(empty_database: dict[str, URL])
 
     assert tuple(food) == (None,) * 6
     assert restaurant_day_kcal == 5000
+
+
+def test_meal_restaurants_migration_backfills_every_restaurant_meal(
+    empty_database: dict[str, URL],
+) -> None:
+    """Each Restaurant Meal from before 0006 gets its one row; a foods Meal gets none."""
+    alembic_upgrade(empty_database["app"], "0005")
+    owner = create_engine(empty_database["app"])
+    with owner.begin() as connection:
+        connection.execute(
+            text(
+                """
+                INSERT INTO restaurants (user_id, name) SELECT id, 'Diner' FROM users;
+                INSERT INTO meals (user_id, kind, restaurant_id, occurred_at, occurred_tz, day)
+                SELECT user_id, 'restaurant', id, now(), 'UTC', current_date FROM restaurants;
+                INSERT INTO meals (user_id, kind, occurred_at, occurred_tz, day)
+                SELECT id, 'foods', now(), 'UTC', current_date FROM users;
+                """
+            )
+        )
+
+    alembic_upgrade(empty_database["app"])
+
+    with owner.connect() as connection:
+        copied = (
+            connection.execute(
+                text(
+                    """
+                SELECT m.restaurant_id = mr.restaurant_id AND m.user_id = mr.user_id
+                FROM meal_restaurants mr JOIN meals m ON m.id = mr.meal_id
+                """
+                )
+            )
+            .scalars()
+            .all()
+        )
+    owner.dispose()
+
+    assert copied == [True]

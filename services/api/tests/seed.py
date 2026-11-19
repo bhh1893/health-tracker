@@ -32,6 +32,8 @@ FIRST_DAY = date(2023, 1, 1)
 # One real user's rates (ADR 0012): about 1,100 Meals and 7,000 Sets a year.
 MEAL_TIMES = (time(8, 0), time(12, 30), time(19, 0))
 RESTAURANT_SHARE = 0.1
+RESTAURANTS_PER_MEAL = (1, 2, 3)
+RESTAURANTS_PER_MEAL_WEIGHTS = (0.85, 0.1, 0.05)
 FOOD_ENTRIES_PER_MEAL = (2, 5)
 TRAINING_DAY_SHARE = 4 / 7
 EXERCISES_PER_SESSION = 8
@@ -90,6 +92,7 @@ COLUMNS = {
     "exercises": ("id", "user_id", "name", "archived_at"),
     "restaurants": ("id", "user_id", "name", "archived_at"),
     "meals": ("id", "user_id", "kind", "restaurant_id", "occurred_at", "occurred_tz", "day"),
+    "meal_restaurants": ("user_id", "meal_id", "restaurant_id"),
     "food_entries": ("user_id", "meal_id", "food_id", "quantity", "unit"),
     "exercise_entries": (
         "id",
@@ -156,13 +159,18 @@ def meal_rows(rng: Random, user: User, day: date, weights: list[float], batch: B
         jitter = timedelta(minutes=rng.randint(-45, 45))
         moment = datetime.combine(day, meal_time, user.timezone) + jitter
         meal_id = uuid7_at(rng, moment)
-        restaurant = None
+        restaurants: list[UUID] = []
         if rng.random() < RESTAURANT_SHARE:
-            restaurant = rng.choice(user.restaurants)
-        kind = "foods" if restaurant is None else "restaurant"
+            # Mostly one; sometimes a food hall or a night out (ADR 0034).
+            count = rng.choices(RESTAURANTS_PER_MEAL, RESTAURANTS_PER_MEAL_WEIGHTS)[0]
+            restaurants = rng.sample(user.restaurants, count)
+        kind = "restaurant" if restaurants else "foods"
+        first = restaurants[0] if restaurants else None
         tz = user.timezone.key
-        batch["meals"].append((meal_id, user.id, kind, restaurant, moment, tz, day))
-        if restaurant is None:
+        batch["meals"].append((meal_id, user.id, kind, first, moment, tz, day))
+        for restaurant in restaurants:
+            batch["meal_restaurants"].append((user.id, meal_id, restaurant))
+        if not restaurants:
             count = rng.randint(*FOOD_ENTRIES_PER_MEAL)
             for food in rng.choices(user.foods, cum_weights=weights, k=count):
                 quantity = rng.randint(10, 400)
@@ -229,7 +237,12 @@ def generate(scale: Scale) -> Iterator[Batch]:
     exercise_weights = usage_weights(EXERCISES_PER_USER)
     for offset in range(scale.days):
         day = FIRST_DAY + timedelta(days=offset)
-        batch: Batch = {"meals": [], "food_entries": [], "exercise_entries": []}
+        batch: Batch = {
+            "meals": [],
+            "meal_restaurants": [],
+            "food_entries": [],
+            "exercise_entries": [],
+        }
         for user in users:
             meal_rows(rng, user, day, food_weights, batch)
             if rng.random() < TRAINING_DAY_SHARE:

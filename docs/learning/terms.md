@@ -687,3 +687,4 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`overscroll-contain`**: when a scrolling list hits its end, the swipe stops there instead of scrolling the page or sheet behind it.
 - **Join table**: a table whose rows each link one row of a table to one row of another, e.g. `meal_restaurants` linking a Meal to each of its Restaurants; how a relational database stores "one Meal, many Restaurants".
 - **Deprecated field**: an API field still served and accepted but marked (OpenAPI `deprecated: true`) as on its way out, so new clients stop using it while old ones keep working until the next major version.
+- **Backfill**: a migration step that fills a new table or column from existing data, e.g. copying every `meals.restaurant_id` into `meal_restaurants`, so new code finds old rows where it now looks.

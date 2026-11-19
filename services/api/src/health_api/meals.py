@@ -1,17 +1,19 @@
 """Meals: one aggregate, read and written whole (ADR 0002, ADR 0006, ADR 0012).
 
-Food Entries have no endpoint of their own. Every write goes through PUT /meals/{id} and
-replaces the whole Meal in one transaction, which is what lets the API keep the rule the
-database cannot: a Foods Meal has at least one Food Entry.
+Food Entries and a Meal's Restaurants have no endpoint of their own. Every write goes through
+PUT /meals/{id} and replaces the whole Meal in one transaction, which is what lets the API keep
+the rules the database cannot: a foods Meal has at least one Food Entry, and a Restaurant Meal
+at least one Restaurant (ADR 0034).
 """
 
 from decimal import Decimal
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, Query, Response
-from pydantic import UUID7, BaseModel, BeforeValidator, ConfigDict, Field
+from fastapi.exceptions import RequestValidationError
+from pydantic import UUID7, BaseModel, BeforeValidator, ConfigDict, Field, model_validator
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -31,17 +33,32 @@ from health_api.entries import (
     range_filters,
 )
 from health_api.identity import CurrentUser
-from health_api.problems import KIND_IMMUTABLE, LAST_FOOD_ENTRY, CatalogRef, ProblemError
+from health_api.problems import (
+    KIND_IMMUTABLE,
+    LAST_FOOD_ENTRY,
+    SEVERAL_RESTAURANTS,
+    CatalogRef,
+    ProblemError,
+)
 
 # Far above any real Meal. Bounds the rows one request can write.
 MAX_FOOD_ENTRIES = 100
+# Ten stops in one sitting is already a lot; each kind's cap fits its own use (ADR 0034).
+MAX_RESTAURANTS = 10
 
-# Which field a failed foreign key means. Same-owner links are composite FKs (ADR 0002), so
-# "no such item" and "someone else's item" are one error, and neither reveals the other.
-REFERENCE_CONSTRAINTS = {
-    "food_entries_food_id_user_id_fkey": ("food_entries", "A Food here does not exist."),
-    "meals_restaurant_id_user_id_fkey": ("restaurant_id", "This Restaurant does not exist."),
+# The foreign keys that refuse a missing Food or Restaurant. Same-owner links are composite FKs
+# (ADR 0002), so "no such item" and "someone else's item" are one error, and neither reveals
+# the other.
+FOOD_REFERENCE = "food_entries_food_id_user_id_fkey"
+# Two, while meals.restaurant_id still holds the first Restaurant (ADR 0034).
+RESTAURANT_REFERENCES = {
+    "meals_restaurant_id_user_id_fkey",
+    "meal_restaurants_restaurant_id_user_id_fkey",
 }
+
+# Marks a field as on its way out in the contract, without the runtime warning pydantic's own
+# `deprecated` adds to every read of it. Removed only in an /api/v2 (ADR 0006).
+DEPRECATED: dict[str, Any] = {"deprecated": True}
 
 Unit = Literal["g", "count"]
 
@@ -74,7 +91,35 @@ class PutFoodsMeal(PutMealFields):
 
 class PutRestaurantMeal(PutMealFields):
     kind: Literal["restaurant"]
-    restaurant_id: UUID
+    # Read back in the order sent. A Restaurant once per Meal.
+    restaurant_ids: (
+        Annotated[list[UUID], Field(min_length=1, max_length=MAX_RESTAURANTS)] | None
+    ) = None
+    # The v1 field from before ADR 0034. Means restaurant_ids: [restaurant_id].
+    restaurant_id: UUID | None = Field(default=None, json_schema_extra=DEPRECATED)
+
+    @model_validator(mode="after")
+    def restaurants_sent_once(self) -> Self:
+        if (self.restaurant_ids is None) == (self.restaurant_id is None):
+            raise ValueError("Send restaurant_ids, or the deprecated restaurant_id, not both.")
+        if self.restaurant_ids is not None and len(set(self.restaurant_ids)) < len(
+            self.restaurant_ids
+        ):
+            raise ValueError("restaurant_ids lists a Restaurant twice.")
+        return self
+
+    @property
+    def restaurants(self) -> list[UUID]:
+        """The Restaurants in order, whichever field carried them."""
+        if self.restaurant_ids is not None:
+            return self.restaurant_ids
+        assert self.restaurant_id is not None  # restaurants_sent_once guarantees one of them
+        return [self.restaurant_id]
+
+    @property
+    def restaurants_field(self) -> str:
+        """The field an error about the Restaurants belongs to: the one the client sent."""
+        return "restaurant_ids" if self.restaurant_ids is not None else "restaurant_id"
 
 
 PutMeal = Annotated[PutFoodsMeal | PutRestaurantMeal, Field(discriminator="kind")]
@@ -113,7 +158,10 @@ class FoodsMeal(MealFields):
 
 class RestaurantMeal(MealFields):
     kind: Literal["restaurant"] = "restaurant"
-    restaurant: CatalogRef
+    # In the order they were saved.
+    restaurants: list[CatalogRef]
+    # The v1 field from before ADR 0034: the first of `restaurants`.
+    restaurant: CatalogRef = Field(json_schema_extra=DEPRECATED)
 
 
 Meal = Annotated[FoodsMeal | RestaurantMeal, Field(discriminator="kind")]
@@ -172,6 +220,34 @@ def load_food_entries(
     return entries, totals
 
 
+def load_restaurants(
+    session: Session, user: UUID, meal_ids: list[UUID]
+) -> dict[UUID, list[CatalogRef]]:
+    """All the Meals' Restaurants in one query, each Meal's in the order they were saved.
+
+    ORDER BY id is that order: a save inserts them in request order, and UUIDv7 ids rise
+    within a connection (ADR 0034).
+    """
+    rows = session.execute(
+        text(
+            """
+            SELECT mr.meal_id, r.id, r.name, r.archived_at IS NOT NULL AS archived
+            FROM meal_restaurants mr
+            JOIN restaurants r ON r.id = mr.restaurant_id
+            WHERE mr.user_id = :user AND mr.meal_id = ANY(:meal_ids)
+            ORDER BY mr.id
+            """
+        ),
+        {"user": user, "meal_ids": meal_ids},
+    ).mappings()
+    restaurants: dict[UUID, list[CatalogRef]] = {meal_id: [] for meal_id in meal_ids}
+    for row in rows:
+        restaurants[row["meal_id"]].append(
+            CatalogRef(id=row["id"], name=row["name"], archived=row["archived"])
+        )
+    return restaurants
+
+
 def select_meals(
     session: Session, user: UUID, where: str, limit: int | None = 1, **params: Any
 ) -> list[FoodsMeal | RestaurantMeal]:
@@ -201,6 +277,7 @@ def select_meals(
                 ORDER BY m.day DESC, m.occurred_at DESC, m.id DESC
                 LIMIT :limit
             ) m
+            -- Only for the fallback below. Goes with the column, in the contract step.
             LEFT JOIN restaurants r ON r.id = m.restaurant_id
             ORDER BY m.day DESC, m.occurred_at DESC, m.id DESC
             """
@@ -209,6 +286,9 @@ def select_meals(
     ).all()
     food_entries, totals = load_food_entries(
         session, user, [row.id for row in rows if row.kind == "foods"]
+    )
+    restaurants = load_restaurants(
+        session, user, [row.id for row in rows if row.kind == "restaurant"]
     )
 
     meals: list[FoodsMeal | RestaurantMeal] = []
@@ -227,10 +307,16 @@ def select_meals(
                 FoodsMeal(**fields, food_entries=food_entries[row.id], total=totals[row.id])
             )
         else:
-            restaurant = CatalogRef(
-                id=row.restaurant_id, name=row.restaurant_name, archived=row.restaurant_archived
-            )
-            meals.append(RestaurantMeal(**fields, restaurant=restaurant))
+            # No rows means an api pod from before ADR 0034 saved this Meal mid-rollout: it
+            # wrote only the old column. Read that, rather than fail every list holding it.
+            stops = restaurants[row.id] or [
+                CatalogRef(
+                    id=row.restaurant_id,
+                    name=row.restaurant_name,
+                    archived=row.restaurant_archived,
+                )
+            ]
+            meals.append(RestaurantMeal(**fields, restaurants=stops, restaurant=stops[0]))
     return meals
 
 
@@ -244,10 +330,11 @@ def load_meal(session: Session, user: UUID, meal_id: UUID) -> FoodsMeal | Restau
 def write_meal(
     session: Session, user: UUID, meal_id: UUID, body: PutFoodsMeal | PutRestaurantMeal
 ) -> bool:
-    """Replaces the Meal and its Food Entries. True if this created it. The caller commits.
+    """Replaces the Meal and its Food Entries or Restaurants. True if this created it. The
+    caller commits.
 
     The upsert goes first because it also takes the row lock: a second PUT to this Meal waits
-    here, so two replaces cannot interleave their Food Entries.
+    here, so two replaces cannot interleave their rows.
     """
     written = session.execute(
         text(
@@ -270,7 +357,8 @@ def write_meal(
             "id": meal_id,
             "user": user,
             "kind": body.kind,
-            "restaurant": body.restaurant_id if isinstance(body, PutRestaurantMeal) else None,
+            # The first Restaurant, for an api still on the old version mid-rollout (ADR 0034).
+            "restaurant": body.restaurants[0] if isinstance(body, PutRestaurantMeal) else None,
             "label": body.label,
             "occurred_at": body.occurred_at,
             "occurred_tz": body.occurred_tz,
@@ -327,7 +415,56 @@ def write_meal(
                 for entry in body.food_entries
             ],
         )
+    else:
+        replace_restaurants(session, user, meal_id, body, written.created)
     return written.created
+
+
+def replace_restaurants(
+    session: Session, user: UUID, meal_id: UUID, body: PutRestaurantMeal, created: bool
+) -> None:
+    """Writes the Meal's Restaurants in request order. Runs under write_meal's row lock."""
+    if body.restaurant_id is not None and not created:
+        held = session.execute(
+            text("SELECT count(*) FROM meal_restaurants WHERE meal_id = :meal AND user_id = :user"),
+            {"meal": meal_id, "user": user},
+        ).scalar_one()
+        if held > 1:
+            # A client from before ADR 0034 would drop every Restaurant but one, unseen.
+            session.rollback()
+            raise ProblemError(
+                409,
+                type=SEVERAL_RESTAURANTS,
+                detail="This Meal has several Restaurants. Send restaurant_ids to change it.",
+            )
+    session.execute(
+        text("DELETE FROM meal_restaurants WHERE meal_id = :meal AND user_id = :user"),
+        {"meal": meal_id, "user": user},
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO meal_restaurants (user_id, meal_id, restaurant_id)
+            VALUES (:user, :meal, :restaurant)
+            """
+        ),
+        [
+            {"user": user, "meal": meal_id, "restaurant": restaurant}
+            for restaurant in body.restaurants
+        ],
+    )
+
+
+def reference_error(
+    body: PutFoodsMeal | PutRestaurantMeal, constraint: str
+) -> RequestValidationError | None:
+    """The 422 for a failed foreign key, on the field the client sent. None if it is not one."""
+    if constraint == FOOD_REFERENCE:
+        return invalid_field(("body", "food_entries"), "A Food here does not exist.")
+    if constraint in RESTAURANT_REFERENCES and isinstance(body, PutRestaurantMeal):
+        # meals.restaurant_id is checked first, so either constraint can mean any Restaurant.
+        return invalid_field(("body", body.restaurants_field), "A Restaurant here does not exist.")
+    return None
 
 
 def meals_router() -> APIRouter:
@@ -371,7 +508,7 @@ def meals_router() -> APIRouter:
         "/{meal_id}",
         operation_id="get_meal",
         response_model=Meal,
-        description="Read one Meal with its Food Entries or Restaurant.",
+        description="Read one Meal with its Food Entries or Restaurants.",
         responses=problems(404),
     )
     def get_meal(
@@ -397,11 +534,10 @@ def meals_router() -> APIRouter:
             created = write_meal(session, user, meal_id, body)
         except IntegrityError as error:
             session.rollback()
-            reference = REFERENCE_CONSTRAINTS.get(violated_constraint(error))
-            if reference is None:
+            refused = reference_error(body, violated_constraint(error))
+            if refused is None:
                 raise
-            field, message = reference
-            raise invalid_field(("body", field), message) from None
+            raise refused from None
         # Read before commit, so the response is what this transaction wrote.
         meal = load_meal(session, user, meal_id)
         session.commit()
@@ -413,10 +549,10 @@ def meals_router() -> APIRouter:
         "/{meal_id}",
         operation_id="delete_meal",
         status_code=204,
-        description="Delete a Meal and its Food Entries.",
+        description="Delete a Meal and its Food Entries or Restaurants.",
     )
     def delete_meal(meal_id: UUID, user: CurrentUser, session: DbSession) -> None:
-        # Food Entries go with it, by the foreign keys' ON DELETE CASCADE.
+        # Its Food Entries or Restaurants go with it, by the foreign keys' ON DELETE CASCADE.
         session.execute(
             text("DELETE FROM meals WHERE id = :id AND user_id = :user"),
             {"id": meal_id, "user": user},

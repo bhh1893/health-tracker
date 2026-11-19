@@ -1079,16 +1079,40 @@
             "type": "string"
           },
           "restaurant_id": {
-            "format": "uuid",
-            "title": "Restaurant Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true,
+            "title": "Restaurant Id"
+          },
+          "restaurant_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restaurant Ids"
           }
         },
         "required": [
           "occurred_at",
           "occurred_tz",
-          "kind",
-          "restaurant_id"
+          "kind"
         ],
         "title": "PutRestaurantMeal",
         "type": "object"
@@ -1174,7 +1198,15 @@
             "type": "string"
           },
           "restaurant": {
-            "$ref": "#/components/schemas/CatalogRef"
+            "$ref": "#/components/schemas/CatalogRef",
+            "deprecated": true
+          },
+          "restaurants": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogRef"
+            },
+            "title": "Restaurants",
+            "type": "array"
           }
         },
         "required": [
@@ -1184,6 +1216,7 @@
           "day",
           "number",
           "label",
+          "restaurants",
           "restaurant"
         ],
         "title": "RestaurantMeal",
@@ -3618,7 +3651,7 @@
     },
     "/api/v1/meals/{meal_id}": {
       "delete": {
-        "description": "Delete a Meal and its Food Entries.",
+        "description": "Delete a Meal and its Food Entries or Restaurants.",
         "operationId": "delete_meal",
         "parameters": [
           {
@@ -3701,7 +3734,7 @@
         ]
       },
       "get": {
-        "description": "Read one Meal with its Food Entries or Restaurant.",
+        "description": "Read one Meal with its Food Entries or Restaurants.",
         "operationId": "get_meal",
         "parameters": [
           {
