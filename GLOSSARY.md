@@ -31,7 +31,7 @@ _Avoid_: Date (ambiguous across timezones)
 ## Groupings
 
 **Meal**:
-A numbered, optionally labelled eating occasion within a Day. Holds either Food Entries or exactly one Restaurant, never both.
+A numbered, optionally labelled eating occasion within a Day. Holds either Food Entries or one to ten Restaurants, never both.
 _Avoid_: Breakfast/lunch/dinner as identifiers (they are only labels)
 
 **Session**:
@@ -49,7 +49,7 @@ The user's growing list of distinct strength Exercises. Every Exercise Entry ref
 _Avoid_: Movement list
 
 **Restaurant Catalog**:
-The user's growing list of distinct Restaurants. A restaurant Meal refers to one Restaurant in it.
+The user's growing list of distinct Restaurants. A Restaurant Meal refers to one or more Restaurants in it.
 _Avoid_: Place, venue
 
 **Archived**:

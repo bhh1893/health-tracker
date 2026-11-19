@@ -10,6 +10,8 @@ status: accepted
 
 **Amended by ADR 0031:** the window header loses its Search and Dashboards icons; Exercise | Meals becomes the Add tab of a bottom bar (History | Add | Profile).
 
+**Amended by ADR 0034:** Restaurant mode builds an ordered list of one to ten Restaurants, the same way Foods are added.
+
 ## Shape
 
 - **Windows:** a segmented control switches Exercise and Meals. Both show the Day being viewed (today in v1). Restaurant is a mode inside the Meal sheet, not a third window: a Restaurant Meal is still a Meal.
