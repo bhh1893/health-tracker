@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { addDays } from "../lib/day";
@@ -21,8 +22,8 @@ function drawChart(points: TrendPoint[]) {
       to={points.at(-1)?.day ?? first}
       fromZero
       formatValue={String}
-      accentLabel="Restaurant Day"
-      hollowLabel="Incomplete Day"
+      accentLabel="ate out"
+      hollowLabel="incomplete"
       points={points}
     />,
   );
@@ -78,17 +79,31 @@ describe("an accent point", () => {
     expect(dots.map((dot) => dot.getAttribute("fill"))).toEqual([ORANGE]);
   });
 
-  it("is not named in a legend", () => {
-    const { container } = drawChart([
+  it("is named in the legend, which leaves out kinds the chart lacks", () => {
+    drawChart([
       { day: day(0), value: 2000 },
       { day: day(1), value: 5000, accent: true },
     ]);
 
-    expect(container.querySelector("ul")).toBeNull();
-    // The table under the chart is the one place that names it.
-    const named = screen.getAllByText("Restaurant Day");
-    expect(named.map((element) => element.closest("table"))).not.toContain(
-      null,
-    );
+    expect(screen.getByRole("list")).toHaveTextContent(/^ate out$/);
+  });
+});
+
+describe("the view switch", () => {
+  it("shows the chart by default, and the table in its place when picked", async () => {
+    const { container } = drawChart([
+      { day: day(0), value: 2000 },
+      { day: day(1), value: 900, hollow: true },
+    ]);
+    expect(screen.getByRole("radio", { name: "chart" })).toBeChecked();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("radio", { name: "table" }));
+
+    expect(container.querySelector("svg.recharts-surface")).toBeNull();
+    // The legend explains marks on the chart, so it leaves with it.
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    const table = screen.getByRole("table", { name: "Calories per Day" });
+    expect(within(table).getAllByRole("row")).toHaveLength(3);
   });
 });

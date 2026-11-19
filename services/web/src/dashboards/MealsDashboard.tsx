@@ -51,34 +51,14 @@ function Charts({
     );
   return (
     <>
-      <StatTiles
-        stats={[
-          {
-            label: "Average",
-            value:
-              summary.averageKcal === null
-                ? "–"
-                : formatKcal(summary.averageKcal),
-            note: `over ${String(summary.days)} logged ${summary.days === 1 ? "Day" : "Days"}`,
-          },
-          {
-            label: "Restaurant Days",
-            value: String(summary.restaurantDays),
-          },
-          {
-            label: "Incomplete Days",
-            value: String(summary.incompleteDays),
-          },
-        ]}
-      />
       <TrendChart
         title="Calories per Day"
         from={start}
         to={to}
         fromZero
         formatValue={formatKcal}
-        accentLabel="Restaurant Day"
-        hollowLabel="Incomplete Day"
+        accentLabel="ate out"
+        hollowLabel="incomplete"
         // The API answers newest first; a chart reads oldest first.
         points={totals.toReversed().map((total) => ({
           day: total.day,
@@ -87,6 +67,26 @@ function Charts({
           hollow: total.incomplete,
           detail: formatMacros(total) ?? undefined,
         }))}
+      />
+      <StatTiles
+        stats={[
+          {
+            label: "avg",
+            value:
+              summary.averageKcal === null
+                ? "–"
+                : formatKcal(summary.averageKcal),
+            note: `${String(summary.days)} ${summary.days === 1 ? "day" : "days"}`,
+          },
+          {
+            label: "ate out",
+            value: String(summary.restaurantDays),
+          },
+          {
+            label: "incomplete",
+            value: String(summary.incompleteDays),
+          },
+        ]}
       />
     </>
   );

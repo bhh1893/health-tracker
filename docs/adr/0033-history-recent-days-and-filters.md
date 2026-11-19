@@ -36,7 +36,7 @@ History becomes one screen per kind that answers both "what happened?" and "how 
 - **A kept Day shows all of its contents**, with the matching text highlighted, so the rest of that Day stays in view.
 - **The filter never narrows the Dashboard.** The averages and chart stay "all eating in the Range".
 - **A Day's contents:** each Food with its quantity, or, on a Restaurant Day, its Restaurants. A Restaurant Day's row shows an orange **Ate out** pill.
-- **Chart:** a Restaurant Day is an orange point on the calories line itself, with no legend. The Ate out pills in Recent Days, in the same orange, explain it.
+- **Chart:** a Restaurant Day is an orange point on the calories line itself. The legend names it "ate out" next to the "incomplete" ring (amended 2026-11-19: the first cut had no legend and left the Ate out pills to explain the orange). The tiles, labeled avg | ate out | incomplete, sit under the chart, and a chart | table switch replaces ADR 0024's "as a table" disclosure: one view at a time, chart by default.
 
 ### Exercise
 
