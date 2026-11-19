@@ -38,11 +38,9 @@ const foodRow = (name: string) =>
     { name },
   );
 
-async function openNewMeal() {
+async function openNewMeal(button: "Add Food" | "Add Restaurant" = "Add Food") {
   await screen.findByText("No Meals on this Day.");
-  await userEvent.click(
-    screen.getByRole("button", { name: "Add Meal to Mon Nov 2" }),
-  );
+  await userEvent.click(screen.getByRole("button", { name: button }));
 }
 
 async function searchAndAdd(name: string) {
@@ -209,13 +207,36 @@ describe("adding a Meal", () => {
     expect(await card("Meal 1, Breakfast")).toHaveTextContent("Banana× 1");
   });
 
-  it("logs a Restaurant Meal from a recent chip", async () => {
+  it("opens a sheet of the button's kind, titled with the Day and no kind switch", async () => {
     renderAt(PAST_URL, <MealsWindow />);
-    await openNewMeal();
+
+    await openNewMeal("Add Food");
+    expect(
+      screen.getByRole("dialog", { name: "Add Food to Mon Nov 2" }),
+    ).toBeInTheDocument();
+    expect(within(sheet()).queryByRole("radio")).not.toBeInTheDocument();
+    await userEvent.click(
+      within(sheet()).getByRole("button", { name: "Close" }),
+    );
 
     await userEvent.click(
-      within(sheet()).getByRole("radio", { name: "Restaurant" }),
+      screen.getByRole("button", { name: "Add Restaurant" }),
     );
+    expect(
+      screen.getByRole("dialog", { name: "Add Restaurant to Mon Nov 2" }),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet()).getByRole("combobox", { name: "Restaurant" }),
+    ).toBeInTheDocument();
+    expect(
+      within(sheet()).queryByRole("combobox", { name: "Add Food" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("logs a Restaurant Meal from a recent chip", async () => {
+    renderAt(PAST_URL, <MealsWindow />);
+    await openNewMeal("Add Restaurant");
+
     await userEvent.click(
       within(
         await within(sheet()).findByRole("group", {
@@ -265,8 +286,9 @@ describe("adding a Meal", () => {
     ).toBe(true);
 
     await userEvent.click(
-      within(sheet()).getByRole("radio", { name: "Restaurant" }),
+      within(sheet()).getByRole("button", { name: "Close" }),
     );
+    await openNewMeal("Add Restaurant");
     expect(
       follows(
         within(sheet()).getByRole("combobox", { name: "Restaurant" }),
@@ -313,10 +335,8 @@ describe("editing a Meal", () => {
     await userEvent.click(
       within(await card("Meal 1")).getByRole("button", { name: "Edit Meal 1" }),
     );
-    // A saved Meal's kind cannot change (ADR 0006).
-    expect(
-      within(sheet()).getByRole("radio", { name: "Restaurant" }),
-    ).toBeDisabled();
+    // A saved Meal's kind cannot change (ADR 0006), so there is no switch to offer.
+    expect(within(sheet()).queryByRole("radio")).not.toBeInTheDocument();
     const quantity = within(foodRow("Oats")).getByRole("spinbutton", {
       name: "Quantity",
     });

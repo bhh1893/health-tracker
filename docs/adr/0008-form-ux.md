@@ -54,3 +54,7 @@ status: accepted
 ## Amendment: Meal card Edit button and a capped Meal sheet
 
 Changed 2026-11-19. A Meal card no longer edits on a tap anywhere: an **Edit** button under the time opens the Meal sheet, so a tap meant to scroll the feed cannot open it. A Restaurant Meal shows its name in orange beside a fork and knife, as History does, instead of "At <Restaurant>". The Meal sheet grows to at most two thirds of the screen, so the feed stays in view above it. Top to bottom it is now: Foods | Restaurant toggle; the pick (food search + **Add** and recent chips, or the Restaurant search); the Food Entries in a bordered list with a divider between rows, the only part that scrolls once the sheet reaches its cap; Note (2/3) | Time (1/3); Save. An X beside the title closes the sheet without saving. **Label** is shown as **Note**; the API field stays `label`.
+
+## Amendment: one Add button per Meal kind
+
+Changed 2026-11-19. The Day feed's single **Add Meal** button becomes two side by side, **Add Food | Add Restaurant**, each opening the Meal sheet already set to its kind. The Foods | Restaurant toggle leaves the sheet, which frees its top row for the pick. A saved Meal's kind could never change anyway (ADR 0006), so the toggle only ever mattered before the first tap; choosing on the button does the same job one step earlier. The button labels no longer name a past Day, since two long labels do not fit side by side on a phone; the sheet's title does instead ("Add Food to Mon Nov 2"), and the Day pager above the feed shows it too.
