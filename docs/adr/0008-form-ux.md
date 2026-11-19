@@ -58,3 +58,7 @@ Changed 2026-11-19. A Meal card no longer edits on a tap anywhere: an **Edit** b
 ## Amendment: one Add button per Meal kind
 
 Changed 2026-11-19. The Day feed's single **Add Meal** button becomes two side by side, **Add Food | Add Restaurant**, each opening the Meal sheet already set to its kind. The Foods | Restaurant toggle leaves the sheet, which frees its top row for the pick. A saved Meal's kind could never change anyway (ADR 0006), so the toggle only ever mattered before the first tap; choosing on the button does the same job one step earlier. The button labels no longer name a past Day, since two long labels do not fit side by side on a phone; the sheet's title does instead ("Add Food to Mon Nov 2"), and the Day pager above the feed shows it too.
+
+## Amendment: no time on Meals in the UI
+
+Changed 2026-11-19. Meals no longer show or edit a time. The Meal sheet drops its Time field: a new Meal happens now, moved onto the viewed Day, and an edit keeps the saved Meal's `occurred_at` and `occurred_tz`. **Note** is shown as **Label** again, now across the full row. A Meal card no longer shows the clock time, and its **Edit** button becomes a pencil icon beside the title, with the same accessible name ("Edit Meal 1"). The data model and API are unchanged: `occurred_at` is still stored and still orders and numbers the Day's Meals. The cost: a Meal logged after the fact sorts by when it was logged, and nothing in the UI can reorder it. The Session card's **Edit** becomes the same pencil, beside its trash can. Sets keep their Time field.

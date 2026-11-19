@@ -95,7 +95,8 @@ describe("the Day feed", () => {
 
     const first = await card("Meal 1, Breakfast");
     expect(first).toHaveTextContent("Oats80 g");
-    expect(first).toHaveTextContent("08:00");
+    // The time is stored and orders the feed, but the card does not show it.
+    expect(first).not.toHaveTextContent("08:00");
     expect(await card("Meal 2")).toHaveTextContent("Corner Cafe");
   });
 
@@ -226,7 +227,7 @@ describe("adding a Meal", () => {
       "count",
     );
     await userEvent.type(
-      within(sheet()).getByRole("textbox", { name: "Note" }),
+      within(sheet()).getByRole("textbox", { name: "Label" }),
       "Breakfast",
     );
     await userEvent.click(save);
@@ -330,18 +331,19 @@ describe("adding a Meal", () => {
     expect(api.puts).toHaveLength(0);
   });
 
-  it("puts the pick above Note and Time for both kinds of Meal", async () => {
+  it("puts the pick above the Label, with no Time, for both kinds of Meal", async () => {
     renderAt(PAST_URL, <MealsWindow />);
     await openNewMeal();
 
-    const note = () => within(sheet()).getByRole("textbox", { name: "Note" });
+    const label = () => within(sheet()).getByRole("textbox", { name: "Label" });
+    expect(within(sheet()).queryByLabelText("Time")).not.toBeInTheDocument();
     const follows = (a: Node, b: Node) =>
       Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
     expect(
       follows(
         within(sheet()).getByRole("combobox", { name: "Add Food" }),
-        note(),
+        label(),
       ),
     ).toBe(true);
 
@@ -352,7 +354,7 @@ describe("adding a Meal", () => {
     expect(
       follows(
         within(sheet()).getByRole("combobox", { name: "Add Restaurant" }),
-        note(),
+        label(),
       ),
     ).toBe(true);
   });
