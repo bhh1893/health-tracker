@@ -57,41 +57,47 @@ export function CatalogPage({ catalog }: CatalogPageProps) {
     // Laid out like Home's window: at least a screen tall above the bar, so the Add
     // button sits at the bottom even on a short list. No Back link: tapping
     // Profile in the bar returns there.
-    <main className="mx-auto flex min-h-[calc(100dvh-var(--tab-bar-footprint))] max-w-md flex-col gap-4 px-4 pt-4 pb-(--tab-bar-gap)">
-      <h1 className="text-center text-xl font-semibold">{catalog.plural}</h1>
+    <main className="mx-auto flex min-h-[calc(100dvh-var(--tab-bar-footprint))] max-w-md flex-col gap-4 px-4 pb-(--tab-bar-gap)">
+      {/* Pinned while the list scrolls under it: sticky, so the page keeps one scroll
+          (no nested scroll box). It owns the page's top padding, so nothing shows
+          above it once stuck, and an opaque background hides the rows passing under.
+          z-10 stays under the tab bar (z-40) and sheets (z-50). */}
+      <div className="sticky top-0 z-10 flex flex-col gap-4 border-b border-gray-200 bg-white pt-4 pb-4">
+        <h1 className="text-center text-xl font-semibold">{catalog.plural}</h1>
 
-      <input
-        type="search"
-        aria-label={`Search ${catalog.plural}`}
-        placeholder="Name contains"
-        className={fieldClass}
-        value={filters.q}
-        onChange={({ target }) => {
-          update({ q: target.value });
-        }}
-      />
+        <input
+          type="search"
+          aria-label={`Search ${catalog.plural}`}
+          placeholder="Name contains"
+          className={fieldClass}
+          value={filters.q}
+          onChange={({ target }) => {
+            update({ q: target.value });
+          }}
+        />
 
-      <div className="flex flex-wrap gap-2">
-        {hasNutrition && (
+        <div className="flex flex-wrap gap-2">
+          {hasNutrition && (
+            <ToggleButton
+              className={chipClass}
+              isSelected={filters.missing}
+              onChange={(missing) => {
+                update({ missing });
+              }}
+            >
+              No nutrition yet
+            </ToggleButton>
+          )}
           <ToggleButton
             className={chipClass}
-            isSelected={filters.missing}
-            onChange={(missing) => {
-              update({ missing });
+            isSelected={filters.archived}
+            onChange={(archived) => {
+              update({ archived });
             }}
           >
-            No nutrition yet
+            Show archived
           </ToggleButton>
-        )}
-        <ToggleButton
-          className={chipClass}
-          isSelected={filters.archived}
-          onChange={(archived) => {
-            update({ archived });
-          }}
-        >
-          Show archived
-        </ToggleButton>
+        </div>
       </div>
 
       {list.error && <ProblemAlert error={list.error} />}
