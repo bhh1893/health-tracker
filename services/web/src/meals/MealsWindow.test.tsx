@@ -256,6 +256,11 @@ describe("adding a Meal", () => {
     await openNewMeal("Add Restaurant");
     await userEvent.click(await recentRestaurant("Taco Stand"));
     const label = within(sheet()).getByRole("combobox", { name: "Label" });
+    expect(
+      within(label)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["None", "Lunch", "Dinner", "Other..."]);
 
     expect(
       within(sheet()).queryByRole("textbox", { name: "Other Label" }),
