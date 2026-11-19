@@ -79,7 +79,7 @@ export function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/exercise" replace />} />
+      <Route path="/" element={<Navigate to="/meals" replace />} />
       {/* Old paths, kept forever (ADR 0031). Search's URLs are translated, not
           passed through, since History reads its params differently (ADR 0033). */}
       <Route path="/search" element={<SearchRedirect />} />

@@ -1,9 +1,11 @@
+import type { ReactNode } from "react";
 import { useSearchParams } from "react-router";
 
 import { CatalogComboBox } from "../catalog/CatalogComboBox";
 import { exerciseCatalog, type CatalogItem } from "../catalog/catalogs";
 import { RecentChips } from "../catalog/RecentChips";
 import { useToday } from "../lib/useToday";
+import { labelClass, fieldClass } from "../components/formStyles";
 import { Segments } from "../components/Segments";
 import { DashboardSection } from "./DashboardSection";
 import { ExerciseDays } from "./ExerciseDays";
@@ -24,6 +26,7 @@ const TABS = [
 ] as const satisfies readonly { id: Tab; label: string }[];
 
 const RANGES = [
+  { id: "7d", label: "7 days" },
   { id: "30d", label: "30 days" },
   { id: "60d", label: "60 days" },
   { id: "90d", label: "90 days" },
@@ -31,9 +34,9 @@ const RANGES = [
   { id: "all", label: "All" },
 ] as const satisfies readonly { id: RangeName; label: string }[];
 
-// ADR 0033's History frame: Meals | Exercise and the Range on one row, then the
-// kind's search field, the Dashboard section, then Recent Days. Every choice
-// lives in the URL, so this screen holds no state of its own.
+// ADR 0033's History frame: Meals | Exercise across a full row, then the kind's
+// search field with the Range beside it, the Dashboard section, then Recent Days.
+// Every choice lives in the URL, so this screen holds no state of its own.
 export function HistoryScreen() {
   const [params, setParams] = useSearchParams();
   const today = useToday();
@@ -61,23 +64,15 @@ export function HistoryScreen() {
     />
   );
 
-  return (
-    <main className="mx-auto flex max-w-md flex-col gap-4 p-4">
-      {/* No Back link: History is the tab's root, and the bar leaves it. */}
-      <h1 className="text-xl font-semibold">History</h1>
-
-      <div className="flex items-center justify-between gap-2">
-        <Segments
-          label="Kind"
-          options={TABS}
-          value={query.tab}
-          onChange={(tab) => {
-            update({ tab });
-          }}
-        />
+  // The search field takes three quarters of the row, the Range the last quarter.
+  // Both have a label above, so their boxes line up.
+  const searchRow = (field: ReactNode) => (
+    <div className="flex gap-2">
+      <div className="min-w-0 basis-3/4">{field}</div>
+      <label className={`${labelClass} basis-1/4`}>
+        Range
         {/* A native select: on a phone it opens the system's own picker. */}
         <select
-          aria-label="Range"
           value={query.range}
           onChange={(event) => {
             const range = RANGES.find(({ id }) => id === event.target.value);
@@ -85,7 +80,7 @@ export function HistoryScreen() {
               update({ range: range.id });
             }
           }}
-          className="rounded-full border border-gray-300 bg-white px-3 py-1 text-base"
+          className={`${fieldClass} px-2`}
         >
           {RANGES.map(({ id, label }) => (
             <option key={id} value={id}>
@@ -93,16 +88,34 @@ export function HistoryScreen() {
             </option>
           ))}
         </select>
-      </div>
+      </label>
+    </div>
+  );
+
+  return (
+    <main className="mx-auto flex max-w-md flex-col gap-4 p-4">
+      {/* No Back link: History is the tab's root, and the bar leaves it. */}
+      <h1 className="text-xl font-semibold">History</h1>
+
+      <Segments
+        label="Kind"
+        options={TABS}
+        value={query.tab}
+        onChange={(tab) => {
+          update({ tab });
+        }}
+      />
 
       {query.tab === "meals" ? (
         <>
-          <MealFilter
-            value={query.q}
-            onCommit={(q) => {
-              update({ q });
-            }}
-          />
+          {searchRow(
+            <MealFilter
+              value={query.q}
+              onCommit={(q) => {
+                update({ q });
+              }}
+            />,
+          )}
           {/* The filter never narrows the Dashboard (ADR 0033): its numbers stay
               "all eating in the Range". */}
           {section(null)}
@@ -119,13 +132,15 @@ export function HistoryScreen() {
         <>
           {/* Read-only: History never creates an Exercise, and an archived one
               still has history worth charting. */}
-          <CatalogComboBox
-            catalog={exerciseCatalog}
-            canCreate={false}
-            clearable
-            value={query.exercise && { ...query.exercise, archived: false }}
-            onChange={pickExercise}
-          />
+          {searchRow(
+            <CatalogComboBox
+              catalog={exerciseCatalog}
+              canCreate={false}
+              clearable
+              value={query.exercise && { ...query.exercise, archived: false }}
+              onChange={pickExercise}
+            />,
+          )}
           {/* The pick is required (ADR 0033): with no `id` in the URL, the
               screen is this empty state and asks the API for no Sessions. */}
           {query.exercise === null ? (

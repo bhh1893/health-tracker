@@ -5,7 +5,7 @@ const segmentClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-white font-semibold shadow-sm" : "text-gray-600"
   }`;
 
-// Exercise and Meals share this frame (ADR 0008): the Add tab's screen. Search and
+// Meals and Exercise share this frame (ADR 0008): the Add tab's screen. Search and
 // Dashboards are reached from the bottom bar's History tab (ADR 0031).
 export function WindowLayout() {
   // Keeps ?day= when switching windows, so both show the same Day.
@@ -22,14 +22,15 @@ export function WindowLayout() {
         aria-label="Windows"
         className="flex gap-1 rounded-xl bg-gray-100 p-1"
       >
+        {/* Meals first, the default, in the same order as History's toggle. */}
+        <NavLink to={{ pathname: "/meals", search }} className={segmentClass}>
+          Meals
+        </NavLink>
         <NavLink
           to={{ pathname: "/exercise", search }}
           className={segmentClass}
         >
           Exercise
-        </NavLink>
-        <NavLink to={{ pathname: "/meals", search }} className={segmentClass}>
-          Meals
         </NavLink>
       </nav>
       <Outlet />

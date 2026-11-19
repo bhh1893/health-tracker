@@ -115,10 +115,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const recentDays = () => screen.getByRole("region", { name: "Recent Days" });
+const recentDays = () => screen.getByRole("region", { name: "Days" });
 const rowButtons = () =>
   within(recentDays())
-    .getAllByRole("heading", { level: 3 })
+    .getAllByRole("heading", { level: 2 })
     .map((heading) => within(heading).getByRole("button"));
 
 describe("Meals Recent Days", () => {

@@ -32,3 +32,7 @@ status: accepted
 
 - The `auth-check` query in `WindowLayout` predates Google sign-in (it guards a "wrong secret" screen that no longer exists) and is removed with the restructure; `useMe` already fails at load.
 - `/profile` ships as a placeholder until the Profile tickets land.
+
+## Amendment: Add opens on Meals
+
+Changed 2026-11-18, to match History's Meals | Exercise order (ADR 0033). Add's switch reads Meals | Exercise, `/` lands on `/meals`, and Add's root, where a second tap resets it, is `/meals`. The `/exercise` route is unchanged.

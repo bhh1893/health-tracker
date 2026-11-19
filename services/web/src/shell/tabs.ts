@@ -14,7 +14,7 @@ export interface TabSpec {
 export const TABS: readonly TabSpec[] = [
   { id: "history", label: HISTORY_LABEL, root: "/history" },
   // Add's root has no ?day=, so a reset lands on today.
-  { id: "add", label: "Add", root: "/exercise" },
+  { id: "add", label: "Add", root: "/meals" },
   { id: "profile", label: "Profile", root: "/profile" },
 ];
 

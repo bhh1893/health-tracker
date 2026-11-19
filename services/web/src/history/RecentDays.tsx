@@ -23,7 +23,7 @@ interface RecentDaysProps<T> {
   pages: UseInfiniteQueryResult<InfiniteData<DayPage<T>>>;
   // Said when the Range has no Day, e.g. "No Meals in this range."
   empty: string;
-  // A line under the heading about the Days listed, e.g. how many match a filter.
+  // A line at the top of the list about the Days listed, e.g. how many match a filter.
   summary?: string | undefined;
   // One row per Day, usually a <DayRow>. The newest row starts open.
   renderDay: (item: T, defaultExpanded: boolean) => ReactNode;
@@ -43,24 +43,20 @@ export function RecentDays<T>({
   const { error, hasNextPage, isFetchingNextPage } = pages;
 
   return (
+    // No visible title: the heavier border sets the list apart. The region keeps
+    // a name for screen readers, which list it among the page's landmarks.
     <section
-      aria-labelledby="recent-days"
-      className="flex flex-col rounded-2xl border border-gray-200 bg-white"
+      aria-label="Days"
+      className="flex flex-col rounded-2xl border-2 border-gray-300 bg-white"
     >
-      <h2
-        id="recent-days"
-        className="px-3 pt-3 pb-1 text-sm font-semibold text-gray-600"
-      >
-        Recent Days
-      </h2>
       {summary !== undefined && (
-        <p className="px-3 pb-2 text-sm text-gray-600">{summary}</p>
+        <p className="px-3 py-2 text-sm text-gray-600">{summary}</p>
       )}
       {/* Which rows are open is not kept in the URL (ADR 0033): opening a Day
           is a quick look, not a setting. */}
       {days.map((day, index) => renderDay(day, index === 0))}
       {!pages.isPending && error === null && days.length === 0 && (
-        <p className="px-3 pb-3 text-gray-500">{empty}</p>
+        <p className="px-3 py-3 text-gray-500">{empty}</p>
       )}
       <Status
         pages={pages.data?.pages}
@@ -135,7 +131,7 @@ function Status({
   return (
     <p
       role="status"
-      className={visible && text !== "" ? "px-3 pb-3 text-gray-500" : "sr-only"}
+      className={visible && text !== "" ? "px-3 py-3 text-gray-500" : "sr-only"}
     >
       {text}
     </p>
@@ -156,9 +152,11 @@ export function DayRow({ day, defaultExpanded, pill, children }: DayRowProps) {
   return (
     <Disclosure
       defaultExpanded={defaultExpanded}
-      className="group border-t border-gray-100"
+      className="group border-t border-gray-100 first:border-t-0"
     >
-      <Heading level={3}>
+      {/* Level 2, a sibling of the Dashboard's heading: the list has no heading
+          of its own to sit under. */}
+      <Heading level={2}>
         <Button
           slot="trigger"
           // Spoken as "11-13-26 [Friday], Ate out": the spans alone would run

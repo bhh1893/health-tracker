@@ -104,6 +104,7 @@ describe("History in the URL", () => {
 
 describe("rangeStart", () => {
   it("counts today as one of the Days", () => {
+    expect(rangeStart("7d", "2026-11-15")).toBe("2026-11-09");
     expect(rangeStart("30d", "2026-11-15")).toBe("2026-10-17");
     expect(rangeStart("60d", "2026-11-15")).toBe("2026-09-17");
     expect(rangeStart("90d", "2026-11-15")).toBe("2026-08-18");
