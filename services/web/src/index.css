@@ -8,12 +8,15 @@ html {
 }
 
 /* The bottom bar's footprint, the one source for everything that must clear it
-   (ADR 0031): the bar's height, its gap above the edge, and the iPhone home
-   indicator's inset. */
+   (ADR 0031): the bar's height plus its lift off the screen's bottom edge.
+   --tab-bar-gap is the spacing between the bar and what sits above it.
+   The lift: iOS reserves ~34px (safe-area-inset-bottom) for the home indicator,
+   but the indicator itself is a thin line ~8px up. Sitting 14px into the reserved
+   strip keeps the pill ~20px from the edge, clear of the line; phones with no
+   indicator (inset 0) get 0.5rem. */
 :root {
   --tab-bar-height: 4rem;
   --tab-bar-gap: 0.75rem;
-  --tab-bar-footprint: calc(
-    var(--tab-bar-height) + var(--tab-bar-gap) + env(safe-area-inset-bottom)
-  );
+  --tab-bar-lift: max(0.5rem, calc(env(safe-area-inset-bottom) - 0.875rem));
+  --tab-bar-footprint: calc(var(--tab-bar-height) + var(--tab-bar-lift));
 }

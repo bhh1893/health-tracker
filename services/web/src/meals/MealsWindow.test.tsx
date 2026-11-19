@@ -70,7 +70,7 @@ describe("the Day feed", () => {
     const first = await card("Meal 1, Breakfast");
     expect(first).toHaveTextContent("Oats80 g");
     expect(first).toHaveTextContent("08:00");
-    expect(await card("Meal 2")).toHaveTextContent("At Corner Cafe");
+    expect(await card("Meal 2")).toHaveTextContent("Corner Cafe");
   });
 
   it("says so when the Day is empty", async () => {
@@ -185,7 +185,7 @@ describe("adding a Meal", () => {
       "count",
     );
     await userEvent.type(
-      within(sheet()).getByRole("textbox", { name: "Label" }),
+      within(sheet()).getByRole("textbox", { name: "Note" }),
       "Breakfast",
     );
     await userEvent.click(save);
@@ -230,25 +230,37 @@ describe("adding a Meal", () => {
       within(sheet()).getByRole("button", { name: "Save" }),
     );
 
-    expect(await card("Meal 1")).toHaveTextContent("At Corner Cafe");
+    expect(await card("Meal 1")).toHaveTextContent("Corner Cafe");
     expect(api.puts[0]?.body).toMatchObject({
       kind: "restaurant",
       restaurant_id: cafe.id,
     });
   });
 
-  it("puts the Restaurant pick above Label and Time for a Restaurant Meal", async () => {
+  it("closes the sheet from the X without saving", async () => {
     renderAt(PAST_URL, <MealsWindow />);
     await openNewMeal();
 
-    const label = () => within(sheet()).getByRole("textbox", { name: "Label" });
+    await userEvent.click(
+      within(sheet()).getByRole("button", { name: "Close" }),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(api.puts).toHaveLength(0);
+  });
+
+  it("puts the pick above Note and Time for both kinds of Meal", async () => {
+    renderAt(PAST_URL, <MealsWindow />);
+    await openNewMeal();
+
+    const note = () => within(sheet()).getByRole("textbox", { name: "Note" });
     const follows = (a: Node, b: Node) =>
       Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
     expect(
       follows(
-        label(),
         within(sheet()).getByRole("combobox", { name: "Add Food" }),
+        note(),
       ),
     ).toBe(true);
 
@@ -258,7 +270,7 @@ describe("adding a Meal", () => {
     expect(
       follows(
         within(sheet()).getByRole("combobox", { name: "Restaurant" }),
-        label(),
+        note(),
       ),
     ).toBe(true);
   });

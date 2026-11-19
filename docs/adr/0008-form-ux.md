@@ -48,3 +48,7 @@ status: accepted
 - The combobox needs a loading state and must drop out-of-order responses; keying each TanStack Query on `q` does this.
 - Viewing a past Day and adding to it reuses the same windows; Day navigation is not designed yet.
 - `prototype/form-ux` is never merged; `web` is rebuilt from this ADR with tests.
+
+## Amendment: Meal card Edit button and a capped Meal sheet
+
+Changed 2026-11-19. A Meal card no longer edits on a tap anywhere: an **Edit** button under the time opens the Meal sheet, so a tap meant to scroll the feed cannot open it. A Restaurant Meal shows its name in orange beside a fork and knife, as History does, instead of "At <Restaurant>". The Meal sheet grows to at most two thirds of the screen, so the feed stays in view above it. Top to bottom it is now: Foods | Restaurant toggle; the pick (food search + **Add** and recent chips, or the Restaurant search); the Food Entries in a bordered list with a divider between rows, the only part that scrolls once the sheet reaches its cap; Note (2/3) | Time (1/3); Save. An X beside the title closes the sheet without saving. **Label** is shown as **Note**; the API field stays `label`.

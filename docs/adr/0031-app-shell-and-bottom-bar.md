@@ -40,3 +40,7 @@ Changed 2026-11-18, to match History's Meals | Exercise order (ADR 0033). Add's 
 ## Amendment: Add is renamed Home
 
 Changed 2026-11-19. The middle tab's label is **Home** and its icon a house: it is where the app opens, and logging is only part of what it shows (the Day Total sits above the Meals). The routes and root are unchanged, so bookmarks and the home-screen shortcut keep working.
+
+## Amendment: the bar sits lower
+
+Changed 2026-11-19. The bar sat a full gap above the iOS home-indicator inset, about 46 px off the edge, which read as floating too high. It now sits 14 px into the inset (`--tab-bar-lift` in `index.css`), about 20 px off the edge, still clear of the indicator line; a phone with no inset gets 0.5rem. Everything that clears the bar reads `--tab-bar-footprint`, so pages and Add buttons move down with it.
