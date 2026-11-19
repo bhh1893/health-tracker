@@ -15,7 +15,7 @@ History becomes one screen per kind that answers both "what happened?" and "how 
   | Parameter | Meaning | Default |
   | --- | --- | --- |
   | `tab` | `meals` or `exercise` | `meals` |
-  | `range` | `30d`, `60d`, `90d`, `1y`, `all` (ADR 0024's ranges) | `30d` |
+  | `range` | `7d`, `30d`, `60d`, `90d`, `1y`, `all` (ADR 0024's ranges, plus `7d`) | `30d` |
   | `q` | Meals filter text | none |
   | `id`, `name` | the picked Exercise | none |
   | `dash` | `open` when the Dashboard section is open | closed |
@@ -25,7 +25,7 @@ History becomes one screen per kind that answers both "what happened?" and "how 
 
 ### Layout, top to bottom
 
-1. **Meals | Exercise** toggle and **Range**, one row.
+1. **Meals | Exercise** toggle, a full row. The **Range** sits beside the search field (amended below).
 2. **The search field**, which differs by kind (below).
 3. **Dashboard**, a collapsible section holding ADR 0024's tiles and chart. It starts closed, and `dash=open` keeps it open. The chart chunk loads the first time it opens, not when History opens, so a History visit no longer pays for the chart library.
 4. **Recent Days**, the Days in the Range with something logged, newest first. The list loads more as it scrolls, never the whole Range at once. Each row is titled `MM-DD-YY [Weekday]`, e.g. `11-16-26 [Monday]`, and opens to show the Day's contents. This format is History's own; Add's Day pager keeps `formatDay`.
@@ -82,3 +82,11 @@ History becomes one screen per kind that answers both "what happened?" and "how 
 - `web` loses the Search screen and its query code. Recent Days on Meals pages by Day, and on Exercise it reads one Exercise's Sessions. Search's merging of two cursor streams goes with it.
 - A filter like `a` matches most Days. That is correct, and paging keeps it cheap.
 - Restaurant Days are visible in Recent Days only through the Ate out pill. A filter by Food name never matches a Restaurant Day unless the Restaurant's name matches too, because a Restaurant Meal has no Food Entries.
+
+## Amendment: toggle row and a 7 day Range
+
+Changed after phone use, 2026-11-18.
+
+- **Layout:** Meals | Exercise is a full-width segmented toggle on its own row, styled like Add's Exercise | Meals switch. The Range moves down beside the search field: field three quarters, Range one quarter, both labelled.
+- **Ranges:** `7d` is added before `30d`, for "what did I do this week". The default stays `30d`.
+- **Recent Days has no visible title.** A heavier border sets the list apart instead. "Recent Days" stays the name in docs and code; screen readers hear the list as "Days".

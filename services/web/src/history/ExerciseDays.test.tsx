@@ -85,10 +85,10 @@ afterEach(() => {
 const url = () => screen.getByLabelText("url");
 const picker = () => screen.getByRole("combobox", { name: "Exercise" });
 const prompt = "Pick an Exercise to see its Sessions.";
-const recentDays = () => screen.getByRole("region", { name: "Recent Days" });
+const recentDays = () => screen.getByRole("region", { name: "Days" });
 const rowButtons = () =>
   within(recentDays())
-    .getAllByRole("heading", { level: 3 })
+    .getAllByRole("heading", { level: 2 })
     .map((heading) => within(heading).getByRole("button"));
 const benchUrl = `id=${bench.id}&name=Bench+Press`;
 
@@ -111,7 +111,7 @@ describe("Exercise with nothing picked", () => {
       screen.queryByRole("button", { name: /^Dashboard/ }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("region", { name: "Recent Days" }),
+      screen.queryByRole("region", { name: "Days" }),
     ).not.toBeInTheDocument();
     expect(requests).toEqual([]);
   });
@@ -226,7 +226,7 @@ describe("Exercise Recent Days", () => {
       await screen.findByRole("group", { name: "Recent Exercises" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("region", { name: "Recent Days" }),
+      screen.queryByRole("region", { name: "Days" }),
     ).not.toBeInTheDocument();
   });
 });

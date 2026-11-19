@@ -49,3 +49,10 @@ Logging a Meal and fixing a Food become two separate jobs done in two places. Ad
 - Browser filtering is a plain substring match, not the server's fuzzy ranking, so "chiken" finds nothing on a list page while the logging combobox would find Chicken.
 - A list page downloads every item of its Catalog on each visit. At a few hundred items that is tens of kilobytes; if a Catalog ever nears the cap, the notice says so and pagination becomes the fix.
 - Restaurant Day calories can no longer be changed while looking at the chart.
+
+## Amendment: sheet layout
+
+Changed 2026-11-19 to make the Food sheet easier to scan.
+
+- **Archive, Unarchive and Delete are icons in the sheet's header**, beside the title, on every Profile sheet. Delete still asks once more, on a line under the header. The "Archived items are hidden when logging" note is dropped: Archive is undone with one tap.
+- **The Food sheet is two columns:** Name | Fill from reference, then Basis | Piece Weight, Calories | Protein, Carbs | Fat, then Cancel | Save. Clear sits on the Nutrition header and still leaves Piece Weight alone.

@@ -206,15 +206,15 @@ describe("the shell", () => {
     server.use(signedInAs("member"));
   });
 
-  it("starts on the Exercise window, viewing today", async () => {
+  it("starts on the Meals window, viewing today", async () => {
     renderAt("/");
 
     expect(
       await screen.findByRole("heading", {
-        name: `Exercise on ${toDay(new Date())}`,
+        name: `Meals on ${toDay(new Date())}`,
       }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("url")).toHaveTextContent("/exercise");
+    expect(screen.getByLabelText("url")).toHaveTextContent("/meals");
   });
 
   it("keeps the viewed Day when switching windows", async () => {
@@ -285,25 +285,26 @@ describe("the shell", () => {
   });
 
   it("returns each tab to where it was left, and resets it on a second tap", async () => {
-    renderAt("/meals?day=2026-11-02");
-    await screen.findByRole("heading", { name: "Meals on 2026-11-02" });
+    renderAt("/exercise?day=2026-11-02");
+    await screen.findByRole("heading", { name: "Exercise on 2026-11-02" });
 
     await userEvent.click(tab("History"));
     await screen.findByRole("heading", { level: 1, name: "History" });
     await userEvent.click(tab("Add"));
 
     expect(
-      await screen.findByRole("heading", { name: "Meals on 2026-11-02" }),
+      await screen.findByRole("heading", { name: "Exercise on 2026-11-02" }),
     ).toBeInTheDocument();
 
+    // A second tap resets to the root: the Meals window, viewing today.
     await userEvent.click(tab("Add"));
 
     expect(
       await screen.findByRole("heading", {
-        name: `Exercise on ${toDay(new Date())}`,
+        name: `Meals on ${toDay(new Date())}`,
       }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("url")).toHaveTextContent(/^\/exercise$/);
+    expect(screen.getByLabelText("url")).toHaveTextContent(/^\/meals$/);
   });
 
   it("returns History with its Dashboard still open", async () => {

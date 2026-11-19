@@ -11,7 +11,7 @@ export interface Picked {
   id: string;
   name: string;
 }
-export type RangeName = "30d" | "60d" | "90d" | "1y" | "all";
+export type RangeName = "7d" | "30d" | "60d" | "90d" | "1y" | "all";
 
 export interface HistoryQuery {
   tab: Tab;
@@ -27,6 +27,7 @@ export interface HistoryQuery {
 }
 
 export const RANGE_DAYS: Record<Exclude<RangeName, "all">, number> = {
+  "7d": 7,
   "30d": 30,
   "60d": 60,
   "90d": 90,
@@ -34,7 +35,7 @@ export const RANGE_DAYS: Record<Exclude<RangeName, "all">, number> = {
 };
 
 const TABS: readonly Tab[] = ["exercise", "meals"];
-const RANGES: readonly RangeName[] = ["30d", "60d", "90d", "1y", "all"];
+const RANGES: readonly RangeName[] = ["7d", "30d", "60d", "90d", "1y", "all"];
 const DEFAULT_RANGE = "30d";
 
 // The tab a URL with no valid `tab` opens. Meals, except that a picked Exercise

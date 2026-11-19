@@ -1,4 +1,4 @@
-import { useState, type SyntheticEvent } from "react";
+import { useId, useState, type SyntheticEvent } from "react";
 import {
   Button,
   ComboBox,
@@ -86,18 +86,22 @@ function SavedFoodSheet({
 }: FoodSheetProps & { foodId: string }) {
   const food = useFood(foodId);
   return (
-    <BottomSheet title={food.data?.name ?? "Food"} onClose={form.onClose}>
+    <BottomSheet
+      title={food.data?.name ?? "Food"}
+      onClose={form.onClose}
+      actions={
+        manage &&
+        food.data && (
+          <ItemActions
+            catalog={foodCatalog}
+            item={food.data}
+            onDone={form.onClose}
+          />
+        )
+      }
+    >
       {food.data ? (
-        <>
-          <FoodForm food={food.data} {...form} />
-          {manage && (
-            <ItemActions
-              catalog={foodCatalog}
-              item={food.data}
-              onDone={form.onClose}
-            />
-          )}
-        </>
+        <FoodForm food={food.data} {...form} />
       ) : food.error ? (
         <ProblemAlert error={food.error} />
       ) : (
@@ -133,6 +137,7 @@ function FoodForm({ food, onClose, onSaved, onOpen }: FoodFormProps) {
   const putFood = usePutFood(id);
   const write = food ? patchFood : putFood;
 
+  const nutritionId = useId();
   const check = checkFood(draft);
   const errors: FoodErrors = triedSave && !check.ok ? check.errors : {};
   const clash = nameClashOf(write.error);
@@ -160,6 +165,19 @@ function FoodForm({ food, onClose, onSaved, onOpen }: FoodFormProps) {
     }
   }
 
+  function nutritionField(field: NutritionField) {
+    return (
+      <NumberField
+        label={NUTRITION_LABELS[field]}
+        value={draft[field]}
+        error={errors[field]}
+        onChange={(value) => {
+          change({ [field]: value });
+        }}
+      />
+    );
+  }
+
   function save(event: SyntheticEvent) {
     event.preventDefault();
     send(false);
@@ -167,51 +185,46 @@ function FoodForm({ food, onClose, onSaved, onOpen }: FoodFormProps) {
 
   return (
     <form className="flex flex-col gap-4" onSubmit={save} noValidate>
-      <TextField
-        label="Name"
-        value={draft.name}
-        error={errors.name}
-        maxLength={MAX_NAME_LENGTH}
-        onChange={(name) => {
-          change({ name });
-          // A clash was about the name as sent. Once it changes, "Save anyway"
-          // would vouch for a name the server never checked.
-          write.reset();
-        }}
-      />
-
-      <ReferenceSearch
-        key={searchKey}
-        onPick={(reference) => {
-          setDraft((current) => fillFrom(current, reference));
-          setFilledFrom(reference.name);
-          setSearchKey((current) => current + 1);
-        }}
-      />
+      {/* items-start: an error under one field must not stretch the other. */}
+      <div className="grid grid-cols-2 items-start gap-3">
+        <TextField
+          label="Name"
+          value={draft.name}
+          error={errors.name}
+          maxLength={MAX_NAME_LENGTH}
+          onChange={(name) => {
+            change({ name });
+            // A clash was about the name as sent. Once it changes, "Save anyway"
+            // would vouch for a name the server never checked.
+            write.reset();
+          }}
+        />
+        <ReferenceSearch
+          key={searchKey}
+          onPick={(reference) => {
+            setDraft((current) => fillFrom(current, reference));
+            setFilledFrom(reference.name);
+            setSearchKey((current) => current + 1);
+          }}
+        />
+      </div>
       {filledFrom && (
         <p role="status" className="text-sm text-gray-600">
           Filled from {filledFrom}. Check it against your label.
         </p>
       )}
 
-      <fieldset className="flex flex-col gap-3">
-        {/* First child, so it names the group for a screen reader. */}
-        <legend className="mb-3 font-medium">Nutrition, as on the label</legend>
-        <div className="grid grid-cols-2 gap-3">
-          {NUTRITION_FIELDS.map((field) => (
-            <NumberField
-              key={field}
-              label={NUTRITION_LABELS[field]}
-              value={draft[field]}
-              error={errors[field]}
-              onChange={(value) => {
-                change({ [field]: value });
-              }}
-            />
-          ))}
+      {/* Named by its visible header, not a <legend>: a legend cannot share a
+          row with the Clear button. Piece Weight sits in the grid beside Basis,
+          both being grams, though Clear leaves it alone. */}
+      <fieldset aria-labelledby={nutritionId} className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span id={nutritionId} className="font-medium">
+            Nutrition, as on the label
+          </span>
           <Button
             aria-label="Clear Nutrition"
-            className="self-end rounded-xl p-3 text-base text-teal-700"
+            className="rounded-xl px-3 py-1 text-base text-teal-700"
             onPress={() => {
               change(Object.fromEntries(NUTRITION_FIELDS.map((f) => [f, ""])));
             }}
@@ -219,22 +232,28 @@ function FoodForm({ food, onClose, onSaved, onOpen }: FoodFormProps) {
             Clear
           </Button>
         </div>
+        <div className="grid grid-cols-2 items-start gap-3">
+          {nutritionField("basis_g")}
+          <NumberField
+            label="Piece Weight (g)"
+            hint="Grams in one piece, to total a count."
+            value={draft.piece_g}
+            error={errors.piece_g}
+            onChange={(piece_g) => {
+              change({ piece_g });
+            }}
+          />
+          {nutritionField("kcal")}
+          {nutritionField("protein_g")}
+          {nutritionField("carbs_g")}
+          {nutritionField("fat_g")}
+        </div>
         {errors.nutrition && (
           <p role="alert" className="text-sm text-red-800">
             {errors.nutrition}
           </p>
         )}
       </fieldset>
-
-      <NumberField
-        label="Piece Weight (g)"
-        hint="Grams in one piece, so a count can be totalled."
-        value={draft.piece_g}
-        error={errors.piece_g}
-        onChange={(piece_g) => {
-          change({ piece_g });
-        }}
-      />
 
       {clash ? (
         <NameClash
@@ -292,7 +311,7 @@ function ReferenceSearch({ onPick }: ReferenceSearchProps) {
   }
 
   return (
-    <>
+    <div className="flex min-w-0 flex-col gap-1">
       <ComboBox
         className="flex min-w-0 flex-col gap-1"
         inputValue={text}
@@ -307,7 +326,7 @@ function ReferenceSearch({ onPick }: ReferenceSearchProps) {
         <Label className="text-sm font-medium text-gray-600">
           Fill from reference
         </Label>
-        <Input className={fieldClass} placeholder="Search Reference Foods" />
+        <Input className={fieldClass} placeholder="Search" />
         <Popover className="w-(--trigger-width) overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg">
           <ListBox<ReferenceFood>
             className="max-h-72 outline-none"
@@ -334,6 +353,6 @@ function ReferenceSearch({ onPick }: ReferenceSearchProps) {
         </Popover>
       </ComboBox>
       {references.error && <ProblemAlert error={references.error} />}
-    </>
+    </div>
   );
 }

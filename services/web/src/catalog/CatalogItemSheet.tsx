@@ -54,16 +54,18 @@ function SavedItemSheet({
     <BottomSheet
       title={item.data?.name ?? catalog.label}
       onClose={form.onClose}
-    >
-      {item.data ? (
-        <>
-          <NameForm catalog={catalog} item={item.data} {...form} />
+      actions={
+        item.data && (
           <ItemActions
             catalog={catalog}
             item={item.data}
             onDone={form.onClose}
           />
-        </>
+        )
+      }
+    >
+      {item.data ? (
+        <NameForm catalog={catalog} item={item.data} {...form} />
       ) : item.error ? (
         <ProblemAlert error={item.error} />
       ) : (
