@@ -56,22 +56,6 @@ export function ExerciseDashboard({
 
   return (
     <>
-      <StatTiles
-        stats={[
-          { label: "Sessions", value: String(summary.sessions) },
-          {
-            label: "Best top Set",
-            value: summary.best?.top ?? "",
-            note: summary.best ? formatDay(summary.best.day) : undefined,
-          },
-          {
-            label: "Change",
-            value:
-              summary.change === null ? "–" : signed(summary.change, format),
-            note: "first to last",
-          },
-        ]}
-      />
       <TrendChart
         title={byWeight ? "Top Set weight" : "Top Set reps"}
         from={start}
@@ -87,6 +71,22 @@ export function ExerciseDashboard({
             value: byWeight ? point.topWeight : point.topReps,
             detail: `${point.top}, ${count(point.sets)}`,
           }))}
+      />
+      <StatTiles
+        stats={[
+          { label: "Sessions", value: String(summary.sessions) },
+          {
+            label: "Best top Set",
+            value: summary.best?.top ?? "",
+            note: summary.best ? formatDay(summary.best.day) : undefined,
+          },
+          {
+            label: "Change",
+            value:
+              summary.change === null ? "–" : signed(summary.change, format),
+            note: "first to last",
+          },
+        ]}
       />
       {points.some((point) => point.volume !== null) && (
         <TrendChart

@@ -105,11 +105,15 @@ const tile = (label: string) => {
   return term.parentElement ?? term;
 };
 
-// The table under the chart holds the same points as its SVG, and reads as text, so
+// A chart's view switch: chart (the default) or table.
+const viewSwitch = (title: string) =>
+  screen.findByRole("radiogroup", { name: `${title} view` });
+
+// The table view holds the same points as the chart's SVG, and reads as text, so
 // that is what these tests read. TrendChart.test.tsx checks the marks themselves.
 async function tableRows(title: string) {
   await userEvent.click(
-    await screen.findByRole("button", { name: `${title} as a table` }),
+    within(await viewSwitch(title)).getByRole("radio", { name: "table" }),
   );
   const table = screen.getByRole("table", { name: title });
   return within(table)
@@ -145,7 +149,7 @@ describe("the History frame", () => {
       expect(dashboard()).toHaveAccessibleName("Dashboard, Avg 2,200 cal");
     });
     expect(
-      screen.queryByRole("button", { name: "Calories per Day as a table" }),
+      screen.queryByRole("radiogroup", { name: "Calories per Day view" }),
     ).not.toBeInTheDocument();
   });
 
@@ -168,11 +172,7 @@ describe("the History frame", () => {
 
     expect(url()).toHaveTextContent(/^\/history\?dash=open$/);
     expect(dashboard()).toHaveAttribute("aria-expanded", "true");
-    expect(
-      await screen.findByRole("button", {
-        name: "Calories per Day as a table",
-      }),
-    ).toBeInTheDocument();
+    expect(await viewSwitch("Calories per Day")).toBeInTheDocument();
 
     await userEvent.click(dashboard());
 
@@ -186,9 +186,7 @@ describe("the History frame", () => {
     await userEvent.click(screen.getByRole("radio", { name: "Exercise" }));
 
     expect(url()).toHaveTextContent(`/history?${benchUrl}&dash=open`);
-    expect(
-      await screen.findByRole("button", { name: "Top Set weight as a table" }),
-    ).toBeInTheDocument();
+    expect(await viewSwitch("Top Set weight")).toBeInTheDocument();
   });
 
   it("hides the Dashboard on Exercise until one is picked", () => {
@@ -219,8 +217,8 @@ describe("the Meals Dashboard", () => {
       [formatDay(daysAgo(1)), "2,400 cal", "P 150 g · C 200 g · F 60 g"],
       [formatDay(daysAgo(3)), "1,600 cal", "P 150 g · C 200 g · F 60 g"],
     ]);
-    expect(tile("Average")).toHaveTextContent("2,000 cal");
-    expect(tile("Average")).toHaveTextContent("over 2 logged Days");
+    expect(tile("avg")).toHaveTextContent("2,000 cal");
+    expect(tile("avg")).toHaveTextContent("2 days");
     const [request] = api.calls("/days");
     expect(request?.searchParams.get("from")).toBe(daysAgo(29));
     expect(request?.searchParams.get("to")).toBe(today);
@@ -242,25 +240,21 @@ describe("the Meals Dashboard", () => {
     });
     renderAt("/history?dash=open", <HistoryScreen />);
 
+    // The chart's legend names the orange point and the ring.
+    await viewSwitch("Calories per Day");
+    const legend = within(dashboardPanel()).getAllByRole("list")[0];
+    expect(legend).toHaveTextContent(/^ate outincomplete$/);
+    expect(tile("ate out")).toHaveTextContent("1");
+    expect(tile("incomplete")).toHaveTextContent("1");
+
     const rows = await tableRows("Calories per Day");
 
-    expect(rows[0]).toEqual([
-      formatDay(daysAgo(1)),
-      "5,000 cal",
-      "Restaurant Day",
-    ]);
+    expect(rows[0]).toEqual([formatDay(daysAgo(1)), "5,000 cal", "ate out"]);
     expect(rows[1]).toEqual([
       formatDay(daysAgo(2)),
       "900 cal",
-      "Incomplete Day · P 150 g · C 200 g · F 60 g",
+      "incomplete · P 150 g · C 200 g · F 60 g",
     ]);
-    expect(tile("Restaurant Days")).toHaveTextContent("1");
-    expect(tile("Incomplete Days")).toHaveTextContent("1");
-    // The legend names the ring. A Restaurant Day's orange is explained by the
-    // ate out pills around the chart, not by a legend (ADR 0033).
-    const legend = screen.getAllByRole("list")[0];
-    expect(legend).toHaveTextContent("Incomplete Day");
-    expect(legend).not.toHaveTextContent("Restaurant Day");
   });
 
   it("asks for the range the chip names, and all of history without a start", async () => {
@@ -349,7 +343,7 @@ describe("the Exercise Dashboard", () => {
       [formatDay(daysAgo(5)), "5 reps", "BW × 5, 2 Sets"],
     ]);
     expect(
-      screen.queryByRole("button", { name: "Volume as a table" }),
+      screen.queryByRole("radiogroup", { name: "Volume view" }),
     ).not.toBeInTheDocument();
   });
 
@@ -376,9 +370,7 @@ describe("the Exercise Dashboard", () => {
     expect(screen.getByRole("combobox", { name: "Exercise" })).toHaveValue(
       "Bench Press",
     );
-    expect(
-      await screen.findByRole("button", { name: "Top Set weight as a table" }),
-    ).toBeInTheDocument();
+    expect(await viewSwitch("Top Set weight")).toBeInTheDocument();
   });
 
   it("shows a failed load as a Problem", async () => {
