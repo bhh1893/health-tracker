@@ -1,7 +1,7 @@
 import { useState, type SyntheticEvent } from "react";
 import { Button } from "react-aria-components";
 
-import { BottomSheet } from "../components/BottomSheet";
+import { Sheet } from "../components/Sheet";
 import { TextField } from "../components/Fields";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { uuidv7 } from "../lib/uuidv7";
@@ -34,9 +34,9 @@ export function CatalogItemSheet({
 }: CatalogItemSheetProps) {
   if (itemId === null) {
     return (
-      <BottomSheet title={`New ${catalog.label}`} onClose={form.onClose}>
+      <Sheet title={`New ${catalog.label}`} onClose={form.onClose}>
         <NameForm catalog={catalog} item={null} {...form} />
-      </BottomSheet>
+      </Sheet>
     );
   }
   return <SavedItemSheet catalog={catalog} itemId={itemId} {...form} />;
@@ -51,7 +51,7 @@ function SavedItemSheet({
   // list is not showing.
   const item = useCatalogItem(catalog, itemId);
   return (
-    <BottomSheet
+    <Sheet
       title={item.data?.name ?? catalog.label}
       onClose={form.onClose}
       actions={
@@ -73,7 +73,7 @@ function SavedItemSheet({
           Loading...
         </p>
       )}
-    </BottomSheet>
+    </Sheet>
   );
 }
 

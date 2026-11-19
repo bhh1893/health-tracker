@@ -21,7 +21,7 @@ const iconButton =
 // the form below stays the sheet's focus. Archive hides an item from logging and
 // keeps its history; Delete removes it for good and is offered only while no Entry
 // uses it, which `last_used_day` says. The API still refuses a used one (409), for
-// an Entry logged since the list loaded. Rendered in BottomSheet's wrapping header
+// an Entry logged since the list loaded. Rendered in Sheet's wrapping header
 // row: the icons sit by the title, and the confirm and errors take full lines.
 export function ItemActions({ catalog, item, onDone }: ItemActionsProps) {
   const setArchived = useSetArchived(catalog, item.id);

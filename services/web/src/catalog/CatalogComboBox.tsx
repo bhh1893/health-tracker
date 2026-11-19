@@ -12,7 +12,7 @@ import {
 } from "react-aria-components";
 
 import { ApiError } from "../api/client";
-import { BottomSheet } from "../components/BottomSheet";
+import { Sheet } from "../components/Sheet";
 import { ClearIcon } from "../components/ClearIcon";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
@@ -258,7 +258,7 @@ export function CatalogComboBox({
       {showFailure && <ProblemAlert error={failure} />}
 
       {conflict && (
-        <BottomSheet
+        <Sheet
           title={
             conflict.canCreateAnyway
               ? "Did you mean?"
@@ -292,7 +292,7 @@ export function CatalogComboBox({
           <Button slot="close" className="p-2 text-base text-gray-600">
             Cancel
           </Button>
-        </BottomSheet>
+        </Sheet>
       )}
     </>
   );

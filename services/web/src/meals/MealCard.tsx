@@ -6,15 +6,14 @@ import { mealName, type Meal } from "./meals";
 
 interface MealCardProps {
   meal: Meal;
-  number: number;
   onEdit: () => void;
 }
 
 // The pencil beside the title opens the Meal sheet (ADR 0008). Only the button
 // edits, so a tap meant to scroll the feed cannot open a sheet by accident. The
 // card shows no time: the feed's order already says which Meal came first.
-export function MealCard({ meal, number, onEdit }: MealCardProps) {
-  const name = mealName(number, meal.label);
+export function MealCard({ meal, onEdit }: MealCardProps) {
+  const name = mealName(meal.label);
   return (
     <article
       aria-label={name}

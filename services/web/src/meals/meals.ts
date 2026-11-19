@@ -163,8 +163,8 @@ function byOccurrence(a: Meal, b: Meal) {
   return difference !== 0 ? difference : a.id.localeCompare(b.id);
 }
 
-// Oldest first, in the order the API numbers them, so a Meal's position is its
-// number even for an optimistic Meal the server has not numbered yet.
+// Oldest first, the order the API returns them, so an optimistic Meal the server
+// has not stored yet already sits where it will land.
 export function sortMeals(meals: Meal[]) {
   return meals.toSorted(byOccurrence);
 }
@@ -179,7 +179,10 @@ export function formatAmount({
   return unit === "g" ? `${String(quantity)} g` : `× ${String(quantity)}`;
 }
 
-export const mealName = (number: number, label: string | null) =>
-  label === null
-    ? `Meal ${String(number)}`
-    : `Meal ${String(number)}, ${label}`;
+// One-tap Labels for the Meal sheet. Only a shortcut: the Label stays free text and
+// the API accepts any.
+export const LABEL_PRESETS = ["Breakfast", "Lunch", "Dinner", "Snack"];
+
+// A Meal is called by its Label, or plain "Meal" without one. Two unlabelled Meals
+// share the name; the feed's order tells them apart.
+export const mealName = (label: string | null) => label ?? "Meal";

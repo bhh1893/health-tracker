@@ -83,7 +83,7 @@ async function searchAndAdd(name: string) {
 }
 
 describe("the Day feed", () => {
-  it("numbers the Day's Meals in time order, with label and contents", async () => {
+  it("names each Meal by its Label, or Meal without one, in time order", async () => {
     seedApi(
       aRestaurantMeal([cafe], {
         id: "b",
@@ -93,11 +93,14 @@ describe("the Day feed", () => {
     );
     renderAt(PAST_URL, <MealsWindow />);
 
-    const first = await card("Meal 1, Breakfast");
+    const first = await card("Breakfast");
     expect(first).toHaveTextContent("Oats80 g");
     // The time is stored and orders the feed, but the card does not show it.
     expect(first).not.toHaveTextContent("08:00");
-    expect(await card("Meal 2")).toHaveTextContent("Corner Cafe");
+    expect(await card("Meal")).toHaveTextContent("Corner Cafe");
+    expect(
+      screen.getAllByRole("article").map((article) => article.ariaLabel),
+    ).toEqual(["Breakfast", "Meal"]);
   });
 
   it("says so when the Day is empty", async () => {
@@ -226,8 +229,8 @@ describe("adding a Meal", () => {
       within(foodRow("Banana")).getByRole("combobox", { name: "Unit" }),
       "count",
     );
-    await userEvent.type(
-      within(sheet()).getByRole("textbox", { name: "Label" }),
+    await userEvent.selectOptions(
+      within(sheet()).getByRole("combobox", { name: "Label" }),
       "Breakfast",
     );
     await userEvent.click(save);
@@ -248,7 +251,53 @@ describe("adding a Meal", () => {
 
     unmount();
     renderAt(PAST_URL, <MealsWindow />);
-    expect(await card("Meal 1, Breakfast")).toHaveTextContent("Banana× 1");
+    expect(await card("Breakfast")).toHaveTextContent("Banana× 1");
+  });
+
+  it("saves a typed Label from Other, and None as no Label", async () => {
+    renderAt(PAST_URL, <MealsWindow />);
+    await openNewMeal();
+    await searchAndAdd("Oats");
+    const label = within(sheet()).getByRole("combobox", { name: "Label" });
+
+    expect(
+      within(sheet()).queryByRole("textbox", { name: "Other Label" }),
+    ).not.toBeInTheDocument();
+    await userEvent.selectOptions(label, "Other...");
+    const other = within(sheet()).getByRole("textbox", { name: "Other Label" });
+    expect(other).toHaveFocus();
+    await userEvent.type(other, "Brunch");
+    await userEvent.click(
+      within(sheet()).getByRole("button", { name: "Save" }),
+    );
+
+    await waitFor(() => {
+      expect(api.puts).toHaveLength(1);
+    });
+    expect(api.puts[0]?.body.label).toBe("Brunch");
+    expect(await card("Brunch")).toBeInTheDocument();
+
+    await userEvent.click(
+      within(await card("Brunch")).getByRole("button", { name: "Edit Brunch" }),
+    );
+    // A typed Label reopens under Other, without pulling up the keyboard.
+    const reopened = within(sheet()).getByRole("textbox", {
+      name: "Other Label",
+    });
+    expect(reopened).toHaveValue("Brunch");
+    expect(reopened).not.toHaveFocus();
+    await userEvent.selectOptions(
+      within(sheet()).getByRole("combobox", { name: "Label" }),
+      "None",
+    );
+    await userEvent.click(
+      within(sheet()).getByRole("button", { name: "Save" }),
+    );
+
+    await waitFor(() => {
+      expect(api.puts).toHaveLength(2);
+    });
+    expect(api.puts[1]?.body.label).toBeNull();
   });
 
   it("opens a sheet of the button's kind, titled with the Day and no kind switch", async () => {
@@ -309,7 +358,7 @@ describe("adding a Meal", () => {
     );
     await userEvent.click(save());
 
-    expect(await card("Meal 1")).toHaveTextContent("Taco Stand · Noodle Bar");
+    expect(await card("Meal")).toHaveTextContent("Taco Stand · Noodle Bar");
     expect(api.puts[0]?.body).toEqual(
       expect.objectContaining({
         kind: "restaurant",
@@ -335,7 +384,8 @@ describe("adding a Meal", () => {
     renderAt(PAST_URL, <MealsWindow />);
     await openNewMeal();
 
-    const label = () => within(sheet()).getByRole("textbox", { name: "Label" });
+    const label = () =>
+      within(sheet()).getByRole("combobox", { name: "Label" });
     expect(within(sheet()).queryByLabelText("Time")).not.toBeInTheDocument();
     const follows = (a: Node, b: Node) =>
       Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
@@ -395,7 +445,7 @@ describe("editing a Meal", () => {
     renderAt(PAST_URL, <MealsWindow />);
 
     await userEvent.click(
-      within(await card("Meal 1")).getByRole("button", { name: "Edit Meal 1" }),
+      within(await card("Meal")).getByRole("button", { name: "Edit Meal" }),
     );
     // A saved Meal's kind cannot change (ADR 0006), so there is no switch to offer.
     expect(within(sheet()).queryByRole("radio")).not.toBeInTheDocument();
@@ -432,7 +482,7 @@ describe("editing a Meal", () => {
     );
     renderAt(PAST_URL, <MealsWindow />);
     await userEvent.click(
-      within(await card("Meal 1")).getByRole("button", { name: "Edit Meal 1" }),
+      within(await card("Meal")).getByRole("button", { name: "Edit Meal" }),
     );
 
     await userEvent.click(
@@ -455,7 +505,7 @@ describe("editing a Meal", () => {
     renderAt(PAST_URL, <MealsWindow />);
 
     await userEvent.click(
-      within(await card("Meal 1")).getByRole("button", { name: "Edit Meal 1" }),
+      within(await card("Meal")).getByRole("button", { name: "Edit Meal" }),
     );
     expect(restaurantNames()).toEqual([
       "Corner Cafe",
@@ -490,7 +540,7 @@ describe("editing a Meal", () => {
     );
     renderAt(PAST_URL, <MealsWindow />);
     await userEvent.click(
-      within(await card("Meal 1")).getByRole("button", { name: "Edit Meal 1" }),
+      within(await card("Meal")).getByRole("button", { name: "Edit Meal" }),
     );
 
     expect(restaurantNames()).toHaveLength(10);
@@ -513,7 +563,7 @@ describe("editing a Meal", () => {
     seedApi(aMeal());
     renderAt(PAST_URL, <MealsWindow />);
     await userEvent.click(
-      within(await card("Meal 1")).getByRole("button", { name: "Edit Meal 1" }),
+      within(await card("Meal")).getByRole("button", { name: "Edit Meal" }),
     );
 
     await userEvent.click(
@@ -521,7 +571,7 @@ describe("editing a Meal", () => {
     );
     expect(api.meals.size).toBe(1);
     await userEvent.click(
-      within(sheet()).getByRole("button", { name: "Delete Meal 1" }),
+      within(sheet()).getByRole("button", { name: "Delete Meal" }),
     );
 
     expect(

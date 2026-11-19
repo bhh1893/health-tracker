@@ -9,7 +9,7 @@ import {
   type CatalogRef,
 } from "../catalog/catalogs";
 import { RecentChips } from "../catalog/RecentChips";
-import { BottomSheet } from "../components/BottomSheet";
+import { Sheet } from "../components/Sheet";
 import { ForkKnifeIcon } from "../components/ForkKnifeIcon";
 import { fieldClass, labelClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
@@ -20,6 +20,7 @@ import {
   buildMeal,
   draftOf,
   emptyDraft,
+  LABEL_PRESETS,
   MAX_RESTAURANTS,
   mealName,
   parseQuantity,
@@ -32,6 +33,9 @@ import { useDeleteMeal, usePutMeal } from "./queries";
 
 const LAST_FOOD_MESSAGE =
   "A Meal keeps at least one Food. To remove it, delete the Meal.";
+// The select's value for "type my own"; no real Label can collide with it, since
+// a typed Label never reaches the select's value.
+const OTHER = "__other__";
 const FULL_MESSAGE = `A Meal holds at most ${String(MAX_RESTAURANTS)} Restaurants. Remove one to add another.`;
 
 // Edit a saved Meal, or add a new one of the kind its button picked. The kind is
@@ -39,17 +43,10 @@ const FULL_MESSAGE = `A Meal holds at most ${String(MAX_RESTAURANTS)} Restaurant
 // Meal's kind cannot change (409 kind-immutable, ADR 0006).
 type MealSheetProps = {
   day: string;
-  number: number;
   onClose: () => void;
 } & ({ saved: Meal; kind?: never } | { saved: null; kind: Meal["kind"] });
 
-export function MealSheet({
-  day,
-  saved,
-  kind,
-  number,
-  onClose,
-}: MealSheetProps) {
+export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
   // One id per opening, as for Sets: if a save fails after the server stored it,
   // saving again replaces that Meal instead of adding a second.
   const [id] = useState(() => saved?.id ?? uuidv7());
@@ -57,6 +54,12 @@ export function MealSheet({
   const [draft, setDraft] = useState<MealDraft>(() =>
     saved === null ? emptyDraft(kind) : draftOf(saved),
   );
+  // Typing a Label instead of picking a preset. Its own state, because "Other" with
+  // nothing typed yet and no Label both hold an empty label.
+  const [customLabel, setCustomLabel] = useState(
+    () => draft.label !== "" && !LABEL_PRESETS.includes(draft.label),
+  );
+  const [pickedOther, setPickedOther] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const putMeal = usePutMeal();
   const deleteMeal = useDeleteMeal();
@@ -103,24 +106,49 @@ export function MealSheet({
 
   // Last in both kinds: the picks (Foods or Restaurants) are what a Meal is for,
   // so they lead, and the Label is optional. No time field: a new Meal happens now
-  // and an edit keeps its time (ADR 0008).
+  // and an edit keeps its time (ADR 0008). A native select, so on a phone picking a
+  // preset opens the system picker, not the keyboard; Other adds a text field.
   const labelField = (
-    <label className={labelClass}>
-      Label
-      <input
-        type="text"
-        maxLength={200}
-        placeholder="Optional, e.g. Breakfast"
-        className={fieldClass}
-        value={draft.label}
-        onChange={({ target }) => {
-          change({ label: target.value });
-        }}
-      />
-    </label>
+    <div className="flex flex-col gap-2">
+      <label className={labelClass}>
+        Label
+        <select
+          className={fieldClass}
+          value={customLabel ? OTHER : draft.label}
+          onChange={({ target }) => {
+            const other = target.value === OTHER;
+            setCustomLabel(other);
+            setPickedOther(other);
+            change({ label: other ? "" : target.value });
+          }}
+        >
+          <option value="">None</option>
+          {LABEL_PRESETS.map((preset) => (
+            <option key={preset}>{preset}</option>
+          ))}
+          <option value={OTHER}>Other...</option>
+        </select>
+      </label>
+      {customLabel && (
+        <input
+          type="text"
+          aria-label="Other Label"
+          maxLength={200}
+          placeholder="e.g. Brunch"
+          // Focus only when the user just picked Other, not when an edit opens on a
+          // typed Label: the keyboard opens when asked for.
+          autoFocus={pickedOther}
+          className={fieldClass}
+          value={draft.label}
+          onChange={({ target }) => {
+            change({ label: target.value });
+          }}
+        />
+      )}
+    </div>
   );
 
-  const name = mealName(number, saved?.label ?? null);
+  const name = mealName(saved?.label ?? null);
   const title =
     saved === null
       ? `Add ${kind === "foods" ? "Food" : "Restaurant"} to ${formatDay(day)}`
@@ -130,7 +158,7 @@ export function MealSheet({
     // Capped at two thirds of the screen: past that the Foods list scrolls on its
     // own, so the pick, Label and Save stay put. min-h-0 lets the form, and so the
     // list, shrink to the cap.
-    <BottomSheet
+    <Sheet
       title={title}
       onClose={onClose}
       maxHeight="two-thirds"
@@ -234,7 +262,7 @@ export function MealSheet({
           )}
         </div>
       </form>
-    </BottomSheet>
+    </Sheet>
   );
 }
 

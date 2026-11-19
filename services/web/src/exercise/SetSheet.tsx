@@ -3,7 +3,7 @@ import { Button } from "react-aria-components";
 
 import { CatalogComboBox } from "../catalog/CatalogComboBox";
 import { exerciseCatalog, type CatalogItem } from "../catalog/catalogs";
-import { BottomSheet } from "../components/BottomSheet";
+import { Sheet } from "../components/Sheet";
 import { fieldClass, labelClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDay } from "../lib/day";
@@ -56,7 +56,7 @@ export function SetSheet({ day, previous, onClose }: SetSheetProps) {
   }
 
   return (
-    <BottomSheet title={`Add Set to ${formatDay(day)}`} onClose={onClose}>
+    <Sheet title={`Add Set to ${formatDay(day)}`} onClose={onClose}>
       <form className="flex flex-col gap-4" onSubmit={save}>
         <div className="grid grid-cols-[2fr_1fr] gap-3">
           <CatalogComboBox
@@ -128,6 +128,6 @@ export function SetSheet({ day, previous, onClose }: SetSheetProps) {
           </Button>
         </div>
       </form>
-    </BottomSheet>
+    </Sheet>
   );
 }
