@@ -59,6 +59,7 @@ export function draftOf(meal: Meal): MealDraft {
             unit: entry.unit,
           }))
         : [],
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- the move to `restaurants` is #273 (ADR 0034)
     restaurant: meal.kind === "restaurant" ? meal.restaurant : null,
   };
 }
@@ -130,7 +131,12 @@ export function buildMeal(input: BuildMeal): Meal | null {
   if (draft.kind === "restaurant") {
     return draft.restaurant === null
       ? null
-      : { ...shared, kind: "restaurant", restaurant: draft.restaurant };
+      : {
+          ...shared,
+          kind: "restaurant",
+          restaurants: [draft.restaurant],
+          restaurant: draft.restaurant,
+        };
   }
   const entries = draft.rows.map((row) => ({
     food: row.food,
@@ -158,7 +164,10 @@ export function toPutMeal(meal: Meal): PutMeal {
     occurred_tz: meal.occurred_tz,
   };
   return meal.kind === "restaurant"
-    ? { ...fields, kind: "restaurant", restaurant_id: meal.restaurant.id }
+    ? // Until #273, web sends the old field: an api pod from before ADR 0034
+      // would refuse restaurant_ids mid-rollout.
+      // eslint-disable-next-line @typescript-eslint/no-deprecated -- the move to `restaurants` is #273 (ADR 0034)
+      { ...fields, kind: "restaurant", restaurant_id: meal.restaurant.id }
     : {
         ...fields,
         kind: "foods",

@@ -9,6 +9,7 @@ export function MealContents({ meal }: { meal: Meal }) {
       {meal.kind === "restaurant" ? (
         <li className="flex items-center gap-2 text-orange-800">
           <ForkKnifeIcon />
+          {/* eslint-disable-next-line @typescript-eslint/no-deprecated -- the move to `restaurants` is #273 (ADR 0034) */}
           <span>{meal.restaurant.name}</span>
         </li>
       ) : (

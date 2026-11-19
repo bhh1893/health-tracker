@@ -269,7 +269,7 @@ export interface paths {
         };
         /**
          * Get Meal
-         * @description Read one Meal with its Food Entries or Restaurant.
+         * @description Read one Meal with its Food Entries or Restaurants.
          */
         get: operations["get_meal"];
         /**
@@ -280,7 +280,7 @@ export interface paths {
         post?: never;
         /**
          * Delete Meal
-         * @description Delete a Meal and its Food Entries.
+         * @description Delete a Meal and its Food Entries or Restaurants.
          */
         delete: operations["delete_meal"];
         options?: never;
@@ -803,9 +803,11 @@ export interface components {
             occurred_tz: string;
             /**
              * Restaurant Id
-             * Format: uuid
+             * @deprecated
              */
-            restaurant_id: string;
+            restaurant_id?: string | null;
+            /** Restaurant Ids */
+            restaurant_ids?: string[] | null;
         };
         /**
          * ReferenceFood
@@ -851,7 +853,10 @@ export interface components {
             occurred_at: string;
             /** Occurred Tz */
             occurred_tz: string;
+            /** @deprecated */
             restaurant: components["schemas"]["CatalogRef"];
+            /** Restaurants */
+            restaurants: components["schemas"]["CatalogRef"][];
         };
         /** SessionSet */
         SessionSet: {

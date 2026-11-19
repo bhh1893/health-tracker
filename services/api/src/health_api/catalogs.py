@@ -640,8 +640,8 @@ CATALOGS = (
         add_writes=add_name_writes,
         last_use="""
             SELECT m.day, m.occurred_at
-            FROM meals m
-            WHERE m.user_id = c.user_id AND m.restaurant_id = c.id
+            FROM meal_restaurants mr JOIN meals m ON m.id = mr.meal_id
+            WHERE mr.user_id = c.user_id AND mr.restaurant_id = c.id
             ORDER BY m.day DESC, m.occurred_at DESC
             LIMIT 1
         """,

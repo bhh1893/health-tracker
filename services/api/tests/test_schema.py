@@ -41,9 +41,11 @@ def foods_meal(session: Session, user: UUID) -> UUID:
 
 def restaurant_meal(session: Session, user: UUID) -> UUID:
     restaurant = insert(session, "restaurants", user_id=user, name="Diner")
-    return insert(
+    meal = insert(
         session, "meals", user_id=user, kind="restaurant", restaurant_id=restaurant, **WHEN
     )
+    insert(session, "meal_restaurants", user_id=user, meal_id=meal, restaurant_id=restaurant)
+    return meal
 
 
 def food_entry(session: Session, user: UUID, meal: UUID, food: UUID, **values: Any) -> UUID:
@@ -145,6 +147,78 @@ def test_food_entry_cannot_claim_a_restaurant_kind(session: Session, user: UUID)
     assert_rejected(caught, CHECK_VIOLATION, "food_entries_meal_kind_check")
 
 
+def test_cannot_list_another_users_restaurant_on_a_meal(
+    session: Session, user: UUID, other_user: UUID
+) -> None:
+    meal = restaurant_meal(session, user)
+    theirs = insert(session, "restaurants", user_id=other_user, name="Cafe")
+
+    with pytest.raises(IntegrityError) as caught:
+        insert(session, "meal_restaurants", user_id=user, meal_id=meal, restaurant_id=theirs)
+
+    assert_rejected(caught, FOREIGN_KEY_VIOLATION, "meal_restaurants_restaurant_id_user_id_fkey")
+
+
+def test_cannot_list_a_restaurant_on_another_users_meal(
+    session: Session, user: UUID, other_user: UUID
+) -> None:
+    theirs = restaurant_meal(session, other_user)
+    mine = insert(session, "restaurants", user_id=user, name="Cafe")
+
+    with pytest.raises(IntegrityError) as caught:
+        insert(session, "meal_restaurants", user_id=user, meal_id=theirs, restaurant_id=mine)
+
+    assert_rejected(caught, FOREIGN_KEY_VIOLATION, "meal_restaurants_meal_id_user_id_fkey")
+
+
+def test_a_restaurant_appears_once_per_meal(session: Session, user: UUID) -> None:
+    meal = restaurant_meal(session, user)
+    restaurant = session.scalar(
+        text("SELECT restaurant_id FROM meals WHERE id = :id"), {"id": meal}
+    )
+
+    with pytest.raises(IntegrityError) as caught:
+        insert(session, "meal_restaurants", user_id=user, meal_id=meal, restaurant_id=restaurant)
+
+    assert_rejected(caught, UNIQUE_VIOLATION, "meal_restaurants_meal_id_restaurant_id_key")
+
+
+def test_foods_meal_cannot_list_a_restaurant(session: Session, user: UUID) -> None:
+    meal = foods_meal(session, user)
+    restaurant = insert(session, "restaurants", user_id=user, name="Diner")
+
+    with pytest.raises(IntegrityError) as caught:
+        insert(session, "meal_restaurants", user_id=user, meal_id=meal, restaurant_id=restaurant)
+
+    assert_rejected(caught, FOREIGN_KEY_VIOLATION, "meal_restaurants_meal_id_meal_kind_fkey")
+
+
+def test_meal_restaurant_cannot_claim_a_foods_kind(session: Session, user: UUID) -> None:
+    """The lie that would get past the FK above: only the CHECK stops it."""
+    meal = foods_meal(session, user)
+    restaurant = insert(session, "restaurants", user_id=user, name="Diner")
+
+    with pytest.raises(IntegrityError) as caught:
+        insert(
+            session,
+            "meal_restaurants",
+            user_id=user,
+            meal_id=meal,
+            restaurant_id=restaurant,
+            meal_kind="foods",
+        )
+
+    assert_rejected(caught, CHECK_VIOLATION, "meal_restaurants_meal_kind_check")
+
+
+def test_deleting_a_meal_deletes_its_restaurant_rows(session: Session, user: UUID) -> None:
+    meal = restaurant_meal(session, user)
+
+    session.execute(text("DELETE FROM meals WHERE id = :id"), {"id": meal})
+
+    assert session.scalar(text("SELECT count(*) FROM meal_restaurants")) == 0
+
+
 def test_foods_meal_cannot_have_a_restaurant(session: Session, user: UUID) -> None:
     restaurant = insert(session, "restaurants", user_id=user, name="Diner")
 
@@ -231,6 +305,20 @@ def test_used_restaurant_cannot_be_deleted(session: Session, user: UUID) -> None
         session.execute(text("DELETE FROM restaurants"))
 
     assert_rejected(caught, RESTRICT_VIOLATION, "meals_restaurant_id_user_id_fkey")
+
+
+def test_a_restaurant_listed_after_the_first_cannot_be_deleted(
+    session: Session, user: UUID
+) -> None:
+    """Only the join table knows about a Meal's second Restaurant, so its FK must hold it."""
+    meal = restaurant_meal(session, user)
+    second = insert(session, "restaurants", user_id=user, name="Bar")
+    insert(session, "meal_restaurants", user_id=user, meal_id=meal, restaurant_id=second)
+
+    with pytest.raises(IntegrityError) as caught:
+        session.execute(text("DELETE FROM restaurants WHERE id = :id"), {"id": second})
+
+    assert_rejected(caught, RESTRICT_VIOLATION, "meal_restaurants_restaurant_id_user_id_fkey")
 
 
 def test_never_used_food_can_be_deleted(session: Session, user: UUID) -> None:
@@ -322,13 +410,16 @@ def test_api_rw_cannot_weaken_the_schema(api_rw_engine: Engine, statement: str) 
         ("exercise_entries_user_exercise_day", "(user_id, exercise_id, day, occurred_at, id)"),
         ("food_entries_meal", "(meal_id)"),
         ("food_entries_user_food", "(user_id, food_id) INCLUDE (meal_id)"),
+        # ADR 0034. A Meal's own rows are found through the UNIQUE (meal_id, restaurant_id) key.
+        ("meal_restaurants_meal_id_restaurant_id_key", "(meal_id, restaurant_id)"),
+        ("meal_restaurants_user_restaurant", "(user_id, restaurant_id) INCLUDE (meal_id)"),
         ("foods_name_trgm", "gin (lower(name) gin_trgm_ops)"),
         ("exercises_name_trgm", "gin (lower(name) gin_trgm_ops)"),
         ("restaurants_name_trgm", "gin (lower(name) gin_trgm_ops)"),
         ("reference_foods_name_trgm", "gin (lower(name) gin_trgm_ops)"),
     ],
 )
-def test_adr_0012_indexes_exist(session: Session, index: str, definition: str) -> None:
+def test_designed_indexes_exist(session: Session, index: str, definition: str) -> None:
     created = session.scalar(
         text("SELECT indexdef FROM pg_indexes WHERE indexname = :index"), {"index": index}
     )

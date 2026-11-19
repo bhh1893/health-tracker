@@ -47,7 +47,8 @@ const restaurantDay = (day: string): MealDay => ({
 const names = ({ meals }: MealDay) =>
   meals.flatMap((meal) =>
     meal.kind === "restaurant"
-      ? [meal.restaurant.name]
+      ? // eslint-disable-next-line @typescript-eslint/no-deprecated -- the move to `restaurants` is #273 (ADR 0034)
+        [meal.restaurant.name]
       : meal.food_entries.map((entry) => entry.food.name),
   );
 

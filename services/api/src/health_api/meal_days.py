@@ -25,9 +25,10 @@ from health_api.meals import FoodsMeal, Meal, RestaurantMeal, select_meals
 DEFAULT_DAY_PAGE_SIZE = 20
 MAX_DAY_PAGE_SIZE = 100
 
-# Days that have a Meal whose Food or Restaurant name contains the text, ignoring case. Each
-# subquery starts from the name, so Postgres can find the matching names through the
-# `*_name_trgm` GIN indexes on lower(name) (ADR 0012), then the Meals that use them.
+# Days that have a Meal with a Food or Restaurant whose name contains the text, ignoring case.
+# Any of a Meal's Restaurants counts, not only the first (ADR 0034). Each subquery starts from
+# the name, so Postgres can find the matching names through the `*_name_trgm` GIN indexes on
+# lower(name) (ADR 0012), then the Meals that use them.
 # Archived Foods and Restaurants match too: this is about what was eaten, not the Catalog.
 NAME_FILTER = r"""
     (
@@ -37,9 +38,11 @@ NAME_FILTER = r"""
             WHERE e.user_id = :user AND f.user_id = :user
               AND lower(f.name) LIKE lower(:contains) ESCAPE '\'
         )
-        OR m.restaurant_id IN (
-            SELECT r.id FROM restaurants r
-            WHERE r.user_id = :user AND lower(r.name) LIKE lower(:contains) ESCAPE '\'
+        OR m.id IN (
+            SELECT mr.meal_id FROM meal_restaurants mr
+            JOIN restaurants r ON r.id = mr.restaurant_id
+            WHERE mr.user_id = :user AND r.user_id = :user
+              AND lower(r.name) LIKE lower(:contains) ESCAPE '\'
         )
     )
 """

@@ -32,7 +32,7 @@ from health_api.main import create_app
 
 pytestmark = pytest.mark.index_plans
 
-ENTRY_TABLES = {"meals", "food_entries", "exercise_entries"}
+ENTRY_TABLES = {"meals", "food_entries", "meal_restaurants", "exercise_entries"}
 OWNER_SUBJECT = "owner"
 # Far enough above the small-table regime that a plan here means something.
 MIN_SEEDED_SETS = 1_000_000
@@ -69,7 +69,7 @@ CASES = (
     Case(
         "Meal Days filtered by Restaurant",
         "/meal-days?q=diner",
-        ("meals_user_day", "restaurants_name_trgm"),
+        ("meals_user_day", "restaurants_name_trgm", "meal_restaurants_user_restaurant"),
     ),
     Case("Sets on a Day", "/exercise-entries?from={day}&to={day}", ("exercise_entries_user_day",)),
     Case("Sets newest first", "/exercise-entries", ("exercise_entries_user_day",)),
@@ -93,7 +93,7 @@ CASES = (
     ),
     Case("Recent Foods", "/foods", ("food_entries_user_food",)),
     Case("Recent Exercises", "/exercises", ("exercise_entries_user_exercise_day",)),
-    Case("Recent Restaurants", "/restaurants", ("meals_user_day",)),
+    Case("Recent Restaurants", "/restaurants", ("meal_restaurants_user_restaurant",)),
     Case("Foods typeahead, short", "/foods?q=gr", ("foods_name_trgm",)),
     Case("Foods typeahead, typo", "/foods?q=chiken", ("foods_name_trgm",)),
     Case("Exercises typeahead", "/exercises?q=barbel", ("exercises_user_name_key",)),

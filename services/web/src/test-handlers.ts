@@ -270,13 +270,27 @@ export function fakeMealApi(
           }
           return ref(item);
         };
+        const restaurantMeal = (ids: string[]): Meal => {
+          const [first, ...rest] = ids.map((wanted) =>
+            find(restaurants, wanted),
+          );
+          if (first === undefined) {
+            throw new Error("A Restaurant Meal needs a Restaurant");
+          }
+          return {
+            ...shared,
+            kind: "restaurant",
+            restaurants: [first, ...rest],
+            restaurant: first,
+          };
+        };
         const meal: Meal =
           body.kind === "restaurant"
-            ? {
-                ...shared,
-                kind: "restaurant",
-                restaurant: find(restaurants, body.restaurant_id),
-              }
+            ? restaurantMeal(
+                body.restaurant_ids ??
+                  // eslint-disable-next-line @typescript-eslint/no-deprecated -- the fake API accepts the old field, as the real one does
+                  (body.restaurant_id ? [body.restaurant_id] : []),
+              )
             : {
                 ...shared,
                 kind: "foods",

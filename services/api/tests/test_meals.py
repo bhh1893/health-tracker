@@ -11,7 +11,13 @@ from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
 from health_api.entries import MAX_AMOUNT
-from health_api.problems import KIND_IMMUTABLE, LAST_FOOD_ENTRY, PROBLEM_MEDIA_TYPE
+from health_api.meals import MAX_RESTAURANTS
+from health_api.problems import (
+    KIND_IMMUTABLE,
+    LAST_FOOD_ENTRY,
+    PROBLEM_MEDIA_TYPE,
+    SEVERAL_RESTAURANTS,
+)
 
 
 def meal_url(meal: UUID) -> str:
@@ -36,6 +42,7 @@ def foods_body(food: UUID, at: str = "2026-11-03T12:00:00+00:00", **fields: Any)
 
 
 def restaurant_body(restaurant: UUID, **fields: Any) -> dict[str, Any]:
+    """The deprecated one-Restaurant shape, as clients from before ADR 0034 send it."""
     return {
         "kind": "restaurant",
         "occurred_at": "2026-11-03T12:00:00+00:00",
@@ -43,6 +50,20 @@ def restaurant_body(restaurant: UUID, **fields: Any) -> dict[str, Any]:
         "restaurant_id": str(restaurant),
         **fields,
     }
+
+
+def restaurants_body(*restaurants: UUID, **fields: Any) -> dict[str, Any]:
+    return {
+        "kind": "restaurant",
+        "occurred_at": "2026-11-03T12:00:00+00:00",
+        "occurred_tz": "UTC",
+        "restaurant_ids": [str(restaurant) for restaurant in restaurants],
+        **fields,
+    }
+
+
+def restaurant_ids(meal: dict[str, Any]) -> list[str]:
+    return [restaurant["id"] for restaurant in meal["restaurants"]]
 
 
 def put(client: TestClient, body: dict[str, Any]) -> dict[str, Any]:
@@ -116,11 +137,212 @@ def test_foods_meal_round_trip(client: TestClient, food: UUID) -> None:
 def test_restaurant_meal_round_trip(client: TestClient, restaurant: UUID) -> None:
     meal = put(client, restaurant_body(restaurant))
 
+    chipotle = {"id": str(restaurant), "name": "Chipotle", "archived": False}
     assert meal["kind"] == "restaurant"
-    assert meal["restaurant"] == {"id": str(restaurant), "name": "Chipotle", "archived": False}
+    assert meal["restaurants"] == [chipotle]
+    assert meal["restaurant"] == chipotle
     assert "food_entries" not in meal
     # Its Day counts as the User's flat value (ADR 0023), which no single Meal owns.
     assert "total" not in meal
+
+
+# Several Restaurants (ADR 0034)
+
+
+@pytest.fixture
+def three_restaurants(client: TestClient) -> list[UUID]:
+    # Created C, B, A, so neither creation order nor name order is the order sent below.
+    return [catalog_item(client, "restaurants", name) for name in ("Cafe", "Bar", "Arepas")][::-1]
+
+
+def test_restaurants_read_back_in_the_order_sent(
+    client: TestClient, three_restaurants: list[UUID]
+) -> None:
+    meal = uuid7()
+    first, second, third = three_restaurants
+
+    created = client.put(meal_url(meal), json=restaurants_body(first, second, third)).json()
+    replaced = client.put(meal_url(meal), json=restaurants_body(third, first, second)).json()
+
+    assert restaurant_ids(created) == [str(first), str(second), str(third)]
+    assert restaurant_ids(replaced) == [str(third), str(first), str(second)]
+    assert client.get(meal_url(meal)).json() == replaced
+    assert replaced["restaurant"]["id"] == str(third), "the deprecated field is the first"
+
+
+def test_food_entries_read_back_in_the_order_sent(client: TestClient) -> None:
+    foods = [catalog_item(client, "foods", name) for name in ("Cafe au lait", "Bagel", "Apple")]
+    entries = [{"food_id": str(food), "quantity": 100, "unit": "g"} for food in foods[::-1]]
+
+    meal = put(client, foods_body(foods[0], food_entries=entries))
+
+    assert [entry["food"]["id"] for entry in meal["food_entries"]] == [
+        str(food) for food in foods[::-1]
+    ]
+
+
+def test_the_first_restaurant_is_also_written_to_the_old_column(
+    client: TestClient, session: Session, three_restaurants: list[UUID]
+) -> None:
+    """What an api pod from before ADR 0034 reads mid-rollout."""
+    meal = put(client, restaurants_body(*three_restaurants[1:]))
+
+    column = session.scalar(
+        text("SELECT restaurant_id FROM meals WHERE id = :id"), {"id": meal["id"]}
+    )
+    assert column == three_restaurants[1]
+
+
+def test_a_meal_saved_by_the_old_api_mid_rollout_still_reads(
+    client: TestClient, session: Session, restaurant: UUID
+) -> None:
+    """An api pod from before ADR 0034 writes only meals.restaurant_id, no meal_restaurants."""
+    meal = session.execute(
+        text(
+            """
+            INSERT INTO meals (user_id, kind, restaurant_id, occurred_at, occurred_tz, day)
+            SELECT user_id, 'restaurant', id, '2026-11-03T12:00:00Z', 'UTC', '2026-11-03'
+            FROM restaurants WHERE id = :restaurant
+            RETURNING id
+            """
+        ),
+        {"restaurant": restaurant},
+    ).scalar_one()
+
+    read = client.get(meal_url(meal))
+
+    assert read.status_code == 200, read.text
+    assert restaurant_ids(read.json()) == [str(restaurant)]
+    assert list_ids(client) == [str(meal)]
+
+
+@pytest.mark.parametrize("count", [0, MAX_RESTAURANTS + 1])
+def test_restaurant_count_is_bounded(client: TestClient, count: int) -> None:
+    restaurants = [uuid7() for _ in range(count)]
+
+    response = client.put(meal_url(uuid7()), json=restaurants_body(*restaurants))
+
+    assert error_fields(response) == ["body.restaurant.restaurant_ids"]
+
+
+def test_ten_restaurants_fit(client: TestClient) -> None:
+    restaurants = [catalog_item(client, "restaurants", f"Stop {n}") for n in range(10)]
+
+    assert len(put(client, restaurants_body(*restaurants))["restaurants"]) == MAX_RESTAURANTS
+
+
+def test_a_restaurant_listed_twice_is_invalid(client: TestClient, restaurant: UUID) -> None:
+    response = client.put(meal_url(uuid7()), json=restaurants_body(restaurant, restaurant))
+
+    assert response.status_code == 422, response.text
+
+
+@pytest.mark.parametrize("both", [True, False])
+def test_send_exactly_one_restaurant_field(
+    client: TestClient, restaurant: UUID, both: bool
+) -> None:
+    body = restaurants_body(restaurant) | (
+        {"restaurant_id": str(restaurant)} if both else {"restaurant_ids": None}
+    )
+
+    assert client.put(meal_url(uuid7()), json=body).status_code == 422
+
+
+def test_the_old_field_cannot_shrink_a_meal_of_several(
+    client: TestClient, three_restaurants: list[UUID]
+) -> None:
+    meal = uuid7()
+    client.put(meal_url(meal), json=restaurants_body(*three_restaurants, label="Food hall"))
+
+    response = client.put(meal_url(meal), json=restaurant_body(three_restaurants[0]))
+
+    assert response.status_code == 409
+    assert response.json()["type"] == SEVERAL_RESTAURANTS
+    read = client.get(meal_url(meal)).json()
+    assert read["label"] == "Food hall", "a refused PUT changes nothing"
+    assert restaurant_ids(read) == [str(r) for r in three_restaurants]
+
+
+def test_the_old_field_still_replaces_a_meal_of_one(
+    client: TestClient, three_restaurants: list[UUID]
+) -> None:
+    meal = uuid7()
+    first, second, _ = three_restaurants
+    client.put(meal_url(meal), json=restaurants_body(first))
+
+    response = client.put(meal_url(meal), json=restaurant_body(second))
+
+    assert response.status_code == 200, response.text
+    assert restaurant_ids(response.json()) == [str(second)]
+
+
+def test_another_users_restaurant_in_the_list_is_rejected(
+    client: TestClient, session: Session, restaurant: UUID, other_user: UUID
+) -> None:
+    """Second in the list: only the join table's FK sees it, not meals.restaurant_id's."""
+    theirs = session.execute(
+        text("INSERT INTO restaurants (user_id, name) VALUES (:user, 'Bar') RETURNING id"),
+        {"user": other_user},
+    ).scalar_one()
+    meal = uuid7()
+
+    response = client.put(meal_url(meal), json=restaurants_body(restaurant, theirs))
+
+    assert error_fields(response) == ["body.restaurant_ids"]
+    assert client.get(meal_url(meal)).status_code == 404
+
+
+def test_another_users_restaurant_first_in_the_list_is_rejected_on_the_list(
+    client: TestClient, session: Session, restaurant: UUID, other_user: UUID
+) -> None:
+    """First in the list, meals.restaurant_id's FK refuses it: still the field that was sent."""
+    theirs = session.execute(
+        text("INSERT INTO restaurants (user_id, name) VALUES (:user, 'Bar') RETURNING id"),
+        {"user": other_user},
+    ).scalar_one()
+
+    response = client.put(meal_url(uuid7()), json=restaurants_body(theirs, restaurant))
+
+    assert error_fields(response) == ["body.restaurant_ids"]
+
+
+def test_another_users_meal_of_several_restaurants_is_untouched(
+    client: TestClient, session: Session, restaurant: UUID, other_user: UUID
+) -> None:
+    theirs = [
+        session.execute(
+            text("INSERT INTO restaurants (user_id, name) VALUES (:user, :name) RETURNING id"),
+            {"user": other_user, "name": name},
+        ).scalar_one()
+        for name in ("Bar", "Cafe")
+    ]
+    meal = session.execute(
+        text(
+            """
+            INSERT INTO meals (user_id, kind, restaurant_id, occurred_at, occurred_tz, day)
+            VALUES (:user, 'restaurant', :first, '2026-11-03T12:00:00Z', 'UTC', '2026-11-03')
+            RETURNING id
+            """
+        ),
+        {"user": other_user, "first": theirs[0]},
+    ).scalar_one()
+    session.execute(
+        text(
+            """
+            INSERT INTO meal_restaurants (user_id, meal_id, restaurant_id)
+            VALUES (:user, :meal, :restaurant)
+            """
+        ),
+        [{"user": other_user, "meal": meal, "restaurant": r} for r in theirs],
+    )
+
+    assert client.get(meal_url(meal)).status_code == 404
+    assert client.put(meal_url(meal), json=restaurants_body(restaurant)).status_code == 404
+    assert client.put(meal_url(meal), json=restaurant_body(restaurant)).status_code == 404
+    held = session.scalar(
+        text("SELECT count(*) FROM meal_restaurants WHERE meal_id = :id"), {"id": meal}
+    )
+    assert held == 2
 
 
 def test_day_is_the_date_where_the_user_was(client: TestClient, food: UUID) -> None:
@@ -483,6 +705,16 @@ def test_bad_cursor_is_invalid(client: TestClient, cursor: str) -> None:
 @pytest.mark.parametrize("limit", [0, 201])
 def test_limit_is_bounded(client: TestClient, limit: int) -> None:
     assert client.get("/api/v1/meals", params={"limit": limit}).status_code == 422
+
+
+def test_deleting_a_restaurant_meal_deletes_its_restaurant_rows(
+    client: TestClient, session: Session, three_restaurants: list[UUID]
+) -> None:
+    meal = put(client, restaurants_body(*three_restaurants))
+
+    client.delete(meal_url(UUID(meal["id"])))
+
+    assert session.scalar(text("SELECT count(*) FROM meal_restaurants")) == 0
 
 
 def test_delete_cascades_and_a_retry_is_harmless(

@@ -79,6 +79,10 @@ def make_realistic(value: Any, timezone: str) -> None:
         for key, field in value.items():
             if key in REFERENCES:
                 value[key] = REFERENCES[key]
+            elif key == "restaurant_ids":
+                # One at most: a Restaurant appears once per Meal, and only one exists. An
+                # empty list stays empty, to test the 422.
+                value[key] = [RESTAURANT] if field else field
             elif key == "occurred_tz":
                 value[key] = timezone
             elif key == "nutrition":

@@ -9,6 +9,8 @@ from uuid import UUID, uuid7
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 
 def catalog_item(client: TestClient, table: str, name: str) -> UUID:
@@ -30,12 +32,12 @@ def eat(client: TestClient, day: str, *foods: UUID, at: str = "12:00:00") -> str
     return response.json()["id"]
 
 
-def eat_out(client: TestClient, day: str, restaurant: UUID) -> str:
+def eat_out(client: TestClient, day: str, *restaurants: UUID) -> str:
     body = {
         "kind": "restaurant",
         "occurred_at": f"{day}T19:00:00Z",
         "occurred_tz": "UTC",
-        "restaurant_id": str(restaurant),
+        "restaurant_ids": [str(restaurant) for restaurant in restaurants],
     }
     response = client.put(f"/api/v1/meals/{uuid7()}", json=body)
     assert response.status_code == 201, response.text
@@ -139,6 +141,44 @@ def test_q_matches_food_and_restaurant_names_ignoring_case(client: TestClient, r
     eat(client, "2026-11-04", rice)
 
     assert days(client, q="cHiCkEn") == ["2026-11-02", "2026-11-01"]
+
+
+def test_q_matches_any_restaurant_of_a_meal_not_only_the_first(client: TestClient) -> None:
+    """ADR 0034: a food hall is found by any of its stalls."""
+    hall = catalog_item(client, "restaurants", "Market Hall")
+    stall = catalog_item(client, "restaurants", "Dumpling Stall")
+    eat_out(client, "2026-11-03", hall, stall)
+
+    assert days(client, q="dumpling") == ["2026-11-03"]
+
+
+def test_q_never_finds_another_users_restaurant(
+    client: TestClient, session: Session, rice: UUID
+) -> None:
+    other = session.execute(text("INSERT INTO users DEFAULT VALUES RETURNING id")).scalar_one()
+    theirs = session.execute(
+        text(
+            "INSERT INTO restaurants (user_id, name) VALUES (:user, 'Dumpling Stall') RETURNING id"
+        ),
+        {"user": other},
+    ).scalar_one()
+    meal = session.execute(
+        text(
+            """
+            INSERT INTO meals (user_id, kind, restaurant_id, occurred_at, occurred_tz, day)
+            VALUES (:user, 'restaurant', :r, '2026-11-03T12:00:00Z', 'UTC', '2026-11-03')
+            RETURNING id
+            """
+        ),
+        {"user": other, "r": theirs},
+    ).scalar_one()
+    session.execute(
+        text("INSERT INTO meal_restaurants (user_id, meal_id, restaurant_id) VALUES (:u, :m, :r)"),
+        {"u": other, "m": meal, "r": theirs},
+    )
+    eat(client, "2026-11-03", rice)
+
+    assert days(client, q="dumpling") == []
 
 
 def test_a_kept_day_shows_its_meals_that_did_not_match(client: TestClient, rice: UUID) -> None:

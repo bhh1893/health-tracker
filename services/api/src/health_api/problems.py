@@ -29,6 +29,8 @@ NEAR_DUPLICATE = "urn:health-tracker:problem:near-duplicate"
 ITEM_IN_USE = "urn:health-tracker:problem:item-in-use"
 LAST_FOOD_ENTRY = "urn:health-tracker:problem:last-food-entry"
 KIND_IMMUTABLE = "urn:health-tracker:problem:kind-immutable"
+# A 409: a PUT with the deprecated restaurant_id would shrink a Meal of several (ADR 0034).
+SEVERAL_RESTAURANTS = "urn:health-tracker:problem:several-restaurants"
 # A 403: the caller is known but may not do this yet (ADR 0021).
 PENDING_APPROVAL = "urn:health-tracker:problem:pending-approval"
 # A 403: the caller is new, and the Admin has closed Sign-up (ADR 0026).
