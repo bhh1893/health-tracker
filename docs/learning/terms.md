@@ -683,3 +683,5 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`setQueryData`**: writes a mutation's answer straight into the cache under a query key, so an open screen shows the saved value at once without asking the server again.
 - **Mutation reset (`mutation.reset()`)**: clears a finished mutation's error and data; done here when the name changes, so a clash about the old name stops showing.
 - **Client-made id**: the browser picks the new item's id (a UUIDv7) before the first request, so a retried or "Save anyway" PUT writes the same item instead of a second one.
+- **`min-h-0` in a flex column**: a flex child normally refuses to shrink below its content; `min-h-0` lifts that, so a capped parent can squeeze it and an inner `overflow-y-auto` part scrolls instead.
+- **`overscroll-contain`**: when a scrolling list hits its end, the swipe stops there instead of scrolling the page or sheet behind it.

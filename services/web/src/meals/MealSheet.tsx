@@ -101,11 +101,12 @@ export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
     putMeal.mutate({ before: saved, after: meal }, { onSuccess: onClose });
   }
 
-  // A Restaurant meal leads with the Restaurant pick; a Foods meal leads with Label and Time.
-  const labelAndTime = (
+  // Last in both kinds: the pick (a Food or the Restaurant) is what a Meal is for,
+  // so it leads, and the Note and Time usually keep their defaults.
+  const noteAndTime = (
     <div className="grid grid-cols-[2fr_1fr] gap-3">
       <label className={labelClass}>
-        Label
+        Note
         <input
           type="text"
           maxLength={200}
@@ -139,8 +140,11 @@ export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
     saved === null ? `Add Meal to ${formatDay(day)}` : `Edit ${name}`;
 
   return (
-    <BottomSheet title={title} onClose={onClose}>
-      <form className="flex flex-col gap-4" onSubmit={save}>
+    // Capped at two thirds of the screen: past that the Foods list scrolls on its
+    // own, so the pick, Note and Save stay put. min-h-0 lets the form, and so the
+    // list, shrink to the cap.
+    <BottomSheet title={title} onClose={onClose} maxHeight="two-thirds">
+      <form className="flex min-h-0 flex-col gap-4" onSubmit={save}>
         {/* A saved Meal's kind is fixed (409 kind-immutable, ADR 0006). */}
         <ToggleButtonGroup
           aria-label="Meal kind"
@@ -165,30 +169,25 @@ export function MealSheet({ day, saved, number, onClose }: MealSheetProps) {
         </ToggleButtonGroup>
 
         {draft.kind === "foods" ? (
-          <>
-            {labelAndTime}
-            <FoodsPart
-              rows={draft.rows}
-              lastFoodLocked={lastFoodLocked}
-              onChangeRow={changeRow}
-              onRemoveRow={(key) => {
-                change({ rows: draft.rows.filter((row) => row.key !== key) });
-              }}
-              onAdd={addFood}
-              onEditFood={setEditingFood}
-            />
-          </>
+          <FoodsPart
+            rows={draft.rows}
+            lastFoodLocked={lastFoodLocked}
+            onChangeRow={changeRow}
+            onRemoveRow={(key) => {
+              change({ rows: draft.rows.filter((row) => row.key !== key) });
+            }}
+            onAdd={addFood}
+            onEditFood={setEditingFood}
+          />
         ) : (
-          <>
-            <RestaurantPart
-              value={draft.restaurant}
-              onChange={(restaurant) => {
-                change({ restaurant });
-              }}
-            />
-            {labelAndTime}
-          </>
+          <RestaurantPart
+            value={draft.restaurant}
+            onChange={(restaurant) => {
+              change({ restaurant });
+            }}
+          />
         )}
+        {noteAndTime}
 
         {putMeal.error && <ProblemAlert error={putMeal.error} />}
         {deleteMeal.error && <ProblemAlert error={deleteMeal.error} />}
@@ -269,8 +268,9 @@ interface FoodsPartProps {
   onEditFood: (foodId: string) => void;
 }
 
-// The Meal's Food Entries, then the search to add one more. Picking a suggestion
-// only selects it; Add commits it to the Meal (ADR 0008).
+// The search to add a Food, then the Meal's Food Entries in a bordered list that
+// scrolls on its own. Picking a suggestion only selects it; Add commits it to the
+// Meal (ADR 0008).
 function FoodsPart({
   rows,
   lastFoodLocked,
@@ -291,15 +291,40 @@ function FoodsPart({
 
   return (
     <>
+      <div className="grid grid-cols-[2fr_1fr] items-end gap-3">
+        <CatalogComboBox
+          key={searchKey}
+          catalog={foodCatalog}
+          label="Add Food"
+          value={picked}
+          onChange={setPicked}
+        />
+        <Button
+          className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+          isDisabled={picked === null}
+          onPress={() => {
+            if (picked) {
+              add(picked);
+            }
+          }}
+        >
+          Add
+        </Button>
+      </div>
+      <RecentChips catalog={foodCatalog} onPick={add} />
       {rows.length === 0 ? (
-        <p className="text-gray-500">No Foods yet. Search below to add one.</p>
+        <p className="text-gray-500">No Foods yet. Search above to add one.</p>
       ) : (
-        <ul aria-label="Foods" className="flex flex-col gap-3">
+        // min-h-28 keeps about one row in view when the sheet is at its cap.
+        <ul
+          aria-label="Foods"
+          className="min-h-28 divide-y divide-gray-300 overflow-y-auto overscroll-contain rounded-xl border border-gray-300"
+        >
           {rows.map((row) => (
             <li
               key={row.key}
               aria-label={row.food.name}
-              className="flex flex-col gap-2 border-b border-gray-100 pb-3"
+              className="flex flex-col gap-2 px-3 py-3"
             >
               <div className="flex items-center justify-between">
                 <Button
@@ -362,28 +387,6 @@ function FoodsPart({
       {lastFoodLocked && (
         <p className="text-sm text-gray-600">{LAST_FOOD_MESSAGE}</p>
       )}
-
-      <div className="grid grid-cols-[2fr_1fr] items-end gap-3">
-        <CatalogComboBox
-          key={searchKey}
-          catalog={foodCatalog}
-          label="Add Food"
-          value={picked}
-          onChange={setPicked}
-        />
-        <Button
-          className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
-          isDisabled={picked === null}
-          onPress={() => {
-            if (picked) {
-              add(picked);
-            }
-          }}
-        >
-          Add
-        </Button>
-      </div>
-      <RecentChips catalog={foodCatalog} onPick={add} />
     </>
   );
 }

@@ -7,6 +7,10 @@ interface BottomSheetProps {
   // Small controls beside the title, e.g. a Profile sheet's Archive and Delete
   // icons. The header wraps, so they can add a full-width line under it.
   actions?: ReactNode;
+  // How tall the sheet may grow. "two-thirds" keeps the feed in view above it; a
+  // sheet that uses it lets one inner part scroll (a min-h-0 flex column down to
+  // an overflow-y-auto list) instead of growing past the cap.
+  maxHeight?: "full" | "two-thirds";
   children: ReactNode;
 }
 
@@ -20,6 +24,7 @@ export function BottomSheet({
   title,
   onClose,
   actions,
+  maxHeight = "full",
   children,
 }: BottomSheetProps) {
   return (
@@ -33,7 +38,9 @@ export function BottomSheet({
       }}
       className="fixed top-0 left-0 z-50 flex h-(--visual-viewport-height) w-full items-end justify-center bg-black/40"
     >
-      <Modal className="relative flex max-h-full w-full max-w-md flex-col rounded-t-2xl bg-white after:absolute after:inset-x-0 after:top-full after:h-screen after:bg-white">
+      <Modal
+        className={`relative flex ${maxHeight === "full" ? "max-h-full" : "max-h-2/3"} w-full max-w-md flex-col rounded-t-2xl bg-white after:absolute after:inset-x-0 after:top-full after:h-screen after:bg-white`}
+      >
         <Dialog className="flex min-h-0 flex-col gap-4 overflow-y-auto p-4 outline-none">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-3">
             <Heading
