@@ -4,8 +4,10 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { App } from "../App";
+import type { CatalogRef } from "../catalog/catalogs";
 import {
   aMeal,
+  aRestaurantMeal,
   banana,
   cafe,
   fakeMealApi,
@@ -28,12 +30,34 @@ function seedApi(...seed: Meal[]) {
   server.use(...api.handlers);
 }
 
+// For a Restaurant Catalog beyond the one `cafe`.
+function seedRestaurants(restaurants: CatalogRef[], ...seed: Meal[]) {
+  api = fakeMealApi(seed, undefined, restaurants);
+  server.use(...api.handlers);
+}
+
+const aRestaurant = (n: number, name: string): CatalogRef => ({
+  id: `0190a000-0000-7000-8000-0000000002${String(n).padStart(2, "0")}`,
+  name,
+  archived: false,
+});
+const tacos = aRestaurant(2, "Taco Stand");
+const noodles = aRestaurant(3, "Noodle Bar");
+
 beforeEach(() => {
   seedApi();
 });
 
 const sheet = () => screen.getByRole("dialog");
 const card = (name: string) => screen.findByRole("article", { name });
+const restaurantNames = () =>
+  within(within(sheet()).getByRole("list", { name: "Restaurants" }))
+    .getAllByRole("listitem")
+    .map((item) => item.getAttribute("aria-label"));
+const recentRestaurant = async (name: string) =>
+  within(
+    await within(sheet()).findByRole("group", { name: "Recent Restaurants" }),
+  ).getByRole("button", { name });
 const foodRow = (name: string) =>
   within(within(sheet()).getByRole("list", { name: "Foods" })).getByRole(
     "listitem",
@@ -61,10 +85,8 @@ async function searchAndAdd(name: string) {
 describe("the Day feed", () => {
   it("numbers the Day's Meals in time order, with label and contents", async () => {
     seedApi(
-      aMeal({
+      aRestaurantMeal([cafe], {
         id: "b",
-        kind: "restaurant",
-        restaurant: cafe,
         occurred_at: "2026-11-02T13:00:00+13:00",
       }),
       aMeal({ id: "a", label: "Breakfast" }),
@@ -139,10 +161,7 @@ describe("the Day total", () => {
   });
 
   it("marks a Restaurant Day, with the flat value and no macros", async () => {
-    seedApi(
-      aMeal({ id: "a" }),
-      aMeal({ id: "b", kind: "restaurant", restaurant: cafe }),
-    );
+    seedApi(aMeal({ id: "a" }), aRestaurantMeal([cafe], { id: "b" }));
     renderAt(PAST_URL, <MealsWindow />);
 
     const total = await dayTotal();
@@ -250,36 +269,53 @@ describe("adding a Meal", () => {
       screen.getByRole("dialog", { name: "Add Restaurant to Mon Nov 2" }),
     ).toBeInTheDocument();
     expect(
-      within(sheet()).getByRole("combobox", { name: "Restaurant" }),
+      within(sheet()).getByRole("combobox", { name: "Add Restaurant" }),
     ).toBeInTheDocument();
     expect(
       within(sheet()).queryByRole("combobox", { name: "Add Food" }),
     ).not.toBeInTheDocument();
   });
 
-  it("logs a Restaurant Meal from a recent chip", async () => {
+  it("adds three Restaurants, removes one, and saves the other two in order", async () => {
+    seedRestaurants([cafe, tacos, noodles]);
     renderAt(PAST_URL, <MealsWindow />);
     await openNewMeal("Add Restaurant");
+    const save = () => within(sheet()).getByRole("button", { name: "Save" });
+    expect(save()).toBeDisabled();
+
+    await userEvent.click(await recentRestaurant("Taco Stand"));
+    await userEvent.click(await recentRestaurant("Corner Cafe"));
+    await userEvent.type(
+      within(sheet()).getByRole("combobox", { name: "Add Restaurant" }),
+      "Noodle",
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "Noodle Bar" }),
+    );
+    await userEvent.click(
+      await within(sheet()).findByRole("button", { name: "Add" }),
+    );
+    expect(restaurantNames()).toEqual([
+      "Taco Stand",
+      "Corner Cafe",
+      "Noodle Bar",
+    ]);
+    // A Restaurant appears once per Meal (ADR 0034).
+    expect(await recentRestaurant("Taco Stand")).toBeDisabled();
 
     await userEvent.click(
-      within(
-        await within(sheet()).findByRole("group", {
-          name: "Recent Restaurants",
-        }),
-      ).getByRole("button", { name: "Corner Cafe" }),
+      within(sheet()).getByRole("button", { name: "Remove Corner Cafe" }),
     );
-    expect(
-      within(sheet()).getByRole("combobox", { name: "Restaurant" }),
-    ).toHaveValue("Corner Cafe");
-    await userEvent.click(
-      within(sheet()).getByRole("button", { name: "Save" }),
-    );
+    await userEvent.click(save());
 
-    expect(await card("Meal 1")).toHaveTextContent("Corner Cafe");
-    expect(api.puts[0]?.body).toMatchObject({
-      kind: "restaurant",
-      restaurant_id: cafe.id,
-    });
+    expect(await card("Meal 1")).toHaveTextContent("Taco Stand · Noodle Bar");
+    expect(api.puts[0]?.body).toEqual(
+      expect.objectContaining({
+        kind: "restaurant",
+        restaurant_ids: [tacos.id, noodles.id],
+      }),
+    );
+    expect(api.puts[0]?.body).not.toHaveProperty("restaurant_id");
   });
 
   it("closes the sheet from the X without saving", async () => {
@@ -315,7 +351,7 @@ describe("adding a Meal", () => {
     await openNewMeal("Add Restaurant");
     expect(
       follows(
-        within(sheet()).getByRole("combobox", { name: "Restaurant" }),
+        within(sheet()).getByRole("combobox", { name: "Add Restaurant" }),
         note(),
       ),
     ).toBe(true);
@@ -409,6 +445,66 @@ describe("editing a Meal", () => {
         "A Meal keeps at least one Food. To remove it, delete the Meal.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("shows a multi-Restaurant Meal's list in order and saves the edit under the same id", async () => {
+    const saved = aRestaurantMeal([cafe, tacos, noodles], { id: "r" });
+    seedRestaurants([cafe, tacos, noodles], saved);
+    renderAt(PAST_URL, <MealsWindow />);
+
+    await userEvent.click(
+      within(await card("Meal 1")).getByRole("button", { name: "Edit Meal 1" }),
+    );
+    expect(restaurantNames()).toEqual([
+      "Corner Cafe",
+      "Taco Stand",
+      "Noodle Bar",
+    ]);
+    await userEvent.click(
+      within(sheet()).getByRole("button", { name: "Remove Taco Stand" }),
+    );
+    await userEvent.click(
+      within(sheet()).getByRole("button", { name: "Save" }),
+    );
+
+    await waitFor(() => {
+      expect(api.puts).toHaveLength(1);
+    });
+    expect(api.puts[0]?.id).toBe(saved.id);
+    expect(api.puts[0]?.body).toMatchObject({
+      restaurant_ids: [cafe.id, noodles.id],
+    });
+  });
+
+  it("stops adding Restaurants at 10, and says why", async () => {
+    const ten = Array.from({ length: 10 }, (_, index) =>
+      aRestaurant(10 + index, `Stall ${String(index + 1)}`),
+    );
+    const eleventh = aRestaurant(20, "Stall 11");
+    // First in the Catalog, so it is one of the recent chips.
+    seedRestaurants(
+      [eleventh, ...ten],
+      aRestaurantMeal([ten[0] ?? cafe, ...ten.slice(1)]),
+    );
+    renderAt(PAST_URL, <MealsWindow />);
+    await userEvent.click(
+      within(await card("Meal 1")).getByRole("button", { name: "Edit Meal 1" }),
+    );
+
+    expect(restaurantNames()).toHaveLength(10);
+    expect(await recentRestaurant("Stall 11")).toBeDisabled();
+    expect(
+      within(sheet()).getByText(
+        "A Meal holds at most 10 Restaurants. Remove one to add another.",
+      ),
+    ).toBeInTheDocument();
+
+    await userEvent.click(
+      within(sheet()).getByRole("button", { name: "Remove Stall 3" }),
+    );
+    await userEvent.click(await recentRestaurant("Stall 11"));
+    expect(restaurantNames().at(-1)).toBe("Stall 11");
+    expect(restaurantNames()).toHaveLength(10);
   });
 
   it("deletes the Meal after a confirm", async () => {

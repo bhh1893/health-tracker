@@ -13,6 +13,9 @@ interface RecentChipsProps {
   // Pass the same value as the CatalogComboBox beside it (true when it cannot
   // create), so both read one cache entry.
   includeArchived?: boolean;
+  // A chip for an item that cannot be picked now, e.g. a Restaurant already in the
+  // Meal, shows but cannot be tapped.
+  isDisabled?: (item: CatalogItem) => boolean;
 }
 
 // The most recently used items, one tap each. An empty q is the API's "recent"
@@ -22,6 +25,7 @@ export function RecentChips({
   onPick,
   title,
   includeArchived = false,
+  isDisabled,
 }: RecentChipsProps) {
   const recent = useSuggestions(catalog, "", includeArchived);
   const items = (recent.data ?? []).slice(0, RECENT_CHIPS);
@@ -41,7 +45,8 @@ export function RecentChips({
         {items.map((item) => (
           <Button
             key={item.id}
-            className="shrink-0 rounded-full border border-gray-300 px-3 py-1 text-base whitespace-nowrap data-pressed:bg-gray-100"
+            className="shrink-0 rounded-full border border-gray-300 px-3 py-1 text-base whitespace-nowrap data-disabled:text-gray-400 data-pressed:bg-gray-100"
+            isDisabled={isDisabled?.(item) ?? false}
             onPress={() => {
               onPick(item);
             }}

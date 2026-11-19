@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { components } from "../api/schema";
 import { addDays, toDay } from "../lib/day";
-import { aMeal, banana, cafe, oats } from "../test-handlers";
+import { aMeal, aRestaurantMeal, banana, cafe, oats } from "../test-handlers";
 import { renderAt } from "../test-render";
 import { server } from "../test-server";
 import { formatDayTitle } from "./dayTitle";
@@ -33,22 +33,14 @@ const foodsDay = (day: string): MealDay => ({
 
 const restaurantDay = (day: string): MealDay => ({
   day,
-  meals: [
-    aMeal({
-      id: `${day}-1`,
-      day,
-      kind: "restaurant",
-      restaurant: cafe,
-    }),
-  ],
+  meals: [aRestaurantMeal([cafe], { id: `${day}-1`, day })],
 });
 
 // The Food and Restaurant names on a Day, which is what `q` matches.
 const names = ({ meals }: MealDay) =>
   meals.flatMap((meal) =>
     meal.kind === "restaurant"
-      ? // eslint-disable-next-line @typescript-eslint/no-deprecated -- the move to `restaurants` is #273 (ADR 0034)
-        [meal.restaurant.name]
+      ? meal.restaurants.map(({ name }) => name)
       : meal.food_entries.map((entry) => entry.food.name),
   );
 
@@ -276,9 +268,7 @@ const chickenDay = (day: string): MealDay => ({
 
 const shackDay = (day: string): MealDay => ({
   day,
-  meals: [
-    aMeal({ id: `${day}-1`, day, kind: "restaurant", restaurant: shack }),
-  ],
+  meals: [aRestaurantMeal([cafe, shack], { id: `${day}-1`, day })],
 });
 
 const filter = () => screen.getByRole("searchbox", { name: "Filter Days" });
@@ -345,6 +335,10 @@ describe("the Meals filter", () => {
         name: `${formatDayTitle(daysAgo(3))}, ate out`,
       }),
     );
+    // Every Restaurant of the Meal, in order, and the match is in the second.
+    expect(
+      within(recentDays()).getAllByRole("listitem").at(-1)?.textContent,
+    ).toBe("Corner Cafe · BBQ Chicken Shack");
     expect(marks()).toEqual(["Chicken", "Chicken"]);
   });
 
