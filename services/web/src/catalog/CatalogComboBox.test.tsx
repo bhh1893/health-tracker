@@ -79,6 +79,44 @@ describe("CatalogComboBox", () => {
     expect(api.queries.filter((q) => q === "ben")).toHaveLength(1);
   });
 
+  it("says nothing while a search runs", async () => {
+    server.use(
+      http.get("*/api/v1/exercises", async () => {
+        await delay("infinite");
+        return HttpResponse.json([]);
+      }),
+    );
+    renderAt("/", <Harness />);
+
+    await userEvent.type(input(), "zz");
+
+    expect(screen.queryByText(/Searching/)).not.toBeInTheDocument();
+    expect(screen.queryByText("No match")).not.toBeInTheDocument();
+  });
+
+  it("has no Clear button while empty, and no menu toggle", async () => {
+    renderAt("/", <Harness />);
+
+    await userEvent.click(input());
+
+    expect(
+      screen.queryByRole("button", { name: "Clear" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Show suggestions" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("clears the text and un-picks the item with the ×", async () => {
+    renderAt("/", <Harness initial={squat} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+    expect(input()).toHaveValue("");
+    expect(onChange).toHaveBeenLastCalledWith(null);
+    expect(screen.getByText("Picked: nothing")).toBeInTheDocument();
+  });
+
   it("keeps the server's fuzzy matches the text does not contain", async () => {
     server.use(
       http.get("*/api/v1/exercises", () => HttpResponse.json([bench])),
