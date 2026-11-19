@@ -80,3 +80,7 @@ Changed 2026-11-19. The Meal sheet opens at its full size, two thirds of the scr
 ## Amendment: Label on Restaurant Meals only
 
 Changed 2026-11-19. The Food Meal sheet drops its Label field; the Restaurant Meal sheet keeps it. A new Food Meal saves with no Label and shows as **Meal**. Editing a Food Meal saved earlier with a Label keeps that Label: the sheet sends the whole Meal (ADR 0006), and the hidden field's value rides along unchanged, so nothing is cleared without the user asking. The API and data model are unchanged; `label` stays optional free text for both kinds. The cost: several Food Meals on one Day all read **Meal** and are told apart only by their order and Foods.
+
+## Amendment: Lunch and Dinner presets only
+
+Changed 2026-11-19. The Label select shrinks to None, Lunch, Dinner, Other. Fewer options means fewer rows to scan in the phone's picker. Nothing is lost: any Label can still be typed under Other, and a saved Breakfast or Snack reopens there, as any non-preset Label does.

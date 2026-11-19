@@ -181,7 +181,7 @@ export function formatAmount({
 
 // One-tap Labels for the Meal sheet. Only a shortcut: the Label stays free text and
 // the API accepts any.
-export const LABEL_PRESETS = ["Breakfast", "Lunch", "Dinner", "Snack"];
+export const LABEL_PRESETS = ["Lunch", "Dinner"];
 
 // A Meal is called by its Label, or plain "Meal" without one. Two unlabelled Meals
 // share the name; the feed's order tells them apart.
