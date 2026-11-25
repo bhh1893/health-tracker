@@ -5,9 +5,9 @@ import { describe, expect, it } from "vitest";
 import { addDays } from "../lib/day";
 import { TrendChart, type TrendPoint } from "./TrendChart";
 
-const ORANGE = "#eb6834";
-const BLUE = "#2a78d6";
-const WHITE = "#ffffff";
+const ACCENT = "var(--color-chart-restaurant)";
+const LINE = "var(--color-chart-food)";
+const SURFACE = "var(--color-card)";
 
 const first = "2026-11-01";
 const day = (n: number) => addDays(first, n);
@@ -18,6 +18,7 @@ function drawChart(points: TrendPoint[]) {
   const { container } = render(
     <TrendChart
       title="Calories per Day"
+      measures="food"
       from={points[0]?.day ?? first}
       to={points.at(-1)?.day ?? first}
       fromZero
@@ -50,7 +51,7 @@ describe("an accent point", () => {
     );
   });
 
-  it("is orange with a white ring, and every other point keeps its style", () => {
+  it("is in the Restaurant color with a card-colored ring, and every other point keeps its style", () => {
     const { dots } = drawChart([
       { day: day(0), value: 2000 },
       { day: day(1), value: 5000, accent: true },
@@ -62,9 +63,9 @@ describe("an accent point", () => {
       dot?.getAttribute("stroke"),
     ];
     expect(dots.map(style)).toEqual([
-      [BLUE, WHITE],
-      [ORANGE, WHITE],
-      [WHITE, BLUE],
+      [LINE, SURFACE],
+      [ACCENT, SURFACE],
+      [SURFACE, LINE],
     ]);
   });
 
@@ -76,7 +77,7 @@ describe("an accent point", () => {
     }));
     const { dots } = drawChart(points);
 
-    expect(dots.map((dot) => dot.getAttribute("fill"))).toEqual([ORANGE]);
+    expect(dots.map((dot) => dot.getAttribute("fill"))).toEqual([ACCENT]);
   });
 
   it("is named in the legend, which leaves out kinds the chart lacks", () => {

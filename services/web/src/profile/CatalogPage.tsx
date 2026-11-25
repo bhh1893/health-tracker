@@ -20,8 +20,8 @@ import { ProblemAlert } from "../components/ProblemAlert";
 import { FoodSheet } from "../foods/FoodSheet";
 
 const chipClass =
-  "rounded-full border border-gray-300 px-3 py-1 text-base data-selected:border-teal-700 data-selected:bg-teal-700 data-selected:text-white";
-const tagClass = "rounded-full bg-gray-100 px-2 text-sm text-gray-600";
+  "rounded-full border border-field px-3 py-1 text-base data-selected:border-action data-selected:bg-action data-selected:text-on-fill";
+const tagClass = "rounded-full bg-inset px-2 text-sm text-muted";
 
 interface CatalogPageProps {
   catalog: Catalog;
@@ -62,8 +62,10 @@ export function CatalogPage({ catalog }: CatalogPageProps) {
           (no nested scroll box). It owns the page's top padding, so nothing shows
           above it once stuck, and an opaque background hides the rows passing under.
           z-10 stays under the tab bar (z-40) and sheets (z-50). */}
-      <div className="sticky top-0 z-10 flex flex-col gap-4 border-b border-gray-200 bg-white pt-4 pb-4">
-        <h1 className="text-center text-xl font-semibold">{catalog.plural}</h1>
+      <div className="sticky top-0 z-10 flex flex-col gap-4 border-b border-edge bg-page pt-4 pb-4">
+        <h1 className="text-center text-xl font-semibold text-action">
+          {catalog.plural}
+        </h1>
 
         <input
           type="search"
@@ -110,7 +112,7 @@ export function CatalogPage({ catalog }: CatalogPageProps) {
         />
       ) : (
         !list.error && (
-          <p role="status" className="text-gray-500">
+          <p role="status" className="text-faint">
             Loading...
           </p>
         )
@@ -119,7 +121,7 @@ export function CatalogPage({ catalog }: CatalogPageProps) {
       {/* Sticky just above the bar, and last in the page, so when scrolled to the end
           it rests below the last item instead of covering it. */}
       <Button
-        className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto w-full rounded-2xl bg-teal-700 p-4 text-lg font-semibold text-white data-pressed:bg-teal-900"
+        className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto w-full rounded-2xl bg-action p-4 text-lg font-semibold text-on-fill data-pressed:bg-action-pressed"
         onPress={() => {
           setOpen({ id: null });
         }}
@@ -164,13 +166,13 @@ function Results({ catalog, all, filters, onOpen }: ResultsProps) {
     <>
       {/* The cap is never silent (ADR 0032): a full answer may have left some out. */}
       {all.length === LIST_LIMIT && (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted">
           Showing the first {LIST_LIMIT.toLocaleString("en-US")}{" "}
           {catalog.plural}.
         </p>
       )}
       {items.length === 0 ? (
-        <p className="text-gray-500">
+        <p className="text-faint">
           {all.length === 0
             ? `No ${catalog.plural} yet.`
             : `No ${catalog.plural} match.`}
@@ -178,12 +180,12 @@ function Results({ catalog, all, filters, onOpen }: ResultsProps) {
       ) : (
         <ul
           aria-label={catalog.plural}
-          className="flex flex-col divide-y divide-gray-200"
+          className="flex flex-col divide-y divide-edge"
         >
           {items.map((item) => (
             <li key={item.id}>
               <Button
-                className="flex w-full flex-col items-start gap-1 py-3 text-left data-pressed:bg-gray-50"
+                className="flex w-full flex-col items-start gap-1 py-3 text-left data-pressed:bg-inset"
                 onPress={() => {
                   onOpen(item);
                 }}
@@ -209,13 +211,13 @@ function NutritionLine({ item }: { item: CatalogItem }) {
   const { nutrition } = item;
   if (nutrition == null) {
     return (
-      <span className="rounded-full bg-amber-100 px-2 text-sm text-amber-900">
+      <span className="rounded-full bg-warn-soft px-2 text-sm text-warn-ink">
         No nutrition yet
       </span>
     );
   }
   return (
-    <span className="text-sm text-gray-600">
+    <span className="text-sm text-muted">
       {String(nutrition.kcal)} cal per {grams(nutrition.basis_g)} · P{" "}
       {grams(nutrition.protein_g)} · C {grams(nutrition.carbs_g)} · F{" "}
       {grams(nutrition.fat_g)}

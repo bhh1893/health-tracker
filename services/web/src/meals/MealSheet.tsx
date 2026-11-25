@@ -169,7 +169,7 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
       actions={
         <Button
           aria-label="Close"
-          className="-m-2 rounded-lg p-2 text-gray-500 data-pressed:bg-gray-100"
+          className="-m-2 rounded-lg p-2 text-faint data-pressed:bg-inset"
           onPress={onClose}
         >
           <svg
@@ -215,11 +215,11 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
         {putMeal.error && <ProblemAlert error={putMeal.error} />}
         {deleteMeal.error && <ProblemAlert error={deleteMeal.error} />}
 
-        <div className="sticky bottom-0 flex flex-col gap-3 bg-white py-2">
+        <div className="sticky bottom-0 flex flex-col gap-3 bg-card py-2">
           {confirmingDelete && saved !== null ? (
             <div className="grid grid-cols-2 gap-3">
               <Button
-                className="rounded-xl p-3 text-base text-gray-600"
+                className="rounded-xl p-3 text-base text-muted"
                 onPress={() => {
                   setConfirmingDelete(false);
                 }}
@@ -227,7 +227,7 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
                 Keep
               </Button>
               <Button
-                className="rounded-xl bg-red-700 p-3 text-base font-semibold text-white"
+                className="rounded-xl bg-danger p-3 text-base font-semibold text-on-fill"
                 onPress={() => {
                   deleteMeal.mutate(saved, { onSuccess: onClose });
                 }}
@@ -239,14 +239,14 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
             <div className="grid grid-cols-2 gap-3">
               {saved === null ? (
                 <Button
-                  className="rounded-xl p-3 text-base text-gray-600"
+                  className="rounded-xl p-3 text-base text-muted"
                   onPress={onClose}
                 >
                   Cancel
                 </Button>
               ) : (
                 <Button
-                  className="rounded-xl p-3 text-base text-red-700"
+                  className="rounded-xl p-3 text-base text-danger"
                   onPress={() => {
                     setConfirmingDelete(true);
                   }}
@@ -256,7 +256,7 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
               )}
               <Button
                 type="submit"
-                className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+                className={`rounded-xl p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled ${draft.kind === "foods" ? "bg-food" : "bg-restaurant"}`}
                 isDisabled={meal === null || putMeal.isPending}
               >
                 Save
@@ -309,7 +309,7 @@ function FoodsPart({
           onChange={setPicked}
         />
         <Button
-          className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+          className="rounded-xl bg-food p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled"
           isDisabled={picked === null}
           onPress={() => {
             if (picked) {
@@ -324,11 +324,11 @@ function FoodsPart({
       {/* min-h-28 keeps about one row in view when the keyboard shrinks the sheet. */}
       <EntryBox className="min-h-28">
         {rows.length === 0 ? (
-          <p className="p-3 text-gray-500">
+          <p className="p-3 text-faint">
             No Foods yet. Search above to add one.
           </p>
         ) : (
-          <ul aria-label="Foods" className="divide-y divide-gray-300">
+          <ul aria-label="Foods" className="divide-y divide-field">
             {rows.map((row) => (
               <li
                 key={row.key}
@@ -339,7 +339,7 @@ function FoodsPart({
                   <span className="py-2 font-medium">{row.food.name}</span>
                   <Button
                     aria-label={`Remove ${row.food.name}`}
-                    className="rounded-lg p-2 text-base text-teal-700 data-disabled:text-gray-300"
+                    className="rounded-lg p-2 text-base text-action data-disabled:text-disabled"
                     isDisabled={lastFoodLocked}
                     onPress={() => {
                       onRemoveRow(row.key);
@@ -387,7 +387,7 @@ function FoodsPart({
         )}
       </EntryBox>
       {lastFoodLocked && (
-        <p className="text-sm text-gray-600">{LAST_FOOD_MESSAGE}</p>
+        <p className="text-sm text-muted">{LAST_FOOD_MESSAGE}</p>
       )}
     </>
   );
@@ -427,7 +427,7 @@ function RestaurantPart({ restaurants, onAdd, onRemove }: RestaurantPartProps) {
           onChange={setPicked}
         />
         <Button
-          className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+          className="rounded-xl bg-restaurant p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled"
           isDisabled={picked === null || !canAdd(picked)}
           onPress={() => {
             if (picked) {
@@ -445,24 +445,24 @@ function RestaurantPart({ restaurants, onAdd, onRemove }: RestaurantPartProps) {
       />
       <EntryBox className="min-h-14">
         {restaurants.length === 0 ? (
-          <p className="p-3 text-gray-500">
+          <p className="p-3 text-faint">
             No Restaurants yet. Search above to add one.
           </p>
         ) : (
-          <ul aria-label="Restaurants" className="divide-y divide-gray-300">
+          <ul aria-label="Restaurants" className="divide-y divide-field">
             {restaurants.map((restaurant) => (
               <li
                 key={restaurant.id}
                 aria-label={restaurant.name}
                 className="flex items-center justify-between px-3 py-1"
               >
-                <span className="flex items-center gap-2 py-2 font-medium text-orange-800">
+                <span className="flex items-center gap-2 py-2 font-medium text-restaurant-ink">
                   <ForkKnifeIcon />
                   {restaurant.name}
                 </span>
                 <Button
                   aria-label={`Remove ${restaurant.name}`}
-                  className="rounded-lg p-2 text-base text-teal-700"
+                  className="rounded-lg p-2 text-base text-action"
                   onPress={() => {
                     onRemove(restaurant.id);
                   }}
@@ -474,7 +474,7 @@ function RestaurantPart({ restaurants, onAdd, onRemove }: RestaurantPartProps) {
           </ul>
         )}
       </EntryBox>
-      {full && <p className="text-sm text-gray-600">{FULL_MESSAGE}</p>}
+      {full && <p className="text-sm text-muted">{FULL_MESSAGE}</p>}
     </>
   );
 }
@@ -492,7 +492,7 @@ function EntryBox({
 }) {
   return (
     <div
-      className={`${className} flex-1 overflow-y-auto overscroll-contain rounded-xl border border-gray-300`}
+      className={`${className} flex-1 overflow-y-auto overscroll-contain rounded-xl border border-field`}
     >
       {children}
     </div>

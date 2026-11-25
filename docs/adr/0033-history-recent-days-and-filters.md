@@ -6,6 +6,8 @@ status: accepted
 
 History becomes one screen per kind that answers both "what happened?" and "how is it trending?". A Meals | Exercise toggle and a Range sit on top. Under them is the kind's search field, then a collapsed **Dashboard** section, then **Recent Days**: every Day in the Range with something logged, one collapsible row each. On Meals the field is an optional filter, matching Food and Restaurant names. On Exercise, picking an Exercise is required, and everything below it is about that Exercise. The Search screen goes away. Decided in [History revamp: Meals filter and required Exercise picker replace Search](https://github.com/bhh1893/health-tracker/issues/243), on the map [Health Tracker v1: bottom navigation and Profile](https://github.com/bhh1893/health-tracker/issues/222), from mockups H2, H2b, H3a and H3. It replaces ADR 0031's History layout and amends ADR 0006, ADR 0013 and ADR 0024.
 
+**Amended by ADR 0035:** the Ate out pill and the Restaurant Day's point are pink, not orange.
+
 ## Shape
 
 ### One screen, one URL

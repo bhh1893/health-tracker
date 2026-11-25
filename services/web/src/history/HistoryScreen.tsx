@@ -95,7 +95,7 @@ export function HistoryScreen() {
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-4">
       {/* No Back link: History is the tab's root, and the bar leaves it. */}
-      <h1 className="text-center text-xl font-semibold">History</h1>
+      <h1 className="text-center text-xl font-semibold text-action">History</h1>
 
       <Segments
         label="Kind"
@@ -150,7 +150,7 @@ export function HistoryScreen() {
                 includeArchived
                 onPick={pickExercise}
               />
-              <p className="mt-6 text-center text-gray-600">
+              <p className="mt-6 text-center text-muted">
                 Pick an Exercise to see its Sessions.
               </p>
             </>

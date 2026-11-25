@@ -240,7 +240,7 @@ describe("the Meals Dashboard", () => {
     });
     renderAt("/history?dash=open", <HistoryScreen />);
 
-    // The chart's legend names the orange point and the ring.
+    // The chart's legend names the ate-out point and the ring.
     await viewSwitch("Calories per Day");
     const legend = within(dashboardPanel()).getAllByRole("list")[0];
     expect(legend).toHaveTextContent(/^ate outincomplete$/);

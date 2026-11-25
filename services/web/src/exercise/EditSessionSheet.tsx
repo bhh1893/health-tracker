@@ -101,21 +101,19 @@ export function EditSessionSheet({
               key={id}
               aria-label={name}
               disabled={saving}
-              className="flex flex-col gap-2 border-b border-gray-100 pb-4"
+              className="flex flex-col gap-2 border-b border-edge pb-4"
             >
               <div className="flex items-center justify-between">
-                <span
-                  className={row.removed ? "text-gray-400 line-through" : ""}
-                >
+                <span className={row.removed ? "text-faint line-through" : ""}>
                   {name}
                   {row.removed && ` ${formatSet(row.saved)}`}
                 </span>
                 {row.failed && (
-                  <span className="text-sm text-red-900">Not saved</span>
+                  <span className="text-sm text-danger">Not saved</span>
                 )}
                 <Button
                   aria-label={`${row.removed ? "Undo" : "Delete"} ${name}`}
-                  className="rounded-lg p-2 text-base text-teal-700"
+                  className="rounded-lg p-2 text-base text-action"
                   onPress={() => {
                     updateRow(id, { removed: !row.removed });
                   }}
@@ -173,16 +171,16 @@ export function EditSessionSheet({
           );
         })}
         {failure !== null && <ProblemAlert error={failure} />}
-        <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white py-2">
+        <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-card py-2">
           <Button
-            className="rounded-xl p-3 text-base text-gray-600"
+            className="rounded-xl p-3 text-base text-muted"
             onPress={onClose}
           >
             Cancel
           </Button>
           <Button
             type="submit"
-            className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+            className="rounded-xl bg-action p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled"
             isDisabled={saving || !rows.every(rowIsValid)}
           >
             Save

@@ -17,14 +17,14 @@ export function MealCard({ meal, onEdit }: MealCardProps) {
   return (
     <article
       aria-label={name}
-      className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+      className="rounded-2xl border border-edge bg-card p-4 shadow-sm"
     >
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-lg font-semibold">{name}</h3>
         {/* -m-2 with p-2 gives a 36px tap target without pushing the title down. */}
         <Button
           aria-label={`Edit ${name}`}
-          className="-m-2 rounded-lg p-2 text-teal-700 data-pressed:bg-teal-50"
+          className="-m-2 rounded-lg p-2 text-action data-pressed:bg-action-soft"
           onPress={onEdit}
         >
           <PencilIcon />

@@ -46,9 +46,9 @@ export function ExerciseWindow() {
       <DayPager />
       {entries.error && <ProblemAlert error={entries.error} />}
       {addSet.error && <ProblemAlert error={addSet.error} />}
-      {entries.isPending && <p className="text-gray-500">Loading...</p>}
+      {entries.isPending && <p className="text-faint">Loading...</p>}
       {entries.isSuccess && sessions.length === 0 && (
-        <p className="text-gray-500">No Sets on this Day.</p>
+        <p className="text-faint">No Sets on this Day.</p>
       )}
       {sessions.map((session) => (
         <SessionCard
@@ -70,7 +70,7 @@ export function ExerciseWindow() {
       {/* Sticky just above the bar, and last in the page, so when scrolled to the end
           it rests below the last card instead of covering it. */}
       <Button
-        className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto w-full rounded-2xl bg-teal-700 p-4 text-lg font-semibold text-white"
+        className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto w-full rounded-2xl bg-action p-4 text-lg font-semibold text-on-fill"
         onPress={() => {
           setSheet({ kind: "add" });
         }}

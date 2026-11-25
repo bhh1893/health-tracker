@@ -10,7 +10,7 @@ interface RestaurantLineProps {
   className?: string;
 }
 
-// A Restaurant Meal's Restaurants in orange with the fork and knife, in the order
+// A Restaurant Meal's Restaurants in pink with the fork and knife, in the order
 // they were added, wrapping onto more lines as needed (ADR 0034). The names are one
 // run of text, so a long list wraps like a sentence instead of overflowing.
 export function RestaurantLine({
@@ -19,7 +19,7 @@ export function RestaurantLine({
   className = "",
 }: RestaurantLineProps) {
   return (
-    <li className={`flex items-start gap-2 text-orange-800 ${className}`}>
+    <li className={`flex items-start gap-2 text-restaurant-ink ${className}`}>
       {/* As tall as one line of text, so the icon sits beside the first line. */}
       <span className="flex h-6 items-center">
         <ForkKnifeIcon />

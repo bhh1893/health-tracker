@@ -690,3 +690,7 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Join table**: a table whose rows each link one row of a table to one row of another, e.g. `meal_restaurants` linking a Meal to each of its Restaurants; how a relational database stores "one Meal, many Restaurants".
 - **Deprecated field**: an API field still served and accepted but marked (OpenAPI `deprecated: true`) as on its way out, so new clients stop using it while old ones keep working until the next major version.
 - **Backfill**: a migration step that fills a new table or column from existing data, e.g. copying every `meals.restaurant_id` into `meal_restaurants`, so new code finds old rows where it now looks.
+- **Design token**: a design value (a color, a spacing) given a name for its role, e.g. `--color-restaurant`; components use the name, so a redesign changes the value in one place.
+- **CSS variable (custom property)**: a value named with `--` in CSS and read with `var(--name)`; the browser resolves it at run time, so even an SVG attribute can use it.
+- **`@theme` (Tailwind)**: the CSS block where Tailwind reads tokens and generates classes from them: `--color-food` gives `bg-food`, `text-food` and `border-food`.
+- **Contrast ratio (WCAG AA)**: how far apart two colors are in lightness, from 1:1 to 21:1; the AA accessibility standard asks 4.5:1 for normal text and 3:1 for large text and graphics.

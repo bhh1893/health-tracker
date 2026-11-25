@@ -56,7 +56,7 @@ function matchCount(loaded: number, more: boolean, q: string) {
   return `${String(loaded)}${more ? "+" : ""} ${days} with a Food or Restaurant matching "${q}"`;
 }
 
-// Each Food with its amount, or on a Restaurant Day, its Restaurants in orange.
+// Each Food with its amount, or on a Restaurant Day, its Restaurants in pink.
 // Only names are marked: they are what the filter matches.
 function MealList({ day, q }: { day: MealDay; q: string }) {
   return (
@@ -80,7 +80,7 @@ function MealList({ day, q }: { day: MealDay; q: string }) {
               <span>
                 <Highlight text={entry.food.name} q={q} />
               </span>
-              <span className="whitespace-nowrap text-gray-600">
+              <span className="whitespace-nowrap text-muted">
                 {formatAmount(entry)}
               </span>
             </li>

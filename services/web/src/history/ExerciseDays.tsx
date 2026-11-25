@@ -32,7 +32,7 @@ function SetList({ session }: { session: ExerciseSession }) {
       {session.sets.map((set) => (
         <li key={set.number} className="flex justify-between gap-3 py-1.5">
           <span>Set {set.number}</span>
-          <span className="whitespace-nowrap text-gray-600">
+          <span className="whitespace-nowrap text-muted">
             {formatReps(set.reps)} · {formatWeight(set.weight_lb)}
           </span>
         </li>

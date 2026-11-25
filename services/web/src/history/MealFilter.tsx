@@ -50,12 +50,12 @@ export function MealFilter({ value, onCommit }: MealFilterProps) {
       }}
       className="flex flex-col gap-1"
     >
-      <Label className="text-sm font-medium text-gray-600">Filter Days</Label>
-      <div className="flex items-center rounded-xl border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-teal-600">
+      <Label className="text-sm font-medium text-muted">Filter Days</Label>
+      <div className="flex items-center rounded-xl border border-field bg-card focus-within:ring-2 focus-within:ring-action">
         <svg
           aria-hidden="true"
           viewBox="0 0 24 24"
-          className="ml-3 size-5 shrink-0 text-gray-500"
+          className="ml-3 size-5 shrink-0 text-faint"
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -75,7 +75,7 @@ export function MealFilter({ value, onCommit }: MealFilterProps) {
           // its press to empty the field and call onClear.
           <Button
             aria-label="Clear"
-            className="flex size-11 shrink-0 items-center justify-center text-gray-500"
+            className="flex size-11 shrink-0 items-center justify-center text-faint"
           >
             <ClearIcon />
           </Button>

@@ -1,5 +1,65 @@
 @import "tailwindcss";
 
+/* The color scheme (ADR 0035), each color named for its role rather than its hue, so
+   a new palette changes this block and no component.
+
+   Green is Food, pink is Restaurant, brown is everything else. Red means Delete and
+   errors only, so pink never warns. "-soft" is a tint to sit behind text, "-ink" a
+   text color.
+
+   @theme turns each variable into Tailwind classes: --color-food gives bg-food,
+   text-food and border-food. "initial" removes Tailwind's own palette, so a class
+   such as bg-teal-700 no longer exists and cannot bypass the scheme. "static" emits
+   every variable, including those the chart reads only as var(). */
+@theme static {
+  --color-*: initial;
+
+  /* Cream white: what things sit on. */
+  --color-page: #faf5ea;
+  --color-card: #fffdf8;
+  --color-inset: #efe6d6; /* a switch's track, a stat tile, a pressed row */
+  --color-edge: #e2d4be; /* a hairline between or around things */
+  --color-field: #cbb798; /* an input's border, stronger than an edge */
+  --color-disabled: #cbb798;
+
+  /* Brown: text, and every control that is not about Food or Restaurants. */
+  --color-ink: #3e2a1e;
+  --color-muted: #6b5344;
+  --color-faint: #705949;
+  --color-action: #6b4530;
+  --color-action-pressed: #4a2e20;
+  --color-action-soft: #eadccb;
+  --color-on-fill: #ffffff; /* text on a filled button */
+
+  /* Green: Food. */
+  --color-food: #3f6b3a;
+  --color-food-soft: #e3edd8;
+
+  /* Pink: Restaurant. */
+  --color-restaurant: #b83a66;
+  --color-restaurant-soft: #fadce5;
+  --color-restaurant-ink: #a9325b;
+
+  --color-warn-soft: #ebd9b8;
+  --color-warn-ink: #633f1e;
+  --color-highlight: #f3e2bf;
+  --color-danger: #8f1d14;
+  --color-danger-soft: #f9e3dc;
+
+  /* Chart marks. The line and the point also differ in lightness, since hue alone
+     does not separate green from pink for everyone. */
+  --color-chart-food: #2f5530;
+  --color-chart-restaurant: #d9668a;
+  --color-chart-exercise: #6b4530;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-page);
+    color: var(--color-ink);
+  }
+}
+
 /* The page scrolls but never zooms: no pinch, and two quick taps on a repeat button
    stay two taps instead of a double-tap zoom. iOS ignores user-scalable=no, so this
    is the only switch that works there (ADR 0008). */

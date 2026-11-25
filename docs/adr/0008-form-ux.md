@@ -12,6 +12,8 @@ status: accepted
 
 **Amended by ADR 0034:** Restaurant mode builds an ordered list of one to ten Restaurants, the same way Foods are added.
 
+**Amended by ADR 0035:** a Restaurant's name is pink, not orange.
+
 ## Shape
 
 - **Windows:** a segmented control switches Exercise and Meals. Both show the Day being viewed (today in v1). Restaurant is a mode inside the Meal sheet, not a third window: a Restaurant Meal is still a Meal.
