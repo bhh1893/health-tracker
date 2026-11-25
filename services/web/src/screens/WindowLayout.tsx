@@ -17,7 +17,9 @@ export function WindowLayout() {
     <div className="mx-auto flex min-h-[calc(100dvh-var(--tab-bar-footprint))] max-w-md flex-col gap-4 px-4 pt-4 pb-(--tab-bar-gap)">
       <header>
         <h1 className="text-center text-xl font-semibold text-action">
-          Nibble Jiggle
+          Nibble{" "}
+          {/* Decoration, so the empty alt keeps the heading's name "Nibble Jiggle". */}
+          <img src="/favicon.svg" alt="" className="inline size-8" /> Jiggle
         </h1>
       </header>
       <nav aria-label="Windows" className="flex gap-1 rounded-xl bg-inset p-1">

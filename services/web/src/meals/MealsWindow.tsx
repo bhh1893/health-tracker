@@ -14,7 +14,7 @@ import { useDayMeals } from "./queries";
 // Null sheet: closed. `saved` null: adding a new Meal of `kind`.
 type Sheet = { saved: Meal } | { saved: null; kind: Meal["kind"] } | null;
 
-const addClass = "rounded-2xl p-4 text-lg font-semibold text-on-fill";
+const addClass = "rounded-full p-4 text-lg font-semibold text-on-fill";
 
 export function MealsWindow() {
   const { day } = useViewedDay();
