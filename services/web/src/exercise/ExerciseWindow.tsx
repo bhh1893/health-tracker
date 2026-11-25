@@ -70,7 +70,7 @@ export function ExerciseWindow() {
       {/* Sticky just above the bar, and last in the page, so when scrolled to the end
           it rests below the last card instead of covering it. */}
       <Button
-        className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto w-full rounded-2xl bg-action p-4 text-lg font-semibold text-on-fill"
+        className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto w-full rounded-full bg-action p-4 text-lg font-semibold text-on-fill"
         onPress={() => {
           setSheet({ kind: "add" });
         }}

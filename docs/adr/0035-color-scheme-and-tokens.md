@@ -22,7 +22,7 @@ status: accepted
 - **Named for the role, not the hue:** `bg-restaurant`, not `bg-pink`. A new palette changes one block in `index.css` and no component.
 - **Tailwind's own palette is removed** (`--color-*: initial`), so a class such as `bg-teal-700` produces nothing and cannot bypass the scheme unnoticed.
 - **The chart reads the same tokens** as CSS variables. A chart says what it measures (`food` or `exercise`), and that picks its line color.
-- **Two copies stay outside:** `index.html`'s `theme-color` and the web manifest's colors. The browser reads both before any CSS, so they repeat the brown and the cream by hand.
+- **Three copies stay outside:** `index.html`'s `theme-color` and the web manifest's colors. The browser reads both before any CSS, so they repeat the brown and the cream by hand. The icon (`favicon.svg` and the PNGs rendered from it) repeats the Food green, on the Restaurant badge's light pink, because an SVG loaded as an image cannot read the page's CSS variables. It is a logo, so there the two colors carry no meaning (amended 2026-11-25).
 
 ### Contrast
 
