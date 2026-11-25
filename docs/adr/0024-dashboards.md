@@ -14,6 +14,8 @@ Proposed, not accepted: it was written during the build, with the owner away, an
 
 **Amended by ADR 0033:** the dashboard moves into a collapsed Dashboard section above Recent Days, opened on demand; History's default tab becomes Meals. A Restaurant Day becomes an orange point on the calories line, with no legend, instead of a diamond off it.
 
+**Amended by ADR 0035:** the chart's blue and orange become green (brown for Exercise) and pink, read from the theme's tokens.
+
 ## Shape
 
 ### The screen

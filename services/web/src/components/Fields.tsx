@@ -40,12 +40,12 @@ function Field({
         "aria-describedby": describedBy === "" ? undefined : describedBy,
       })}
       {hint && (
-        <span id={hintId} className="text-sm font-normal text-gray-500">
+        <span id={hintId} className="text-sm font-normal text-faint">
           {hint}
         </span>
       )}
       {error && (
-        <span id={errorId} className="text-sm font-normal text-red-800">
+        <span id={errorId} className="text-sm font-normal text-danger">
           {error}
         </span>
       )}

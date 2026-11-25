@@ -18,7 +18,7 @@ export function Highlight({ text, q }: { text: string; q: string }) {
   return text.split(pattern).map((part, index) =>
     index % 2 === 1 ? (
       // The pieces of one name never reorder, so the index is a stable key.
-      <mark key={index} className="rounded-sm bg-yellow-200 text-inherit">
+      <mark key={index} className="rounded-sm bg-highlight text-inherit">
         {part}
       </mark>
     ) : (

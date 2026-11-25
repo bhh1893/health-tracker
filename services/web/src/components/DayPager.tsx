@@ -5,7 +5,7 @@ import { addDays, formatDay } from "../lib/day";
 import { useViewedDay } from "../lib/useViewedDay";
 
 const stepClass =
-  "rounded-lg px-4 py-2 text-2xl text-teal-700 data-disabled:text-gray-300";
+  "rounded-lg px-4 py-2 text-2xl text-action data-disabled:text-disabled";
 
 // Desktop browsers open the picker only from their small calendar icon. The input
 // covers the whole date here, so ask for the picker on any click.
@@ -61,7 +61,7 @@ export function DayPager() {
       </div>
       {!isToday && (
         <Button
-          className="rounded-xl border-2 border-teal-600 bg-teal-50 p-2 text-base font-semibold text-teal-800 data-pressed:bg-teal-100"
+          className="rounded-xl border-2 border-action bg-action-soft p-2 text-base font-semibold text-action data-pressed:bg-edge"
           onPress={() => {
             setDay(today);
           }}

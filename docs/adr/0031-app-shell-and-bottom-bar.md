@@ -8,6 +8,8 @@ status: accepted
 
 **Amended by ADR 0033:** History's layout (H2 with a search box linking to Search) is replaced by Recent Days with a Meals filter and a required Exercise pick; `/history/search` becomes a redirect.
 
+**Amended by ADR 0035:** the bar is cream, its active tab brown.
+
 ## Shape
 
 - **Routes.** Add keeps `/exercise` and `/meals`; `/` still lands on `/exercise`. History is `/history` (the dashboard) and `/history/search`. Profile is `/profile` and its sub-pages.

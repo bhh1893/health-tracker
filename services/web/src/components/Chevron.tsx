@@ -6,7 +6,7 @@ export function Chevron() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="size-5 shrink-0 text-gray-500 transition-transform group-data-expanded:rotate-180"
+      className="size-5 shrink-0 text-faint transition-transform group-data-expanded:rotate-180"
       fill="none"
       stroke="currentColor"
       strokeWidth={2}

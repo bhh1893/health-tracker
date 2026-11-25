@@ -5,7 +5,7 @@
 //
 // The look is the caller's: a quiet link on the Pending screen, red on Profile.
 export function SignOutLink({
-  className = "text-center text-base text-teal-700 underline",
+  className = "text-center text-base text-action underline",
 }: {
   className?: string;
 }) {

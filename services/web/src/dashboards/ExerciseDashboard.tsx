@@ -32,14 +32,14 @@ export function ExerciseDashboard({
   }
   if (history.data === undefined) {
     return (
-      <p role="status" className="text-gray-500">
+      <p role="status" className="text-faint">
         Loading...
       </p>
     );
   }
   const points = sessionPoints(history.data);
   if (points.length === 0) {
-    return <p className="text-gray-500">No Sessions in this range.</p>;
+    return <p className="text-faint">No Sessions in this range.</p>;
   }
 
   const summary = summarizeExercise(points);
@@ -58,6 +58,7 @@ export function ExerciseDashboard({
     <>
       <TrendChart
         title={byWeight ? "Top Set weight" : "Top Set reps"}
+        measures="exercise"
         from={start}
         to={to}
         fromZero={false}
@@ -91,6 +92,7 @@ export function ExerciseDashboard({
       {points.some((point) => point.volume !== null) && (
         <TrendChart
           title="Volume"
+          measures="exercise"
           from={start}
           to={to}
           fromZero={false}

@@ -29,7 +29,7 @@ export function NameClash({
   return (
     <div
       role="alert"
-      className="flex flex-col gap-2 rounded-xl bg-amber-50 p-4"
+      className="flex flex-col gap-2 rounded-xl bg-warn-soft p-4"
     >
       <p className="font-semibold">
         {clash.kind === "exact"
@@ -41,7 +41,7 @@ export function NameClash({
           <li key={match.id}>
             {onOpen ? (
               <Button
-                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-left text-base data-pressed:bg-gray-100"
+                className="w-full rounded-xl border border-field bg-card p-3 text-left text-base data-pressed:bg-inset"
                 onPress={() => {
                   onOpen(match);
                 }}
@@ -60,7 +60,7 @@ export function NameClash({
       </ul>
       {clash.kind === "near" && (
         <Button
-          className="rounded-xl border border-gray-300 bg-white p-3 text-base"
+          className="rounded-xl border border-field bg-card p-3 text-base"
           isDisabled={pending}
           onPress={onSaveAnyway}
         >

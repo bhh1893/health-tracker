@@ -39,10 +39,10 @@ export function Sheet({
           onClose();
         }
       }}
-      className="fixed top-0 left-0 z-50 flex h-(--visual-viewport-height) w-full items-center justify-center bg-black/40 p-4"
+      className="fixed top-0 left-0 z-50 flex h-(--visual-viewport-height) w-full items-center justify-center bg-ink/45 p-4"
     >
       <Modal
-        className={`flex ${size === "fit" ? "max-h-full" : "h-[min(100%,max(66.667%,24rem))]"} w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl`}
+        className={`flex ${size === "fit" ? "max-h-full" : "h-[min(100%,max(66.667%,24rem))]"} w-full max-w-md flex-col overflow-hidden rounded-2xl bg-card shadow-xl`}
       >
         <Dialog className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 outline-none">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-3">

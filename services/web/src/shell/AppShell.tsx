@@ -63,7 +63,7 @@ export function AppShell() {
       <div className="pointer-events-none sticky bottom-0 z-40 flex justify-center pb-(--tab-bar-lift)">
         <nav
           aria-label="Tabs"
-          className="pointer-events-auto flex h-(--tab-bar-height) gap-1 rounded-full bg-white p-1 shadow-lg ring-1 ring-black/5"
+          className="pointer-events-auto flex h-(--tab-bar-height) gap-1 rounded-full bg-card p-1 shadow-lg ring-1 ring-ink/10"
         >
           {TABS.map(({ id, label, root }) => {
             const isActive = id === active;
@@ -75,8 +75,8 @@ export function AppShell() {
                 aria-current={isActive ? "page" : undefined}
                 className={`flex w-20 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1.5 text-xs ${
                   isActive
-                    ? "bg-teal-50 font-semibold text-teal-700"
-                    : "text-gray-500"
+                    ? "bg-action-soft font-semibold text-action"
+                    : "text-faint"
                 }`}
               >
                 <svg

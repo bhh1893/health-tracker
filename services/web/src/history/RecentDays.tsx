@@ -17,7 +17,7 @@ import { formatDayTitle } from "./dayTitle";
 import type { DayPage } from "./queries";
 
 const buttonClass =
-  "m-3 rounded-xl border-2 border-teal-700 p-3 text-base text-teal-700 data-pressed:bg-teal-50";
+  "m-3 rounded-xl border-2 border-action p-3 text-base text-action data-pressed:bg-action-soft";
 
 interface RecentDaysProps<T> {
   pages: UseInfiniteQueryResult<InfiniteData<DayPage<T>>>;
@@ -47,16 +47,16 @@ export function RecentDays<T>({
     // a name for screen readers, which list it among the page's landmarks.
     <section
       aria-label="Days"
-      className="flex flex-col rounded-2xl border-2 border-gray-300 bg-white"
+      className="flex flex-col rounded-2xl border-2 border-field bg-card"
     >
       {summary !== undefined && (
-        <p className="px-3 py-2 text-sm text-gray-600">{summary}</p>
+        <p className="px-3 py-2 text-sm text-muted">{summary}</p>
       )}
       {/* Which rows are open is not kept in the URL (ADR 0033): opening a Day
           is a quick look, not a setting. */}
       {days.map(renderDay)}
       {!pages.isPending && error === null && days.length === 0 && (
-        <p className="px-3 py-3 text-gray-500">{empty}</p>
+        <p className="px-3 py-3 text-faint">{empty}</p>
       )}
       <Status
         pages={pages.data?.pages}
@@ -131,7 +131,7 @@ function Status({
   return (
     <p
       role="status"
-      className={visible && text !== "" ? "px-3 py-3 text-gray-500" : "sr-only"}
+      className={visible && text !== "" ? "px-3 py-3 text-faint" : "sr-only"}
     >
       {text}
     </p>
@@ -140,7 +140,7 @@ function Status({
 
 interface DayRowProps {
   day: string;
-  // An orange pill after the title, e.g. "ate out" on a Restaurant Day.
+  // A pill in the Restaurant color after the title, e.g. "ate out" on a Restaurant Day.
   pill?: string | undefined;
   children: ReactNode;
 }
@@ -149,7 +149,7 @@ interface DayRowProps {
 export function DayRow({ day, pill, children }: DayRowProps) {
   const title = formatDayTitle(day);
   return (
-    <Disclosure className="group border-t border-gray-100 first:border-t-0">
+    <Disclosure className="group border-t border-edge first:border-t-0">
       {/* Level 2, a sibling of the Dashboard's heading: the list has no heading
           of its own to sit under. */}
       <Heading level={2}>
@@ -162,7 +162,7 @@ export function DayRow({ day, pill, children }: DayRowProps) {
         >
           <span>{title}</span>
           {pill !== undefined && (
-            <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800">
+            <span className="rounded-full bg-restaurant-soft px-2 py-0.5 text-xs font-semibold text-restaurant-ink">
               {pill}
             </span>
           )}

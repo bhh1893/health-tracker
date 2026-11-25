@@ -8,15 +8,14 @@ export function SetList({ sets }: { sets: ExerciseEntry[] }) {
       {sets.map((set, index) => (
         <li
           key={set.id}
-          className="flex justify-between border-b border-gray-100 py-2"
+          className="flex justify-between border-b border-edge py-2"
         >
           <span>
-            <span className="text-gray-500">Set {index + 1}</span>{" "}
-            {formatSet(set)}
+            <span className="text-faint">Set {index + 1}</span> {formatSet(set)}
           </span>
           {/* occurred_at is written in the Set's own zone, so this is the clock
               time where it happened, wherever the phone is now. */}
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-faint">
             {set.occurred_at.slice(11, 16)}
           </span>
         </li>

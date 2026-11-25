@@ -13,13 +13,17 @@ import { Segments } from "../components/Segments";
 import { formatDay } from "../lib/day";
 import { niceTicks } from "./scale";
 
-// Chart colors: the first two slots of a palette checked for colorblind-safe
-// separation and for contrast on white. Text never wears them (ADR 0024).
-const BLUE = "#2a78d6";
-const ORANGE = "#eb6834";
-const SURFACE = "#ffffff";
-const GRID = "#e5e7eb";
-const AXIS_TEXT = "#6b7280";
+// Chart colors are the theme's tokens (index.css), read as CSS variables because
+// Recharts paints SVG attributes, which take no Tailwind class. The line takes the
+// color of what it measures (ADR 0035).
+const LINES = {
+  food: "var(--color-chart-food)",
+  exercise: "var(--color-chart-exercise)",
+};
+const ACCENT = "var(--color-chart-restaurant)";
+const SURFACE = "var(--color-card)";
+const GRID = "var(--color-edge)";
+const AXIS_TEXT = "var(--color-faint)";
 
 // Above this many points a dot on each one is clutter, and the line alone reads better.
 const MAX_DOTTED_POINTS = 45;
@@ -30,7 +34,7 @@ const MS_PER_DAY = 86_400_000;
 export interface TrendPoint {
   day: string;
   value: number | null;
-  // Drawn in orange: a Day of another kind on the same line, such as a Restaurant
+  // Drawn in pink: a Day of another kind on the same line, such as a Restaurant
   // Day. Its kind is a property of the point, not a second series (ADR 0033).
   accent?: boolean;
   // Drawn as a ring instead of a filled dot: the value under-reports.
@@ -41,6 +45,8 @@ export interface TrendPoint {
 
 interface TrendChartProps {
   title: string;
+  // What the line measures, which picks its color.
+  measures: keyof typeof LINES;
   points: TrendPoint[];
   // The Days the x axis spans, both included, so a quiet week shows as a gap.
   from: string;
@@ -96,18 +102,26 @@ const VIEWS = [
 ] as const;
 type View = (typeof VIEWS)[number]["id"];
 
-function LegendKey({ kind, label }: { kind: "dot" | "ring"; label: string }) {
+function LegendKey({
+  kind,
+  label,
+  lineColor,
+}: {
+  kind: "dot" | "ring";
+  label: string;
+  lineColor: string;
+}) {
   return (
     <li className="flex items-center gap-1.5">
       <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 shrink-0">
-        {kind === "dot" && <circle cx={8} cy={8} r={5} fill={ORANGE} />}
+        {kind === "dot" && <circle cx={8} cy={8} r={5} fill={ACCENT} />}
         {kind === "ring" && (
           <circle
             cx={8}
             cy={8}
             r={4}
             fill={SURFACE}
-            stroke={BLUE}
+            stroke={lineColor}
             strokeWidth={2}
           />
         )}
@@ -122,6 +136,7 @@ function LegendKey({ kind, label }: { kind: "dot" | "ring"; label: string }) {
 // table instead, so nothing depends on hovering or on telling two colors apart.
 export function TrendChart({
   title,
+  measures,
   points,
   from,
   to,
@@ -131,6 +146,7 @@ export function TrendChart({
   hollowLabel,
 }: TrendChartProps) {
   const [view, setView] = useState<View>("chart");
+  const lineColor = LINES[measures];
   const data = points.map((point) => ({ ...point, t: dayNumber(point.day) }));
   const byT = new Map(data.map((point) => [point.t, point]));
   const dense = data.length > MAX_DOTTED_POINTS;
@@ -154,7 +170,7 @@ export function TrendChart({
   const scale = dense ? 0.6 : 1;
 
   return (
-    <figure className="flex flex-col gap-2 rounded-2xl border border-gray-200 bg-white p-3">
+    <figure className="flex flex-col gap-2 rounded-2xl border border-edge bg-card p-3">
       <div className="flex items-center justify-between gap-2">
         <figcaption className="font-semibold">{title}</figcaption>
         <Segments
@@ -166,9 +182,14 @@ export function TrendChart({
         />
       </div>
       {view === "chart" && legend.length > 0 && (
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
+        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
           {legend.map((key) => (
-            <LegendKey key={key.kind} kind={key.kind} label={key.label} />
+            <LegendKey
+              key={key.kind}
+              kind={key.kind}
+              label={key.label}
+              lineColor={lineColor}
+            />
           ))}
         </ul>
       )}
@@ -216,19 +237,19 @@ export function TrendChart({
                     return null;
                   }
                   return (
-                    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-md">
-                      <p className="font-semibold text-gray-900">
+                    <div className="rounded-lg border border-edge bg-card px-3 py-2 text-sm shadow-md">
+                      <p className="font-semibold text-ink">
                         {formatValue(point.value)}
                       </p>
-                      <p className="text-gray-600">{formatDay(point.day)}</p>
+                      <p className="text-muted">{formatDay(point.day)}</p>
                       {point.accent === true && accentLabel !== undefined && (
-                        <p className="text-gray-600">{accentLabel}</p>
+                        <p className="text-muted">{accentLabel}</p>
                       )}
                       {point.hollow === true && hollowLabel !== undefined && (
-                        <p className="text-gray-600">{hollowLabel}</p>
+                        <p className="text-muted">{hollowLabel}</p>
                       )}
                       {point.detail !== undefined && (
-                        <p className="text-gray-600">{point.detail}</p>
+                        <p className="text-muted">{point.detail}</p>
                       )}
                     </div>
                   );
@@ -236,7 +257,7 @@ export function TrendChart({
               />
               <Line
                 dataKey="value"
-                stroke={BLUE}
+                stroke={lineColor}
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -254,7 +275,7 @@ export function TrendChart({
                       cx={cx}
                       cy={cy}
                       r={5}
-                      fill={point.accent === true ? ORANGE : BLUE}
+                      fill={point.accent === true ? ACCENT : lineColor}
                       stroke={SURFACE}
                       strokeWidth={2}
                     />
@@ -279,7 +300,7 @@ export function TrendChart({
                         cx={cx}
                         cy={cy}
                         r={5 * scale}
-                        fill={ORANGE}
+                        fill={ACCENT}
                         stroke={SURFACE}
                         strokeWidth={2 * scale}
                       />
@@ -293,7 +314,7 @@ export function TrendChart({
                         cy={cy}
                         r={4 * scale}
                         fill={SURFACE}
-                        stroke={BLUE}
+                        stroke={lineColor}
                         strokeWidth={2 * scale}
                       />
                     );
@@ -308,7 +329,7 @@ export function TrendChart({
                       cx={cx}
                       cy={cy}
                       r={5}
-                      fill={BLUE}
+                      fill={lineColor}
                       stroke={SURFACE}
                       strokeWidth={2}
                     />
@@ -322,7 +343,7 @@ export function TrendChart({
       {view === "table" && (
         <table className="w-full text-left text-sm">
           <caption className="sr-only">{title}</caption>
-          <thead className="text-gray-500">
+          <thead className="text-faint">
             <tr>
               <th className="py-1 pr-2 font-medium">Day</th>
               <th className="py-1 pr-2 font-medium">{title}</th>
@@ -338,7 +359,7 @@ export function TrendChart({
                 point.detail,
               ].filter((note) => note !== undefined);
               return (
-                <tr key={point.day} className="border-t border-gray-100">
+                <tr key={point.day} className="border-t border-edge">
                   <td className="py-1 pr-2">
                     {formatDay(point.day)}
                     {point.day.slice(0, 4) !== to.slice(0, 4) &&
@@ -347,7 +368,7 @@ export function TrendChart({
                   <td className="py-1 pr-2 tabular-nums">
                     {point.value === null ? "" : formatValue(point.value)}
                   </td>
-                  <td className="py-1 text-gray-600">{notes.join(" · ")}</td>
+                  <td className="py-1 text-muted">{notes.join(" · ")}</td>
                 </tr>
               );
             })}

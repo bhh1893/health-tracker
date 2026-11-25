@@ -13,9 +13,9 @@ interface ItemActionsProps {
 }
 
 const quietButton =
-  "rounded-xl border border-gray-300 p-3 text-base data-pressed:bg-gray-100 data-disabled:text-gray-400";
+  "rounded-xl border border-field p-3 text-base data-pressed:bg-inset data-disabled:text-disabled";
 const iconButton =
-  "flex size-11 items-center justify-center rounded-full data-pressed:bg-gray-100 data-disabled:text-gray-300";
+  "flex size-11 items-center justify-center rounded-full data-pressed:bg-inset data-disabled:text-disabled";
 
 // The header of every Profile sheet (ADR 0032): small icons beside the title, so
 // the form below stays the sheet's focus. Archive hides an item from logging and
@@ -43,7 +43,7 @@ export function ItemActions({ catalog, item, onDone }: ItemActionsProps) {
             shows the same word on hover, on a computer. */}
         <Button
           aria-label={archiveLabel}
-          className={`${iconButton} text-gray-600`}
+          className={`${iconButton} text-muted`}
           isDisabled={pending}
           onPress={() => {
             setArchived.mutate(!item.archived, { onSuccess: onDone });
@@ -56,7 +56,7 @@ export function ItemActions({ catalog, item, onDone }: ItemActionsProps) {
         {neverUsed && (
           <Button
             aria-label="Delete"
-            className={`${iconButton} text-red-700`}
+            className={`${iconButton} text-danger`}
             isDisabled={pending || confirming}
             onPress={() => {
               setConfirming(true);
@@ -80,7 +80,7 @@ export function ItemActions({ catalog, item, onDone }: ItemActionsProps) {
             Keep
           </Button>
           <Button
-            className="rounded-xl bg-red-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+            className="rounded-xl bg-danger p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled"
             isDisabled={pending}
             onPress={() => {
               remove.mutate(undefined, { onSuccess: onDone });

@@ -54,7 +54,7 @@ export function DeleteSessionSheet({
     >
       <ol className="flex flex-col text-base">
         {remaining.map((set) => (
-          <li key={set.id} className="border-b border-gray-100 py-2">
+          <li key={set.id} className="border-b border-edge py-2">
             {formatSet(set)}
           </li>
         ))}
@@ -62,13 +62,13 @@ export function DeleteSessionSheet({
       {failure !== null && <ProblemAlert error={failure} />}
       <div className="grid grid-cols-2 gap-3">
         <Button
-          className="rounded-xl p-3 text-base text-gray-600"
+          className="rounded-xl p-3 text-base text-muted"
           onPress={onClose}
         >
           Cancel
         </Button>
         <Button
-          className="rounded-xl bg-red-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+          className="rounded-xl bg-danger p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled"
           isDisabled={deleting}
           onPress={() => {
             void confirm();

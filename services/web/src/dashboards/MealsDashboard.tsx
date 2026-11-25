@@ -11,7 +11,7 @@ interface MealsDashboardProps {
   to: string;
 }
 
-// Calories per Day (ADR 0024), from GET /days. A Restaurant Day is an orange point
+// Calories per Day (ADR 0024), from GET /days. A Restaurant Day is a pink point
 // on the line at the User's flat value (ADR 0033). An Incomplete Day is a ring: it
 // under-reports. The flat value is set on Profile (ADR 0032).
 export function MealsDashboard({ from, to }: MealsDashboardProps) {
@@ -21,12 +21,12 @@ export function MealsDashboard({ from, to }: MealsDashboardProps) {
     <>
       {totals.error && <ProblemAlert error={totals.error} />}
       {totals.data === undefined && !totals.error && (
-        <p role="status" className="text-gray-500">
+        <p role="status" className="text-faint">
           Loading...
         </p>
       )}
       {totals.data?.length === 0 && (
-        <p className="text-gray-500">No Meals in this range.</p>
+        <p className="text-faint">No Meals in this range.</p>
       )}
       {totals.data !== undefined && totals.data.length > 0 && (
         <Charts totals={totals.data} from={from} to={to} />
@@ -53,6 +53,7 @@ function Charts({
     <>
       <TrendChart
         title="Calories per Day"
+        measures="food"
         from={start}
         to={to}
         fromZero

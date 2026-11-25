@@ -1,7 +1,7 @@
 import { formatAmount, type Meal } from "./meals";
 import { RestaurantLine } from "./RestaurantLine";
 
-// What a Meal holds: its Foods and amounts, or its Restaurants in orange with the
+// What a Meal holds: its Foods and amounts, or its Restaurants in pink with the
 // fork and knife, as History shows a Restaurant Meal.
 export function MealContents({ meal }: { meal: Meal }) {
   return (
@@ -12,7 +12,7 @@ export function MealContents({ meal }: { meal: Meal }) {
         meal.food_entries.map((entry, index) => (
           <li key={index} className="flex justify-between">
             <span>{entry.food.name}</span>
-            <span className="text-gray-600">{formatAmount(entry)}</span>
+            <span className="text-muted">{formatAmount(entry)}</span>
           </li>
         ))
       )}

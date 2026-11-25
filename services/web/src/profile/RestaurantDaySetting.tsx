@@ -18,7 +18,7 @@ export function RestaurantDaySetting({ saved }: { saved: number }) {
 
   return (
     <form
-      className="flex flex-col gap-2 rounded-xl border border-gray-200 p-3"
+      className="flex flex-col gap-2 rounded-xl border border-edge bg-card p-3"
       onSubmit={(event) => {
         event.preventDefault();
         if (valid) {
@@ -40,12 +40,12 @@ export function RestaurantDaySetting({ saved }: { saved: number }) {
         <Button
           type="submit"
           isDisabled={!valid || kcal === saved || save.isPending}
-          className="rounded-xl bg-teal-700 px-4 py-3 text-base text-white data-disabled:bg-gray-300"
+          className="rounded-xl bg-action px-4 py-3 text-base text-on-fill data-disabled:bg-disabled"
         >
           Save
         </Button>
       </div>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted">
         Any Day with a Restaurant Meal counts as this many calories, whatever
         else was logged. Changing it changes past Days too.
       </p>

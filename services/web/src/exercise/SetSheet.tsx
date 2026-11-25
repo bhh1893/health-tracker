@@ -114,14 +114,14 @@ export function SetSheet({ day, previous, onClose }: SetSheetProps) {
         {addSet.error && <ProblemAlert error={addSet.error} />}
         <div className="grid grid-cols-2 gap-3">
           <Button
-            className="rounded-xl p-3 text-base text-gray-600"
+            className="rounded-xl p-3 text-base text-muted"
             onPress={onClose}
           >
             Cancel
           </Button>
           <Button
             type="submit"
-            className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+            className="rounded-xl bg-action p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled"
             isDisabled={picked === null || fields === null || addSet.isPending}
           >
             Save

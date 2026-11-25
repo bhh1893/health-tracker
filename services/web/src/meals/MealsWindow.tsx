@@ -14,7 +14,7 @@ import { useDayMeals } from "./queries";
 // Null sheet: closed. `saved` null: adding a new Meal of `kind`.
 type Sheet = { saved: Meal } | { saved: null; kind: Meal["kind"] } | null;
 
-const addClass = "rounded-2xl bg-teal-700 p-4 text-lg font-semibold text-white";
+const addClass = "rounded-2xl p-4 text-lg font-semibold text-on-fill";
 
 export function MealsWindow() {
   const { day } = useViewedDay();
@@ -36,9 +36,9 @@ export function MealsWindow() {
       {meals.error && <ProblemAlert error={meals.error} />}
       {/* One alert is enough when the server is unreachable for both. */}
       {totals.error && !meals.error && <ProblemAlert error={totals.error} />}
-      {meals.isPending && <p className="text-gray-500">Loading...</p>}
+      {meals.isPending && <p className="text-faint">Loading...</p>}
       {meals.isSuccess && sorted.length === 0 && (
-        <p className="text-gray-500">No Meals on this Day.</p>
+        <p className="text-faint">No Meals on this Day.</p>
       )}
       {sorted.map((meal) => (
         <MealCard
@@ -56,7 +56,7 @@ export function MealsWindow() {
           fit side by side; the sheet's title names the Day. */}
       <div className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto grid grid-cols-2 gap-3">
         <Button
-          className={addClass}
+          className={`${addClass} bg-food`}
           onPress={() => {
             setSheet({ saved: null, kind: "foods" });
           }}
@@ -64,7 +64,7 @@ export function MealsWindow() {
           Add Food
         </Button>
         <Button
-          className={addClass}
+          className={`${addClass} bg-restaurant`}
           onPress={() => {
             setSheet({ saved: null, kind: "restaurant" });
           }}

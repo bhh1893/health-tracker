@@ -188,8 +188,8 @@ export function CatalogComboBox({
         }}
         onChange={selectRow}
       >
-        <Label className="text-sm font-medium text-gray-600">{label}</Label>
-        <div className="flex rounded-xl border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-teal-600">
+        <Label className="text-sm font-medium text-muted">{label}</Label>
+        <div className="flex rounded-xl border border-field bg-card focus-within:ring-2 focus-within:ring-action">
           <Input
             className="w-full min-w-0 rounded-xl bg-transparent p-3 text-base outline-none"
             placeholder={catalog.placeholder}
@@ -202,7 +202,7 @@ export function CatalogComboBox({
             <ButtonContext.Provider value={null}>
               <Button
                 aria-label="Clear"
-                className="flex size-11 shrink-0 items-center justify-center text-gray-500"
+                className="flex size-11 shrink-0 items-center justify-center text-faint"
                 onPress={() => {
                   setText("");
                   if (value !== null) {
@@ -227,23 +227,23 @@ export function CatalogComboBox({
           className={
             rows.length === 0 && suggestions.isFetching
               ? "hidden"
-              : "w-(--trigger-width) overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+              : "w-(--trigger-width) overflow-auto rounded-xl border border-edge bg-card shadow-lg"
           }
         >
           <ListBox<CatalogItem>
             className="max-h-72 outline-none"
             renderEmptyState={() => (
-              <p className="p-3 text-base text-gray-500">No match</p>
+              <p className="p-3 text-base text-faint">No match</p>
             )}
           >
             {(row) => (
               <ListBoxItem
                 id={row.id}
                 textValue={row.name}
-                className="cursor-pointer p-3 text-base outline-none data-focused:bg-teal-50 data-selected:font-semibold"
+                className="cursor-pointer p-3 text-base outline-none data-focused:bg-action-soft data-selected:font-semibold"
               >
                 {row.id === CREATE_ROW ? (
-                  <span className="text-teal-700">+ Create "{row.name}"</span>
+                  <span className="text-action">+ Create "{row.name}"</span>
                 ) : row.archived ? (
                   `${row.name} (archived)`
                 ) : (
@@ -271,7 +271,7 @@ export function CatalogComboBox({
           {conflict.matches.map((match) => (
             <Button
               key={match.id}
-              className="rounded-xl border border-gray-300 p-3 text-left text-base data-pressed:bg-gray-100"
+              className="rounded-xl border border-field p-3 text-left text-base data-pressed:bg-inset"
               onPress={() => {
                 chooseMatch(match);
               }}
@@ -281,7 +281,7 @@ export function CatalogComboBox({
           ))}
           {conflict.canCreateAnyway && (
             <Button
-              className="rounded-xl bg-teal-700 p-3 text-base text-white"
+              className="rounded-xl bg-action p-3 text-base text-on-fill"
               onPress={() => {
                 create(conflict.id, conflict.name, true);
               }}
@@ -289,7 +289,7 @@ export function CatalogComboBox({
               Create "{conflict.name}" anyway
             </Button>
           )}
-          <Button slot="close" className="p-2 text-base text-gray-600">
+          <Button slot="close" className="p-2 text-base text-muted">
             Cancel
           </Button>
         </Sheet>

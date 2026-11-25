@@ -12,7 +12,7 @@ export function ProblemAlert({ error }: ProblemAlertProps) {
   return (
     <div
       role="alert"
-      className="rounded-xl bg-red-50 p-4 text-base text-red-900"
+      className="rounded-xl bg-danger-soft p-4 text-base text-danger"
     >
       <p className="font-semibold">
         {problem?.title ?? "Can't reach the server"}

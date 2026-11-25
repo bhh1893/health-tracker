@@ -17,13 +17,13 @@ export function ProfileScreen() {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-8 p-4">
-      <h1 className="text-center text-xl font-semibold">Profile</h1>
+      <h1 className="text-center text-xl font-semibold text-action">Profile</h1>
 
       <section aria-label="Signed in as" className="flex items-center gap-4">
         {/* Decorative: the name and email beside it say the same thing in words. */}
         <div
           aria-hidden="true"
-          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-teal-700 text-2xl font-semibold text-white"
+          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-action text-2xl font-semibold text-on-fill"
         >
           {letter ?? (
             // The same person glyph as the Profile tab.
@@ -46,7 +46,7 @@ export function ProfileScreen() {
           {name !== null && (
             <p className="truncate text-lg font-semibold">{name}</p>
           )}
-          {email !== null && <p className="truncate text-gray-600">{email}</p>}
+          {email !== null && <p className="truncate text-muted">{email}</p>}
         </div>
       </section>
 
@@ -54,11 +54,11 @@ export function ProfileScreen() {
       <nav aria-labelledby="catalogs-heading" className="flex flex-col gap-2">
         <h2
           id="catalogs-heading"
-          className="text-sm font-semibold tracking-wide text-gray-500 uppercase"
+          className="text-sm font-semibold tracking-wide text-faint uppercase"
         >
           Catalogs
         </h2>
-        <ul className="flex flex-col divide-y divide-gray-200 rounded-xl border border-gray-200">
+        <ul className="flex flex-col divide-y divide-edge rounded-xl border border-edge bg-card">
           {CATALOGS.map((catalog) => (
             <li key={catalog.key}>
               <Link
@@ -66,7 +66,7 @@ export function ProfileScreen() {
                 className="flex items-center justify-between p-3 text-base"
               >
                 {catalog.plural}
-                <span aria-hidden="true" className="text-gray-400">
+                <span aria-hidden="true" className="text-faint">
                   ›
                 </span>
               </Link>
@@ -81,7 +81,7 @@ export function ProfileScreen() {
       >
         <h2
           id="settings-heading"
-          className="text-sm font-semibold tracking-wide text-gray-500 uppercase"
+          className="text-sm font-semibold tracking-wide text-faint uppercase"
         >
           Settings
         </h2>
@@ -94,7 +94,7 @@ export function ProfileScreen() {
         )}
       </section>
 
-      <SignOutLink className="py-2 text-base font-semibold text-red-700" />
+      <SignOutLink className="py-2 text-base font-semibold text-danger" />
     </main>
   );
 }

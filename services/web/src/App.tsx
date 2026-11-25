@@ -20,7 +20,7 @@ function NotFound() {
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
       <h1 className="text-2xl font-semibold">Page not found</h1>
-      <Link className="text-teal-700 underline" to="/">
+      <Link className="text-action underline" to="/">
         Back to start
       </Link>
     </main>
@@ -29,7 +29,7 @@ function NotFound() {
 
 function Loading() {
   return (
-    <p role="status" className="p-4 text-gray-500">
+    <p role="status" className="p-4 text-faint">
       Loading...
     </p>
   );
@@ -53,7 +53,7 @@ export function App() {
         <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
           <ProblemAlert error={me.error} />
           <Button
-            className="rounded-xl bg-teal-700 px-4 py-3 text-base text-white data-[pressed]:bg-teal-900"
+            className="rounded-xl bg-action px-4 py-3 text-base text-on-fill data-[pressed]:bg-action-pressed"
             onPress={() => void me.refetch()}
           >
             Try again

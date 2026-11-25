@@ -29,21 +29,21 @@ export function SessionCard({
   return (
     <article
       aria-label={exercise.name}
-      className="rounded-2xl border border-gray-200 bg-white p-3"
+      className="rounded-2xl border border-edge bg-card p-3"
     >
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">{exercise.name}</h3>
         <div className="flex items-center">
           <Button
             aria-label={`Edit ${exercise.name}`}
-            className="rounded-lg p-2 text-teal-700 data-pressed:bg-teal-50"
+            className="rounded-lg p-2 text-action data-pressed:bg-action-soft"
             onPress={onEdit}
           >
             <PencilIcon />
           </Button>
           <Button
             aria-label={`Delete ${exercise.name} for the Day`}
-            className="rounded-lg p-2 text-gray-500"
+            className="rounded-lg p-2 text-faint"
             onPress={onDelete}
           >
             <svg
@@ -64,7 +64,7 @@ export function SessionCard({
       <SetList sets={sets} />
       <div className="mt-2 grid grid-cols-2 gap-2">
         <Button
-          className="rounded-xl border-2 border-dashed border-teal-400 p-2 text-base text-teal-700 data-pressed:bg-teal-50"
+          className="rounded-xl border-2 border-dashed border-action p-2 text-base text-action data-pressed:bg-action-soft"
           onPress={() => {
             onRepeat(last);
           }}
@@ -72,7 +72,7 @@ export function SessionCard({
           + {formatSet(last)}
         </Button>
         <Button
-          className="rounded-xl border-2 border-teal-700 p-2 text-base text-teal-700 data-pressed:bg-teal-50"
+          className="rounded-xl border-2 border-action p-2 text-base text-action data-pressed:bg-action-soft"
           onPress={() => {
             onAddSet(last);
           }}

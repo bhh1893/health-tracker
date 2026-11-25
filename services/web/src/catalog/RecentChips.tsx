@@ -35,7 +35,7 @@ export function RecentChips({
   return (
     <div className="flex flex-col gap-2">
       {title !== undefined && (
-        <span className="text-sm text-gray-600">{title}</span>
+        <span className="text-sm text-muted">{title}</span>
       )}
       <div
         role="group"
@@ -45,7 +45,7 @@ export function RecentChips({
         {items.map((item) => (
           <Button
             key={item.id}
-            className="shrink-0 rounded-full border border-gray-300 px-3 py-1 text-base whitespace-nowrap data-disabled:text-gray-400 data-pressed:bg-gray-100"
+            className="shrink-0 rounded-full border border-field px-3 py-1 text-base whitespace-nowrap data-disabled:text-disabled data-pressed:bg-inset"
             isDisabled={isDisabled?.(item) ?? false}
             onPress={() => {
               onPick(item);

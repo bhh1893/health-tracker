@@ -105,7 +105,7 @@ function SavedFoodSheet({
       ) : food.error ? (
         <ProblemAlert error={food.error} />
       ) : (
-        <p role="status" className="text-gray-500">
+        <p role="status" className="text-faint">
           Loading...
         </p>
       )}
@@ -204,7 +204,7 @@ function FoodForm({ food, onClose, onOpen }: FoodFormProps) {
         />
       </div>
       {filledFrom && (
-        <p role="status" className="text-sm text-gray-600">
+        <p role="status" className="text-sm text-muted">
           Filled from {filledFrom}. Check it against your label.
         </p>
       )}
@@ -219,7 +219,7 @@ function FoodForm({ food, onClose, onOpen }: FoodFormProps) {
           </span>
           <Button
             aria-label="Clear Nutrition"
-            className="rounded-xl px-3 py-1 text-base text-teal-700"
+            className="rounded-xl px-3 py-1 text-base text-action"
             onPress={() => {
               change(Object.fromEntries(NUTRITION_FIELDS.map((f) => [f, ""])));
             }}
@@ -244,7 +244,7 @@ function FoodForm({ food, onClose, onOpen }: FoodFormProps) {
           {nutritionField("fat_g")}
         </div>
         {errors.nutrition && (
-          <p role="alert" className="text-sm text-red-800">
+          <p role="alert" className="text-sm text-danger">
             {errors.nutrition}
           </p>
         )}
@@ -264,16 +264,16 @@ function FoodForm({ food, onClose, onOpen }: FoodFormProps) {
         write.error && <ProblemAlert error={write.error} />
       )}
 
-      <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-white py-2">
+      <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-card py-2">
         <Button
-          className="rounded-xl p-3 text-base text-gray-600"
+          className="rounded-xl p-3 text-base text-muted"
           onPress={onClose}
         >
           Cancel
         </Button>
         <Button
           type="submit"
-          className="rounded-xl bg-teal-700 p-3 text-base font-semibold text-white data-disabled:bg-gray-300"
+          className="rounded-xl bg-action p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled"
           isDisabled={write.isPending}
         >
           Save
@@ -318,10 +318,10 @@ function ReferenceSearch({ onPick }: ReferenceSearchProps) {
         onInputChange={setText}
         onChange={select}
       >
-        <Label className="text-sm font-medium text-gray-600">
+        <Label className="text-sm font-medium text-muted">
           Fill from reference
         </Label>
-        <div className="flex rounded-xl border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-teal-600">
+        <div className="flex rounded-xl border border-field bg-card focus-within:ring-2 focus-within:ring-action">
           <Input
             className="w-full min-w-0 rounded-xl bg-transparent p-3 text-base outline-none"
             placeholder="Search"
@@ -331,7 +331,7 @@ function ReferenceSearch({ onPick }: ReferenceSearchProps) {
             <ButtonContext.Provider value={null}>
               <Button
                 aria-label="Clear"
-                className="flex size-11 shrink-0 items-center justify-center text-gray-500"
+                className="flex size-11 shrink-0 items-center justify-center text-faint"
                 onPress={() => {
                   setText("");
                 }}
@@ -352,23 +352,23 @@ function ReferenceSearch({ onPick }: ReferenceSearchProps) {
           className={
             items.length === 0 && references.isFetching
               ? "hidden"
-              : "w-(--trigger-width) overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+              : "w-(--trigger-width) overflow-auto rounded-xl border border-edge bg-card shadow-lg"
           }
         >
           <ListBox<ReferenceFood>
             className="max-h-72 outline-none"
             renderEmptyState={() => (
-              <p className="p-3 text-base text-gray-500">No match</p>
+              <p className="p-3 text-base text-faint">No match</p>
             )}
           >
             {(reference) => (
               <ListBoxItem
                 id={reference.id}
                 textValue={reference.name}
-                className="cursor-pointer p-3 text-base outline-none data-focused:bg-teal-50"
+                className="cursor-pointer p-3 text-base outline-none data-focused:bg-action-soft"
               >
                 <span className="block">{reference.name}</span>
-                <span className="block text-sm text-gray-500">
+                <span className="block text-sm text-faint">
                   {String(reference.nutrition.kcal)} cal per{" "}
                   {String(reference.nutrition.basis_g)} g
                 </span>

@@ -41,7 +41,7 @@ export function DashboardSection({
     <Disclosure
       isExpanded={open}
       onExpandedChange={onOpenChange}
-      className="group rounded-2xl border border-gray-200 bg-white"
+      className="group rounded-2xl border border-edge bg-card"
     >
       <Heading level={2}>
         <Button
@@ -53,7 +53,7 @@ export function DashboardSection({
         >
           <ChartIcon />
           <span className="font-semibold">Dashboard</span>
-          <span className="ml-auto truncate text-sm text-gray-600">{hint}</span>
+          <span className="ml-auto truncate text-sm text-muted">{hint}</span>
           <Chevron />
         </Button>
       </Heading>
@@ -64,7 +64,7 @@ export function DashboardSection({
         {open && (
           <Suspense
             fallback={
-              <p role="status" className="text-gray-500">
+              <p role="status" className="text-faint">
                 Loading...
               </p>
             }
@@ -95,7 +95,7 @@ function ChartIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="size-5 shrink-0 text-teal-700"
+      className="size-5 shrink-0 text-action"
       fill="none"
       stroke="currentColor"
       strokeWidth={2}

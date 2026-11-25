@@ -33,8 +33,8 @@ export function Segments<T extends string>({
       }}
       className={
         compact
-          ? "inline-flex gap-0.5 rounded-lg bg-gray-100 p-0.5"
-          : "flex gap-1 rounded-xl bg-gray-100 p-1"
+          ? "inline-flex gap-0.5 rounded-lg bg-inset p-0.5"
+          : "flex gap-1 rounded-xl bg-inset p-1"
       }
     >
       {options.map((option) => (
@@ -45,7 +45,7 @@ export function Segments<T extends string>({
             compact
               ? "rounded-md px-2.5 py-1 text-sm"
               : "flex-1 rounded-lg px-4 py-2 text-base"
-          } text-gray-600 data-selected:bg-white data-selected:font-semibold data-selected:text-gray-900 data-selected:shadow-sm`}
+          } text-muted data-selected:bg-card data-selected:font-semibold data-selected:text-ink data-selected:shadow-sm`}
         >
           {option.label}
         </ToggleButton>

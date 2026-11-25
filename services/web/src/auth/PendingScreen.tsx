@@ -25,7 +25,7 @@ export function PendingScreen({
       {/* Which Google account was used, in case it was the wrong one. Left out when the
           provider never sent an address. */}
       {email !== null && (
-        <p className="text-base text-gray-600">Signed in as {email}</p>
+        <p className="text-base text-muted">Signed in as {email}</p>
       )}
       <p className="text-base">
         You are signed in. The owner has to approve your account before you can
@@ -33,7 +33,7 @@ export function PendingScreen({
       </p>
       {error !== null && <ProblemAlert error={error} />}
       <Button
-        className="rounded-xl bg-teal-700 px-4 py-3 text-base text-white data-[disabled]:bg-gray-400 data-[pressed]:bg-teal-900"
+        className="rounded-xl bg-action px-4 py-3 text-base text-on-fill data-[disabled]:bg-disabled data-[pressed]:bg-action-pressed"
         isDisabled={checking}
         onPress={onCheckAgain}
       >
