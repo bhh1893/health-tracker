@@ -41,6 +41,11 @@ spec:
             # The probes, passed through with no session: they report status only
             # (ADR 0010). Anchored, so /healthz/anything still needs a session.
             - --skip-auth-route=GET=^/(healthz|readyz)$
+            # The icons and the web manifest: devices often fetch these without the
+            # session cookie, and a 403 leaves a letter where the icon goes (ADR 0025).
+            # Exact names, never an extension, so a new file stays behind sign-in. Only
+            # `web` has them; the Gateway sends `api` nothing outside /api.
+            - --skip-auth-route=GET=^/(favicon\.svg|apple-touch-icon\.png|icon-192\.png|icon-512\.png|manifest\.webmanifest)$
             # Any Google account may sign in. Approval is the gate, inside `api`: a new
             # person becomes a Pending User who can read only GET /api/me (ADR 0026).
             - --email-domain=*

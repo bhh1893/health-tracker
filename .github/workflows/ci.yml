@@ -349,6 +349,11 @@ jobs:
           asset="$(grep -o '/assets/[^"]*\.js' <<< "${page}" | head -n 1)"
           curl -fsSI "http://localhost:8000${asset}" | grep -qi '^cache-control:.*immutable'
           curl -fsSI http://localhost:8000/manifest.webmanifest | grep -qi '^content-type: application/manifest+json'
+          # The icons are public (ADR 0025): real images, not the index.html fallback.
+          curl -fsSI http://localhost:8000/favicon.svg | grep -qi '^content-type: image/svg+xml'
+          for icon in apple-touch-icon icon-192 icon-512; do
+            curl -fsSI "http://localhost:8000/${icon}.png" | grep -qi '^content-type: image/png'
+          done
           # A missing asset is a real 404, not index.html served as JavaScript.
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/assets/missing.js)" = 404
           # Probe paths answer a bare status, not index.html: they are public (ADR 0025).
