@@ -78,7 +78,7 @@ Settled while building it ([#190](https://github.com/bhh1893/health-tracker/issu
 
 Added by ADR 0030 ([Public threat model](https://github.com/bhh1893/health-tracker/issues/179)).
 
-- **A scheduled GitHub Actions workflow probes `https://app.nibblejiggle.xyz` daily,** and on manual dispatch, with no credentials. It asserts ADR 0025's unauthenticated surface: `/api/v1/meals` gives `401`; `/` serves the Sign-in page; `web`'s `/readyz` body is a bare status; an unknown path returns no data; responses carry HSTS.
+- **A scheduled GitHub Actions workflow probes `https://app.nibblejiggle.xyz` daily,** and on manual dispatch, with no credentials. It asserts ADR 0025's unauthenticated surface: `/api/v1/meals` gives `401`; `/` serves the Sign-in page; `web`'s `/readyz` body is a bare status; the icons and the web manifest are served as themselves, and near misses of their names are not (added 2026-11-25); an unknown path returns no data; responses carry HSTS.
 - **A failure emails the owner** through GitHub's failed-workflow notification. It catches a route made public by mistake after build, and doubles as uptime monitoring.
 - It is not part of `ci-gate`: it tests the live deployment, not a commit.
 

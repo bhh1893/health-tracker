@@ -10,7 +10,12 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign in - Health Tracker</title>
+    <title>Sign in - Nibble Jiggle</title>
+    <!-- Public through --skip-auth-route in sidecar.yaml. The same files index.html
+         links, so a device that first meets this page still finds the icon. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <style>
       body {
         margin: 0;
@@ -39,7 +44,7 @@
   </head>
   <body>
     <main>
-      <h1>Health Tracker</h1>
+      <h1>Nibble Jiggle</h1>
       <!-- GET to /oauth2/start, which redirects to Google. `rd` brings the person back
            to the page they first asked for once Google sends them home. -->
       <form method="GET" action="{{.ProxyPrefix}}/start">

@@ -694,3 +694,4 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **CSS variable (custom property)**: a value named with `--` in CSS and read with `var(--name)`; the browser resolves it at run time, so even an SVG attribute can use it.
 - **`@theme` (Tailwind)**: the CSS block where Tailwind reads tokens and generates classes from them: `--color-food` gives `bg-food`, `text-food` and `border-food`.
 - **Contrast ratio (WCAG AA)**: how far apart two colors are in lightness, from 1:1 to 21:1; the AA accessibility standard asks 4.5:1 for normal text and 3:1 for large text and graphics.
+- **Anchored regex**: a pattern pinned to the whole string with `^` and `$`; without them `/icon.png` would also match `/icon.png/secret`, so an auth exemption should always be anchored.

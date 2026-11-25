@@ -126,6 +126,7 @@ phone <──redirect──> accounts.google.com            proxy ──code for
   - No session, `/api/*` (or `Accept: application/json`): `401`.
   - No session, anything else: the Sign-in page (`sign_in.html`), status `403`.
   - `GET /healthz` and `GET /readyz` pass with no session, for the kubelet's probes.
+  - `GET` of the four icons and `/manifest.webmanifest` passes with no session: devices often fetch them without the cookie.
 - **How it checks the cookie without Google:** the cookie is encrypted and signed with the cookie secret and carries its sign-in time. A cookie this proxy did not make fails the signature; one older than 30 days fails the age check. Google's ID token was checked once, at sign-in, with keys from Google's discovery document.
 - **Watch:**
   - `curl -s -o /dev/null -w '%{http_code}\n' https://app.nibblejiggle.xyz/api/v1/meals` (`401`)

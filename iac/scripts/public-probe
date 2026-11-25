@@ -12,7 +12,7 @@ host=${1:-app.nibblejiggle.xyz}
 base="https://${host}"
 # Cloudflare's HSTS setting, Terraform in iac/cloudflare/ (ADR 0025: 6 months).
 hsts='max-age=15552000'
-sign_in_title='<title>Sign in - Health Tracker</title>'
+sign_in_title='<title>Sign in - Nibble Jiggle</title>'
 # Names the probe in the api's access lines (ADR 0030).
 user_agent='health-tracker-public-probe'
 
@@ -63,6 +63,27 @@ fetch /
 fetch /readyz
 [[ "$code" == 200 ]] || fail "/readyz: want 200, got ${code}"
 [[ "$(tr -d '[:space:]' <<<"$body")" == ok ]] || fail "/readyz: body is not a bare 'ok'"
+
+# The icons and the web manifest are public by design (ADR 0025), so a device that
+# fetches them without the session cookie still gets them. The content type matters:
+# a 200 of text/html would be web's index.html, served because the file is missing.
+public_file() {
+  local path=$1 type=$2
+  fetch "$path"
+  [[ "$code" == 200 ]] || fail "${path}: want 200, got ${code}"
+  grep -qE "^content-type: ${type}(;|\$)" <<<"$headers" || fail "${path}: want content type ${type}"
+}
+public_file /favicon.svg 'image/svg\+xml'
+public_file /apple-touch-icon.png image/png
+public_file /icon-192.png image/png
+public_file /icon-512.png image/png
+public_file /manifest.webmanifest 'application/manifest\+json'
+
+# Near misses of those names stay behind sign-in: the rule lists exact files.
+for path in /favicon.svg/x /icon-256.png /index.html; do
+  fetch "$path"
+  [[ "$code" == 403 ]] || fail "${path}: want 403, got ${code}"
+done
 
 # Unknown paths, a fresh random one per run so no cache can answer for the origin.
 # Under the web route they get the Sign-in page; under /api, a 401. Never data.

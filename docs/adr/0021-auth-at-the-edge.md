@@ -8,6 +8,8 @@ Nothing is served without a session, not even the `web` bundle. oauth2-proxy rep
 
 **Amended at build, 2026-11-17** ([#150](https://github.com/bhh1893/health-tracker/issues/150)): the component is included once by the overlay, not by each service; a page request with no session gets the Sign-in page with `403`, not a redirect; a temporary email allowlist holds until `api` reads the headers. See [Built](#built-2026-11-17).
 
+**Amended by ADR 0025, 2026-11-25:** the icons and the web manifest are served without a session.
+
 **Corrected 2026-11-15:** the rejected "Gateway external auth" option first said Cilium did not implement it. Cilium 1.20.4 does; the option now gives the real reasons it stays rejected. The decision is unchanged. Checked in [Revisit auth placement: sidecars vs Gateway ExternalAuth](https://github.com/bhh1893/health-tracker/issues/181).
 
 ## Shape

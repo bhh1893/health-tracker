@@ -18,7 +18,7 @@ STRIDE (Spoofing, Tampering, Repudiation, Information disclosure, Denial of serv
 
 | Attacker | Status | Main controls |
 | --- | --- | --- |
-| Anonymous internet: scanners and bots, which read the hostname from Certificate Transparency logs | In scope | Nothing served without a session (ADR 0021, unauthenticated surface in ADR 0025); `/oauth2/` rate rule and DDoS at Cloudflare (ADR 0027); patching deadlines (ADR 0028) |
+| Anonymous internet: scanners and bots, which read the hostname from Certificate Transparency logs | In scope | No data served without a session, only the Sign-in page, health status, and the icons and web manifest since 2026-11-25 (ADR 0021, unauthenticated surface in ADR 0025); `/oauth2/` rate rule and DDoS at Cloudflare (ADR 0027); patching deadlines (ADR 0028) |
 | A signed-in stranger (Pending, valid session) | In scope | Pending reaches only `GET /api/me`; route-walk test (ADR 0014); Sign-up brake (ADR 0026) |
 | A stolen session or a compromised Member | In scope | Two-Member isolation test (ADR 0014); per-User rate and write limits (ADR 0027); access lines (below); incident runbook (below) |
 | A compromised dependency or image | In scope | Dependabot, release-watch, digest pins, no automerge (ADR 0028) |
