@@ -19,6 +19,8 @@ Thumbs.db
 # Tooling output.
 node_modules/
 dist/
+# Written by `tsc -b`; `npm run typecheck` (tsc --noEmit) never writes it.
+*.tsbuildinfo
 __pycache__/
 .venv/
 .vagrant/
