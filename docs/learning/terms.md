@@ -726,5 +726,8 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **File signature (magic bytes)**: the first bytes of a file that identify its format (JPEG starts `FF D8 FF`), checked without decoding the rest.
 - **sRGB vs Display P3**: two colour ranges; sRGB is the web's default, P3 is wider and what iPhones shoot in, so converting P3 to sRGB slightly dulls the most saturated colours.
 - **Canvas (`<canvas>`)**: a browser drawing surface holding only pixels; drawing an image onto it and exporting with `toBlob` makes a new image with no metadata.
+- **Object URL (`URL.createObjectURL`)**: a temporary `blob:` address for a file held in the page's memory, so an `<img>` can show a picked photo before any upload.
+- **`capture` (file input)**: an attribute that tells a phone to open the camera directly instead of offering the photo library.
+- **CSS scroll snap**: CSS that makes a scrolling box stop on whole items, which turns a sideways scroll into a one-photo-at-a-time swipe with no JavaScript.
 - **Postgres enum type**: a custom column type (`CREATE TYPE ... AS ENUM`) that only accepts listed values; adding a value needs `ALTER TYPE` and removing one means rebuilding the type, which is why a `CHECK` on `text` is often preferred.
 - **`sr-only`**: a Tailwind class that hides text visually but keeps it in the accessibility tree, so a screen reader still says what an icon means, e.g. "(drinks)" after a Restaurant name.
