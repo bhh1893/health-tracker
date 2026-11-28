@@ -707,3 +707,13 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Chunked transfer encoding**: an HTTP/1.1 body sent in pieces with no `Content-Length` up front, so a server enforcing a size cap must count bytes as they arrive.
 - **`Cache-Control: private, immutable`**: shared caches such as a CDN must not store the response; the browser may, and `immutable` tells it the bytes at this URL never change.
 - **`boto3`**: the most widely used Python S3 client; pointed at any S3-compatible endpoint, it is not tied to AWS.
+- **Orphan (object storage)**: bytes in the store that no database row points to; harmless to correctness but they take space and, for private data, outlive a delete.
+- **Dangling row**: a database row pointing to bytes that do not exist; the user sees a broken photo, so writes are ordered to make this impossible.
+- **Reconciliation sweep**: a scheduled job that compares two stores and fixes the differences, so any failed step heals later without retry logic at each step.
+- **Transactional outbox**: a row written in the same transaction as a change, recording work for another system; a worker reads it and does that work, so the work cannot be forgotten.
+- **Sub-resource**: a resource addressed under its parent's URL (`/meals/{id}/photos/{photo_id}`), so the path itself says who owns it.
+- **`rclone`**: a single-binary tool that copies and syncs files between storage systems (S3 buckets, local disk, and many more); `sync` makes the destination match the source, deleting extras.
+- **`--backup-dir`** (rclone): instead of deleting a file the sync would remove, move it into another folder, so deletes stay recoverable for as long as that folder is kept.
+- **Windows Task Scheduler**: the Windows service that runs a program on a schedule, the host's equivalent of cron or a systemd timer.
+- **Source of truth**: the one store whose contents decide what exists when two stores disagree; the other is reconciled to match it.
+- **Mass-delete brake**: a guard that makes an automated cleanup refuse to run when it would delete far more than usual, because that usually means its inputs are wrong.
