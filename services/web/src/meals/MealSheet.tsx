@@ -9,8 +9,9 @@ import {
   type RestaurantRef,
 } from "../catalog/catalogs";
 import { RecentChips } from "../catalog/RecentChips";
+import { DEFAULT_CATEGORY } from "../catalog/restaurantCategory";
 import { Sheet } from "../components/Sheet";
-import { ForkKnifeIcon } from "../components/ForkKnifeIcon";
+import { CategoryIcon } from "../components/CategoryIcon";
 import { fieldClass, labelClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDay } from "../lib/day";
@@ -96,7 +97,7 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
       ...current,
       restaurants: [
         ...current.restaurants,
-        { id, name, archived, category: category ?? "ate_out" },
+        { id, name, archived, category: category ?? DEFAULT_CATEGORY },
       ],
     }));
   }
@@ -462,7 +463,7 @@ function RestaurantPart({ restaurants, onAdd, onRemove }: RestaurantPartProps) {
                 className="flex items-center justify-between px-3 py-1"
               >
                 <span className="flex items-center gap-2 py-2 font-medium text-restaurant-ink">
-                  <ForkKnifeIcon />
+                  <CategoryIcon category={restaurant.category} />
                   {restaurant.name}
                 </span>
                 <Button

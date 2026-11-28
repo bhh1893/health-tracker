@@ -58,7 +58,9 @@ function Charts({
         to={to}
         fromZero
         formatValue={formatKcal}
-        accentLabel="ate out"
+        // Every Restaurant Day, whatever its Categories (ADR 0041): "ate out"
+        // is now one of them.
+        accentLabel="restaurant"
         hollowLabel="incomplete"
         // The API answers newest first; a chart reads oldest first.
         points={totals.toReversed().map((total) => ({
@@ -80,7 +82,7 @@ function Charts({
             note: `${String(summary.days)} ${summary.days === 1 ? "day" : "days"}`,
           },
           {
-            label: "ate out",
+            label: "restaurant",
             value: String(summary.restaurantDays),
           },
           {

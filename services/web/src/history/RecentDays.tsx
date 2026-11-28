@@ -11,8 +11,12 @@ import {
 } from "react-aria-components";
 import { Link } from "react-router";
 
+import {
+  categoryName,
+  type RestaurantCategory,
+} from "../catalog/restaurantCategory";
+import { CategoryIcon } from "../components/CategoryIcon";
 import { Chevron } from "../components/Chevron";
-import { ForkKnifeIcon } from "../components/ForkKnifeIcon";
 import { LoadMore } from "../components/LoadMore";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDayTitle } from "./dayTitle";
@@ -145,17 +149,23 @@ interface DayRowProps {
   day: string;
   // The Home window the arrow opens the Day in: "/meals" or "/exercise".
   homePath: "/meals" | "/exercise";
-  // A badge after the title, e.g. "ate out" on a Restaurant Day: drawn as the
-  // fork and knife, and read out after the title.
-  badge?: string | undefined;
+  // On a Restaurant Day, its Restaurants' Categories (ADR 0041): each drawn as its
+  // icon after the title, and read out after it, e.g. "ate out, drinks".
+  categories?: readonly RestaurantCategory[];
   children: ReactNode;
 }
 
 // One Day of Recent Days: a pink title row, which opens to the Day's contents
 // on white, beside a round brown arrow button to the same Day on Home, where it
 // can be changed.
-export function DayRow({ day, homePath, badge, children }: DayRowProps) {
+export function DayRow({
+  day,
+  homePath,
+  categories = [],
+  children,
+}: DayRowProps) {
   const title = formatDayTitle(day);
+  const spoken = [title, ...categories.map(categoryName)].join(", ");
   return (
     <Disclosure className="group border-t border-field first:border-t-0">
       {/* Level 2, a sibling of the Dashboard's heading: the list has no heading
@@ -165,18 +175,21 @@ export function DayRow({ day, homePath, badge, children }: DayRowProps) {
           slot="trigger"
           // Spoken as "Friday (11/13/26), ate out": the spans alone would run
           // together. The colon is visual only, so the label leaves it out.
-          aria-label={badge === undefined ? title : `${title}, ${badge}`}
+          aria-label={spoken}
           // -outline-offset-2 draws the focus ring inside the row, where the
           // card's overflow-hidden cannot clip it.
           className="flex min-h-11 w-full items-center gap-2 bg-restaurant px-3 text-left font-semibold text-on-restaurant -outline-offset-2 data-pressed:bg-edge"
         >
           <span>{title}:</span>
-          {/* The icon carries no text: the button's label says "ate out". */}
-          {badge !== undefined && (
-            <span className="flex size-7 items-center justify-center rounded-full bg-card text-restaurant-ink">
-              <ForkKnifeIcon />
+          {/* The icons carry no text: the button's label names each one. */}
+          {categories.map((category) => (
+            <span
+              key={category}
+              className="flex size-7 items-center justify-center rounded-full bg-card text-restaurant-ink"
+            >
+              <CategoryIcon category={category} />
             </span>
-          )}
+          ))}
           <span className="ml-auto">
             <Chevron className="text-on-restaurant" />
           </span>

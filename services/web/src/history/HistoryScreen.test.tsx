@@ -240,16 +240,17 @@ describe("the Meals Dashboard", () => {
     });
     renderAt("/history?dash=open", <HistoryScreen />);
 
-    // The chart's legend names the ate-out point and the ring.
+    // The chart's legend names the Restaurant Day point and the ring. Not "ate
+    // out": that is one Restaurant Category of three (ADR 0041).
     await viewSwitch("Calories per Day");
     const legend = within(dashboardPanel()).getAllByRole("list")[0];
-    expect(legend).toHaveTextContent(/^ate outincomplete$/);
-    expect(tile("ate out")).toHaveTextContent("1");
+    expect(legend).toHaveTextContent(/^restaurantincomplete$/);
+    expect(tile("restaurant")).toHaveTextContent("1");
     expect(tile("incomplete")).toHaveTextContent("1");
 
     const rows = await tableRows("Calories per Day");
 
-    expect(rows[0]).toEqual([formatDay(daysAgo(1)), "5,000 cal", "ate out"]);
+    expect(rows[0]).toEqual([formatDay(daysAgo(1)), "5,000 cal", "restaurant"]);
     expect(rows[1]).toEqual([
       formatDay(daysAgo(2)),
       "900 cal",

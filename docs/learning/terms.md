@@ -727,3 +727,4 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **sRGB vs Display P3**: two colour ranges; sRGB is the web's default, P3 is wider and what iPhones shoot in, so converting P3 to sRGB slightly dulls the most saturated colours.
 - **Canvas (`<canvas>`)**: a browser drawing surface holding only pixels; drawing an image onto it and exporting with `toBlob` makes a new image with no metadata.
 - **Postgres enum type**: a custom column type (`CREATE TYPE ... AS ENUM`) that only accepts listed values; adding a value needs `ALTER TYPE` and removing one means rebuilding the type, which is why a `CHECK` on `text` is often preferred.
+- **`sr-only`**: a Tailwind class that hides text visually but keeps it in the accessibility tree, so a screen reader still says what an icon means, e.g. "(drinks)" after a Restaurant name.

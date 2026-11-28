@@ -1,8 +1,8 @@
 import { formatAmount, type Meal } from "./meals";
 import { RestaurantLine } from "./RestaurantLine";
 
-// What a Meal holds: its Foods and amounts, or its Restaurants in pink with the
-// fork and knife, as History shows a Restaurant Meal.
+// What a Meal holds: its Foods and amounts, or its Restaurants in pink, each with
+// its Category's icon, as History shows a Restaurant Meal.
 export function MealContents({ meal }: { meal: Meal }) {
   return (
     <ul className="mt-1 flex flex-col gap-1">

@@ -1,12 +1,15 @@
 import { useState, type SyntheticEvent } from "react";
 import { Button } from "react-aria-components";
 
+import { labelClass } from "../components/formStyles";
+import { Segments } from "../components/Segments";
 import { Sheet } from "../components/Sheet";
 import { TextField } from "../components/Fields";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { uuidv7 } from "../lib/uuidv7";
 import {
   MAX_NAME_LENGTH,
+  restaurantCatalog,
   type Catalog,
   type CatalogItem,
   type CatalogRef,
@@ -15,6 +18,11 @@ import { ItemActions } from "./ItemActions";
 import { NameClash } from "./NameClash";
 import { nameClashOf } from "./nameClash";
 import { useCatalogItem, useCreateItem, useRenameItem } from "./queries";
+import {
+  CATEGORIES,
+  DEFAULT_CATEGORY,
+  type RestaurantCategory,
+} from "./restaurantCategory";
 
 interface CatalogItemSheetProps {
   catalog: Catalog;
@@ -25,8 +33,9 @@ interface CatalogItemSheetProps {
   onOpen: (item: CatalogRef) => void;
 }
 
-// ADR 0032's sheet for a Restaurant or an Exercise: a name and nothing else to edit,
-// then Archive, Unarchive or Delete. Foods have their own sheet, with Nutrition.
+// ADR 0032's sheet for a Restaurant or an Exercise: a name, and for a Restaurant its
+// Category (ADR 0041), then Archive, Unarchive or Delete. Foods have their own sheet,
+// with Nutrition.
 export function CatalogItemSheet({
   catalog,
   itemId,
@@ -84,9 +93,12 @@ interface NameFormProps {
   onOpen: (item: CatalogRef) => void;
 }
 
-// Mounted once the item has loaded, so the name starts from the server's.
+// Mounted once the item has loaded, so the name and Category start from the server's.
 function NameForm({ catalog, item, onClose, onOpen }: NameFormProps) {
+  const hasCategory = catalog === restaurantCatalog;
   const [name, setName] = useState(item?.name ?? "");
+  const saved = item?.category ?? DEFAULT_CATEGORY;
+  const [category, setCategory] = useState<RestaurantCategory>(saved);
   const [triedSave, setTriedSave] = useState(false);
   // Made once per sheet, so "Save anyway" after a clash creates the same item.
   const [newId] = useState(uuidv7);
@@ -109,15 +121,20 @@ function NameForm({ catalog, item, onClose, onOpen }: NameFormProps) {
       return;
     }
     // Nothing changed, so there is nothing to send.
-    if (trimmed === item?.name) {
+    if (trimmed === item?.name && category === saved) {
       onClose();
       return;
     }
     const done = { onSuccess: onClose };
+    // The name and the Category go in one write, so Save is all or nothing.
+    const sent = hasCategory ? { category } : {};
     if (item) {
-      renameItem.mutate({ name: trimmed, allowSimilar }, done);
+      renameItem.mutate({ name: trimmed, allowSimilar, ...sent }, done);
     } else {
-      createItem.mutate({ id: newId, name: trimmed, allowSimilar }, done);
+      createItem.mutate(
+        { id: newId, name: trimmed, allowSimilar, ...sent },
+        done,
+      );
     }
   }
 
@@ -140,6 +157,20 @@ function NameForm({ catalog, item, onClose, onOpen }: NameFormProps) {
           write.reset();
         }}
       />
+
+      {hasCategory && (
+        // Labelled above like the Name field. The group's own aria-label is what a
+        // screen reader hears, so the visible word is not read twice.
+        <div className={labelClass}>
+          <span aria-hidden="true">Category</span>
+          <Segments
+            label="Category"
+            options={CATEGORIES}
+            value={category}
+            onChange={setCategory}
+          />
+        </div>
+      )}
 
       {clash ? (
         <NameClash

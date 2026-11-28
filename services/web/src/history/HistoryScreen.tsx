@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 
 import { CatalogComboBox } from "../catalog/CatalogComboBox";
 import { exerciseCatalog, type CatalogItem } from "../catalog/catalogs";
+import { CategoryChips } from "../catalog/CategoryChips";
 import { RecentChips } from "../catalog/RecentChips";
 import { useToday } from "../lib/useToday";
 import { labelClass, fieldClass } from "../components/formStyles";
@@ -118,16 +119,31 @@ export function HistoryScreen() {
               }}
             />,
           )}
-          {/* The filter never narrows the Dashboard (ADR 0033): its numbers stay
+          {/* Only Days with a Restaurant of one Category (ADR 0041). A group,
+              so a screen reader hears what the three chips choose. */}
+          <div
+            role="group"
+            aria-label="Restaurant Category"
+            className="flex flex-wrap gap-2"
+          >
+            <CategoryChips
+              value={query.category}
+              onChange={(category) => {
+                update({ category });
+              }}
+            />
+          </div>
+          {/* The filters never narrow the Dashboard (ADR 0033): its numbers stay
               "all eating in the Range". */}
           {section(null)}
-          {/* Keyed on the Range and the filter, so each new list starts with
+          {/* Keyed on the Range and the filters, so each new list starts with
               every Day closed, like a first visit. */}
           <MealDays
-            key={`${from ?? "all"} ${query.q}`}
+            key={`${from ?? "all"} ${query.q} ${query.category ?? ""}`}
             from={from}
             to={today}
             q={query.q}
+            category={query.category}
           />
         </>
       ) : (

@@ -165,6 +165,31 @@ describe("the Day total", () => {
     ).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("names each Category of a Restaurant Day in the Day total", async () => {
+    const bar: RestaurantRef = {
+      ...tacos,
+      name: "Corner Bar",
+      category: "drinks",
+    };
+    seedRestaurants(
+      [cafe, bar],
+      aRestaurantMeal([bar], { id: "a" }),
+      aRestaurantMeal([cafe], { id: "b" }),
+    );
+    renderAt(PAST_URL, <MealsWindow />);
+
+    const total = await dayTotal();
+
+    // In the fixed order, not the order the Meals came in (ADR 0041).
+    await waitFor(() => {
+      expect(
+        within(total)
+          .getAllByText(/^(ate out|drinks|dessert)$/)
+          .map((badge) => badge.textContent),
+      ).toEqual(["ate out", "drinks"]);
+    });
+  });
+
   it("marks a Restaurant Day, with the flat value and no macros", async () => {
     seedApi(aMeal({ id: "a" }), aRestaurantMeal([cafe], { id: "b" }));
     renderAt(PAST_URL, <MealsWindow />);

@@ -2,6 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { api, unwrap } from "../api/client";
 import type { components } from "../api/schema";
+import type { RestaurantCategory } from "../catalog/restaurantCategory";
 import type { ExerciseSession } from "../exercise/sessions";
 
 export type MealDay = components["schemas"]["MealDay"];
@@ -33,9 +34,17 @@ export const DAYS_PER_PAGE = 20;
 // server filters, not the browser: with paging, the browser only ever holds the
 // pages loaded so far and would miss older matches (ADR 0033). Each `q` is its own
 // key, so it is cached on its own and starts from the first page too.
-export function useMealDays(from: string | null, to: string, q: string) {
+//
+// `category` keeps only the Days with a Restaurant of it (ADR 0041), and is its own
+// key for the same reasons.
+export function useMealDays(
+  from: string | null,
+  to: string,
+  q: string,
+  category: RestaurantCategory | null,
+) {
   return useInfiniteQuery({
-    queryKey: [MEAL_DAYS_KEY, from, to, q],
+    queryKey: [MEAL_DAYS_KEY, from, to, q, category],
     queryFn: ({ pageParam }) =>
       unwrap(
         api.GET("/api/v1/meal-days", {
@@ -45,6 +54,7 @@ export function useMealDays(from: string | null, to: string, q: string) {
               to,
               // Left out when empty, so no filter is no `q` at all.
               ...(q === "" ? {} : { q }),
+              ...(category === null ? {} : { category }),
               cursor: pageParam,
               limit: DAYS_PER_PAGE,
             },

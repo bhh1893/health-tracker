@@ -7,6 +7,7 @@ import { useViewedDay } from "../lib/useViewedDay";
 import { DayTotalSummary } from "../nutrition/DayTotalSummary";
 import { useDayTotals } from "../nutrition/queries";
 import { MealCard } from "./MealCard";
+import { categoriesOf } from "../catalog/restaurantCategory";
 import { sortMeals, type Meal } from "./meals";
 import { MealSheet } from "./MealSheet";
 import { useDayMeals } from "./queries";
@@ -15,6 +16,14 @@ import { useDayMeals } from "./queries";
 type Sheet = { saved: Meal } | { saved: null; kind: Meal["kind"] } | null;
 
 const addClass = "rounded-full p-4 text-lg font-semibold";
+
+// The Categories of the Day's Restaurants (ADR 0041), for the Day total's badges.
+const restaurantCategories = (meals: readonly Meal[]) =>
+  categoriesOf(
+    meals.flatMap((meal) =>
+      meal.kind === "restaurant" ? meal.restaurants : [],
+    ),
+  );
 
 export function MealsWindow() {
   const { day } = useViewedDay();
@@ -32,7 +41,12 @@ export function MealsWindow() {
     <main className="flex flex-1 flex-col gap-4">
       <h2 className="sr-only">Meals on {day}</h2>
       <DayPager />
-      {total && <DayTotalSummary total={total} />}
+      {total && (
+        <DayTotalSummary
+          total={total}
+          categories={restaurantCategories(sorted)}
+        />
+      )}
       {meals.error && <ProblemAlert error={meals.error} />}
       {/* One alert is enough when the server is unreachable for both. */}
       {totals.error && !meals.error && <ProblemAlert error={totals.error} />}

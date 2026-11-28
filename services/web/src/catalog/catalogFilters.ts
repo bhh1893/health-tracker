@@ -1,4 +1,5 @@
 import type { CatalogItem } from "./catalogs";
+import { parseCategory, type RestaurantCategory } from "./restaurantCategory";
 
 // A Profile Catalog page's filters (ADR 0032). They live in the URL, so Back and the
 // Profile tab's memory bring the list back as it was.
@@ -9,18 +10,26 @@ export interface CatalogFilters {
   archived: boolean;
   // Foods only: just those with no Nutrition yet.
   missing: boolean;
+  // Restaurants only: just those of this Category (ADR 0041), or null for all.
+  category: RestaurantCategory | null;
 }
 
-// `hasNutrition` is false on Restaurants and Exercises, where ?missing=1 means
-// nothing and is ignored rather than hiding every row.
+// What a Catalog's items have, so a filter it cannot have is ignored rather than
+// hiding every row: ?missing=1 on Restaurants, ?category= on Foods.
+interface Has {
+  nutrition: boolean;
+  category: boolean;
+}
+
 export function parseFilters(
   params: URLSearchParams,
-  hasNutrition: boolean,
+  has: Has,
 ): CatalogFilters {
   return {
     q: params.get("q") ?? "",
     archived: params.get("archived") === "1",
-    missing: hasNutrition && params.get("missing") === "1",
+    missing: has.nutrition && params.get("missing") === "1",
+    category: has.category ? parseCategory(params.get("category")) : null,
   };
 }
 
@@ -29,6 +38,7 @@ export function toSearchParams({
   q,
   archived,
   missing,
+  category,
 }: CatalogFilters): URLSearchParams {
   const params = new URLSearchParams();
   if (q !== "") {
@@ -39,6 +49,9 @@ export function toSearchParams({
   }
   if (missing) {
     params.set("missing", "1");
+  }
+  if (category !== null) {
+    params.set("category", category);
   }
   return params;
 }
@@ -52,13 +65,14 @@ const normalize = (text: string) =>
 // finds nothing here (ADR 0032, Consequences). The order is the API's.
 export function filterItems(
   items: readonly CatalogItem[],
-  { q, archived, missing }: CatalogFilters,
+  { q, archived, missing, category }: CatalogFilters,
 ): CatalogItem[] {
   const needle = normalize(q);
   return items.filter(
     (item) =>
       (archived || !item.archived) &&
       (!missing || item.nutrition == null) &&
+      (category === null || item.category === category) &&
       normalize(item.name).includes(needle),
   );
 }

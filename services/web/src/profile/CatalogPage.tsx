@@ -11,16 +11,18 @@ import {
 import { CatalogItemSheet } from "../catalog/CatalogItemSheet";
 import {
   foodCatalog,
+  restaurantCatalog,
   type Catalog,
   type CatalogItem,
 } from "../catalog/catalogs";
 import { LIST_LIMIT, useCatalogList } from "../catalog/queries";
-import { fieldClass } from "../components/formStyles";
+import { CategoryChips } from "../catalog/CategoryChips";
+import { categoryName } from "../catalog/restaurantCategory";
+import { CategoryIcon } from "../components/CategoryIcon";
+import { chipClass, fieldClass } from "../components/formStyles";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { FoodSheet } from "../foods/FoodSheet";
 
-const chipClass =
-  "rounded-full border border-field px-3 py-1 text-base data-selected:border-action data-selected:bg-action data-selected:text-on-fill";
 const tagClass = "rounded-full bg-inset px-2 text-sm text-on-inset";
 
 interface CatalogPageProps {
@@ -36,8 +38,12 @@ type OpenSheet = { id: string | null } | null;
 // in the browser, so typing never waits on the network.
 export function CatalogPage({ catalog }: CatalogPageProps) {
   const hasNutrition = catalog === foodCatalog;
+  const hasCategory = catalog === restaurantCatalog;
   const [params, setParams] = useSearchParams();
-  const filters = parseFilters(params, hasNutrition);
+  const filters = parseFilters(params, {
+    nutrition: hasNutrition,
+    category: hasCategory,
+  });
   const list = useCatalogList(catalog, filters.archived);
   const [open, setOpen] = useState<OpenSheet>(null);
 
@@ -89,6 +95,14 @@ export function CatalogPage({ catalog }: CatalogPageProps) {
             >
               No nutrition yet
             </ToggleButton>
+          )}
+          {hasCategory && (
+            <CategoryChips
+              value={filters.category}
+              onChange={(category) => {
+                update({ category });
+              }}
+            />
           )}
           <ToggleButton
             className={chipClass}
@@ -192,6 +206,12 @@ function Results({ catalog, all, filters, onOpen }: ResultsProps) {
               >
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="text-base font-medium">{item.name}</span>
+                  {item.category !== undefined && (
+                    <span className="flex items-center gap-1 rounded-full bg-restaurant-soft px-2 text-sm text-on-restaurant">
+                      <CategoryIcon category={item.category} />
+                      {categoryName(item.category)}
+                    </span>
+                  )}
                   {item.archived && <span className={tagClass}>Archived</span>}
                 </span>
                 {catalog === foodCatalog && <NutritionLine item={item} />}

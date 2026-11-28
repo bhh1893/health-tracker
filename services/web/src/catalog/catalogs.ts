@@ -1,13 +1,13 @@
 import { api, unwrap } from "../api/client";
 import type { components } from "../api/schema";
 import { EXERCISE_DAYS_KEY, MEAL_DAYS_KEY } from "../history/queries";
+import { DEFAULT_CATEGORY } from "./restaurantCategory";
 
 export type CatalogRef = components["schemas"]["CatalogRef"];
 export type Food = components["schemas"]["Food"];
 export type Restaurant = components["schemas"]["Restaurant"];
 // A Restaurant inside a Restaurant Meal: the reference plus its Category (ADR 0041).
 export type RestaurantRef = components["schemas"]["RestaurantRef"];
-type PutRestaurant = components["schemas"]["PutRestaurant"];
 
 // The API's bound on every Catalog name (services/api catalogs.py), so a form refuses
 // a longer one in its own words before any request.
@@ -24,15 +24,19 @@ export type CatalogItem = CatalogRef &
       Pick<Restaurant, "category">
   >;
 
+// `category` is sent only to Restaurants, the one Catalog that has it. Left out, a
+// new Restaurant is ate out and a renamed one keeps its Category.
 interface NewItem {
   id: string;
   name: string;
   allowSimilar: boolean;
+  category?: Restaurant["category"];
 }
 
 export interface Rename {
   name: string;
   allowSimilar: boolean;
+  category?: Restaurant["category"];
 }
 
 // The three Catalogs share one API shape (ADR 0006): list, read, create, rename,
@@ -63,6 +67,7 @@ export interface Catalog {
   remove: (id: string) => Promise<void>;
 }
 
+// Foods and Exercises refuse a field they do not have, so `category` never reaches them.
 const renameBody = ({ name, allowSimilar }: Rename) => ({
   name,
   allow_similar: allowSimilar,
@@ -184,22 +189,27 @@ export const restaurantCatalog: Catalog = {
         params: { path: { item_id: id } },
       }),
     ),
-  create: ({ id, name, allowSimilar }) =>
+  create: ({ id, name, allowSimilar, category }) =>
     unwrap(
       api.PUT("/api/v1/restaurants/{item_id}", {
         params: { path: { item_id: id } },
-        // Until the web half of ADR 0041, no category: both images deploy at
-        // once, and an api pod from before it refuses the field mid-rollout.
-        // Left out, the API makes the Restaurant ate out. The contract marks a
-        // field with a default as required, hence the cast.
-        body: { name, allow_similar: allowSimilar } as PutRestaurant,
+        // The contract marks a field with a default as required, as it does
+        // allow_similar, so a new Restaurant sends the API's own default.
+        body: {
+          name,
+          allow_similar: allowSimilar,
+          category: category ?? DEFAULT_CATEGORY,
+        },
       }),
     ),
   rename: (id, change) =>
     unwrap(
       api.PATCH("/api/v1/restaurants/{item_id}", {
         params: { path: { item_id: id } },
-        body: renameBody(change),
+        body: {
+          ...renameBody(change),
+          ...(change.category && { category: change.category }),
+        },
       }),
     ),
   setArchived: (id, archived) =>
