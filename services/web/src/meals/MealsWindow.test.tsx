@@ -4,7 +4,7 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { App } from "../App";
-import type { CatalogRef } from "../catalog/catalogs";
+import type { RestaurantRef } from "../catalog/catalogs";
 import {
   aMeal,
   aRestaurantMeal,
@@ -31,15 +31,16 @@ function seedApi(...seed: Meal[]) {
 }
 
 // For a Restaurant Catalog beyond the one `cafe`.
-function seedRestaurants(restaurants: CatalogRef[], ...seed: Meal[]) {
+function seedRestaurants(restaurants: RestaurantRef[], ...seed: Meal[]) {
   api = fakeMealApi(seed, undefined, restaurants);
   server.use(...api.handlers);
 }
 
-const aRestaurant = (n: number, name: string): CatalogRef => ({
+const aRestaurant = (n: number, name: string): RestaurantRef => ({
   id: `0190a000-0000-7000-8000-0000000002${String(n).padStart(2, "0")}`,
   name,
   archived: false,
+  category: "ate_out",
 });
 const tacos = aRestaurant(2, "Taco Stand");
 const noodles = aRestaurant(3, "Noodle Bar");
