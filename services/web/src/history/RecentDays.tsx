@@ -159,7 +159,7 @@ export function DayRow({ day, homePath, pill, children }: DayRowProps) {
       <Heading level={2}>
         <Button
           slot="trigger"
-          // Spoken as "(Friday) 11-13-26, ate out": the spans alone would run
+          // Spoken as "Friday (11/13/26), ate out": the spans alone would run
           // together. The colon is visual only, so the label leaves it out.
           aria-label={pill === undefined ? title : `${title}, ${pill}`}
           className="flex min-h-11 w-full items-center gap-2 px-3 text-left font-semibold"
@@ -178,8 +178,10 @@ export function DayRow({ day, homePath, pill, children }: DayRowProps) {
       <DisclosurePanel>
         {children}
         {/* A plain link, not a button: it changes the URL, so long-press and
-            the back button work, and Home reads the Day from ?day= (ADR 0013). */}
-        <div className="flex justify-end px-1 pb-1">
+            the back button work, and Home reads the Day from ?day= (ADR 0013).
+            -mt-3 pulls it up over the list's bottom padding and the last row's,
+            so it sits close to the items while keeping its 44px tap target. */}
+        <div className="-mt-3 flex justify-end px-1 pb-1">
           <Link
             to={`${homePath}?day=${day}`}
             aria-label={`Open ${title} on Home`}
