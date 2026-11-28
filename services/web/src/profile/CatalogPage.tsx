@@ -21,7 +21,7 @@ import { FoodSheet } from "../foods/FoodSheet";
 
 const chipClass =
   "rounded-full border border-field px-3 py-1 text-base data-selected:border-action data-selected:bg-action data-selected:text-on-fill";
-const tagClass = "rounded-full bg-inset px-2 text-sm text-muted";
+const tagClass = "rounded-full bg-inset px-2 text-sm text-on-inset";
 
 interface CatalogPageProps {
   catalog: Catalog;
@@ -63,7 +63,7 @@ export function CatalogPage({ catalog }: CatalogPageProps) {
           above it once stuck, and an opaque background hides the rows passing under.
           z-10 stays under the tab bar (z-40) and sheets (z-50). */}
       <div className="sticky top-0 z-10 flex flex-col gap-4 border-b border-edge bg-page pt-4 pb-4">
-        <h1 className="text-center text-xl font-semibold text-action">
+        <h1 className="text-center text-xl font-semibold text-action-ink">
           {catalog.plural}
         </h1>
 

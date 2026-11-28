@@ -5,7 +5,7 @@
 
    Green is Food, pink is Restaurant, brown is everything else. Red means Delete and
    errors only, so pink never warns. "-soft" is a tint to sit behind text, "-ink" a
-   text color.
+   text color, "on-" the text color for a fill.
 
    @theme turns each variable into Tailwind classes: --color-food gives bg-food,
    text-food and border-food. "initial" removes Tailwind's own palette, so a class
@@ -14,31 +14,40 @@
 @theme static {
   --color-*: initial;
 
-  /* Cream white: what things sit on. */
-  --color-page: #faf5ea;
-  --color-card: #fffdf8;
-  --color-inset: #efe6d6; /* a switch's track, a stat tile, a pressed row */
-  --color-edge: #e2d4be; /* a hairline between or around things */
-  --color-field: #cbb798; /* an input's border, stronger than an edge */
-  --color-disabled: #cbb798;
+  /* The owner's palette (ADR 0035): five colors, each with the text color that
+     goes on it. Values not in the palette are marked "derived". */
 
-  /* Brown: text, and every control that is not about Food or Restaurants. */
-  --color-ink: #3e2a1e;
-  --color-muted: #6b5344;
-  --color-faint: #705949;
-  --color-action: #6b4530;
-  --color-action-pressed: #4a2e20;
-  --color-action-soft: #eadccb;
-  --color-on-fill: #ffffff; /* text on a filled button */
+  /* Cream: what things sit on. Text on it is the cream text color. */
+  --color-page: #f6efe9;
+  --color-card: #ffffff;
+  --color-edge: #dccbbe; /* derived: a hairline between or around things */
+  --color-field: #c4afa3; /* derived: an input's border, stronger than an edge */
+  --color-disabled: #c4afa3; /* derived */
+  --color-ink: #79685f;
+  --color-muted: #79685f;
+  --color-faint: #79685f;
+
+  /* Ivory: a toggle's track, a stat tile, a selected tab, a Day row. */
+  --color-inset: #e8ddcb;
+  --color-action-soft: #e8ddcb;
+  --color-on-inset: #66563f; /* text on ivory */
+
+  /* Brown: every control that is not about Food or Restaurants. */
+  --color-action: #8b6a5b; /* fills, borders, icons */
+  --color-action-ink: #79685f; /* brown-role text on cream: links, titles */
+  --color-action-pressed: #6f5447; /* derived */
+  --color-on-fill: #ffffff; /* text on a brown or red fill */
 
   /* Green: Food. */
-  --color-food: #3f6b3a;
-  --color-food-soft: #e3edd8;
+  --color-food: #c0c9b4;
+  --color-food-soft: #e7ebe1; /* derived: a lighter tint for the Day total */
+  --color-on-food: #454f34; /* text on either green */
 
   /* Pink: Restaurant. */
-  --color-restaurant: #b83a66;
-  --color-restaurant-soft: #fadce5;
-  --color-restaurant-ink: #a9325b;
+  --color-restaurant: #eed9d4;
+  --color-restaurant-soft: #eed9d4;
+  --color-restaurant-ink: #7d5556; /* a Restaurant name, and text on pink */
+  --color-on-restaurant: #7d5556;
 
   --color-warn-soft: #ebd9b8;
   --color-warn-ink: #633f1e;
@@ -46,11 +55,12 @@
   --color-danger: #8f1d14;
   --color-danger-soft: #f9e3dc;
 
-  /* Chart marks. The line and the point also differ in lightness, since hue alone
-     does not separate green from pink for everyone. */
-  --color-chart-food: #2f5530;
-  --color-chart-restaurant: #d9668a;
-  --color-chart-exercise: #6b4530;
+  /* Chart marks, each at least 3:1 on a card. The line and the point also differ
+     in lightness, since hue alone does not separate green from pink for
+     everyone. */
+  --color-chart-food: #454f34;
+  --color-chart-restaurant: #b86d7a; /* derived from the pink */
+  --color-chart-exercise: #8b6a5b;
 }
 
 @layer base {

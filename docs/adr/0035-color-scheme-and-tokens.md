@@ -17,12 +17,26 @@ status: accepted
 - **Tan,** a light brown, flags a total to read with care (Incomplete, missing Nutrition) and marks a filter's matches. It takes over from amber and yellow.
 - **Red is Delete, Sign out and errors only,** a dark brick kept well away from pink.
 
+### Palette (2026-11-28)
+
+The owner picked five colors, each with the text color that goes on it:
+
+| Color | Fill | Text on it | Tokens | Used for |
+| --- | --- | --- | --- | --- |
+| Brown | `#8b6a5b` | `#ffffff` | `action`, `on-fill` | buttons, borders, icons, the Exercise chart line, `theme-color` |
+| Pink | `#eed9d4` | `#7d5556` | `restaurant`, `restaurant-soft`, `restaurant-ink`, `on-restaurant` | Restaurant buttons, names, the "ate out" pill and section |
+| Cream | `#f6efe9` | `#79685f` | `page`, `ink`, `muted`, `faint`, `action-ink` | the page and all plain text; cards are white |
+| Green | `#c0c9b4` | `#454f34` | `food`, `on-food` | Food buttons |
+| Ivory | `#e8ddcb` | `#66563f` | `inset`, `action-soft`, `on-inset` | toggles, stat tiles, the selected tab |
+
+The owner's brown text `#ffebe0` was 4.22:1 on the brown, under AA, so text on brown is white (4.87:1) by the owner's choice. Every colored surface sets its own text color: the cream text color falls under 4.5:1 on ivory, pink and green. Derived, not in the palette: `card` white, the `edge` and `field` lines, `disabled`, `action-pressed`, `food-soft` `#e7ebe1` (a lighter green for the Day total) and the chart's Restaurant point `#b86d7a`. Tan (warnings, filter matches) and red are unchanged.
+
 ### Tokens
 
 - **Named for the role, not the hue:** `bg-restaurant`, not `bg-pink`. A new palette changes one block in `index.css` and no component.
 - **Tailwind's own palette is removed** (`--color-*: initial`), so a class such as `bg-teal-700` produces nothing and cannot bypass the scheme unnoticed.
 - **The chart reads the same tokens** as CSS variables. A chart says what it measures (`food` or `exercise`), and that picks its line color.
-- **Three copies stay outside:** `index.html`'s `theme-color` and the web manifest's colors. The browser reads both before any CSS, so they repeat the brown and the cream by hand. The icon (`favicon.svg` and the PNGs rendered from it) repeats the Food green, on the Restaurant badge's light pink, because an SVG loaded as an image cannot read the page's CSS variables. It is a logo, so there the two colors carry no meaning (amended 2026-11-25).
+- **Three copies stay outside:** `index.html`'s `theme-color` and the web manifest's colors. The browser reads both before any CSS, so they repeat the brown and the cream by hand. The icon (`favicon.svg` and the PNGs rendered from it) repeats the earlier Food green, on the earlier Restaurant badge's light pink (not yet moved to the 2026-11-28 palette), because an SVG loaded as an image cannot read the page's CSS variables. It is a logo, so there the two colors carry no meaning (amended 2026-11-25).
 
 ### Contrast
 

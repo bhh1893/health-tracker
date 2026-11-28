@@ -45,7 +45,7 @@ export function Segments<T extends string>({
             compact
               ? "rounded-md px-2.5 py-1 text-sm"
               : "flex-1 rounded-lg px-4 py-2 text-base"
-          } text-muted data-selected:bg-card data-selected:font-semibold data-selected:text-ink data-selected:shadow-sm`}
+          } text-on-inset data-selected:bg-card data-selected:font-semibold data-selected:text-ink data-selected:shadow-sm`}
         >
           {option.label}
         </ToggleButton>

@@ -61,7 +61,7 @@ export function DayPager() {
       </div>
       {!isToday && (
         <Button
-          className="rounded-xl border-2 border-action bg-action-soft p-2 text-base font-semibold text-action data-pressed:bg-edge"
+          className="rounded-xl border-2 border-action bg-action-soft p-2 text-base font-semibold text-on-inset data-pressed:bg-edge"
           onPress={() => {
             setDay(today);
           }}

@@ -14,7 +14,7 @@ import { useDayMeals } from "./queries";
 // Null sheet: closed. `saved` null: adding a new Meal of `kind`.
 type Sheet = { saved: Meal } | { saved: null; kind: Meal["kind"] } | null;
 
-const addClass = "rounded-full p-4 text-lg font-semibold text-on-fill";
+const addClass = "rounded-full p-4 text-lg font-semibold";
 
 export function MealsWindow() {
   const { day } = useViewedDay();
@@ -56,7 +56,7 @@ export function MealsWindow() {
           fit side by side; the sheet's title names the Day. */}
       <div className="sticky bottom-[calc(var(--tab-bar-footprint)+var(--tab-bar-gap))] mt-auto grid grid-cols-2 gap-3">
         <Button
-          className={`${addClass} bg-food`}
+          className={`${addClass} bg-food text-on-food`}
           onPress={() => {
             setSheet({ saved: null, kind: "foods" });
           }}
@@ -64,7 +64,7 @@ export function MealsWindow() {
           Add Food
         </Button>
         <Button
-          className={`${addClass} bg-restaurant`}
+          className={`${addClass} bg-restaurant text-on-restaurant`}
           onPress={() => {
             setSheet({ saved: null, kind: "restaurant" });
           }}

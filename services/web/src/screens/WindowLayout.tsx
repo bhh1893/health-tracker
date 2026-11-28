@@ -2,7 +2,7 @@ import { NavLink, Outlet, useLocation } from "react-router";
 
 const segmentClass = ({ isActive }: { isActive: boolean }) =>
   `flex-1 rounded-lg px-4 py-2 text-center text-base ${
-    isActive ? "bg-card font-semibold shadow-sm" : "text-muted"
+    isActive ? "bg-card font-semibold shadow-sm" : "text-on-inset"
   }`;
 
 // Meals and Exercise share this frame (ADR 0008): the Add tab's screen. Search and
@@ -16,7 +16,7 @@ export function WindowLayout() {
     // an empty Day. The bottom padding is the gap between that button and the bar.
     <div className="mx-auto flex min-h-[calc(100dvh-var(--tab-bar-footprint))] max-w-md flex-col gap-4 px-4 pt-4 pb-(--tab-bar-gap)">
       <header>
-        <h1 className="text-center text-xl font-semibold text-action">
+        <h1 className="text-center text-xl font-semibold text-action-ink">
           Nibble{" "}
           {/* Decoration, so the empty alt keeps the heading's name "Nibble Jiggle". */}
           <img src="/favicon.svg" alt="" className="inline size-8" /> Jiggle

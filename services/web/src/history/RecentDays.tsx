@@ -18,7 +18,7 @@ import { formatDayTitle } from "./dayTitle";
 import type { DayPage } from "./queries";
 
 const buttonClass =
-  "m-3 rounded-xl border-2 border-action p-3 text-base text-action data-pressed:bg-action-soft";
+  "m-3 rounded-xl border-2 border-action p-3 text-base text-action-ink data-pressed:bg-action-soft";
 
 interface RecentDaysProps<T> {
   pages: UseInfiniteQueryResult<InfiniteData<DayPage<T>>>;

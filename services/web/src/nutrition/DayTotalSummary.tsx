@@ -38,19 +38,20 @@ export function DayTotalSummary({ total }: { total: DayTotal }) {
     return (
       <section
         aria-label="Day total"
-        className={`${sectionClass} bg-restaurant-soft`}
+        className={`${sectionClass} bg-restaurant-soft text-on-restaurant`}
       >
         <div>
           <Badge tone="restaurant">ate out</Badge>
         </div>
-        <p className="text-sm text-muted">
-          Not tracking, has become a cheat day.
-        </p>
+        <p className="text-sm">Not tracking, has become a cheat day.</p>
       </section>
     );
   }
   return (
-    <section aria-label="Day total" className={`${sectionClass} bg-food-soft`}>
+    <section
+      aria-label="Day total"
+      className={`${sectionClass} bg-food-soft text-on-food`}
+    >
       <div className="flex items-center justify-between gap-2">
         <p className="text-lg font-semibold">{formatKcal(total.kcal)}</p>
         {total.incomplete && (
@@ -60,11 +61,9 @@ export function DayTotalSummary({ total }: { total: DayTotal }) {
         )}
       </div>
       {/* Null macros are unknown, not zero: "0 g" would be a false number. */}
-      <p className="text-sm text-muted">
-        {formatMacros(total) ?? "Macros: no data"}
-      </p>
+      <p className="text-sm">{formatMacros(total) ?? "Macros: no data"}</p>
       {total.incomplete && (
-        <p className="text-sm text-muted">
+        <p className="text-sm">
           Some Foods have no Nutrition or Piece Weight yet, so the real total is
           higher. Tap Incomplete to finish them.
         </p>
