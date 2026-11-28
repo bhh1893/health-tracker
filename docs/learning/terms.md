@@ -717,3 +717,12 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **Windows Task Scheduler**: the Windows service that runs a program on a schedule, the host's equivalent of cron or a systemd timer.
 - **Source of truth**: the one store whose contents decide what exists when two stores disagree; the other is reconciled to match it.
 - **Mass-delete brake**: a guard that makes an automated cleanup refuse to run when it would delete far more than usual, because that usually means its inputs are wrong.
+- **Re-encode**: decode a file to raw pixels, then compress those pixels into a brand-new file; nothing of the original survives but the picture, which is how metadata is guaranteed gone.
+- **EXIF**: a metadata block inside JPEG and HEIC files listing capture date, camera model, GPS if allowed, and Orientation.
+- **EXIF Orientation**: a field telling viewers to rotate the stored pixels when showing them; the camera writes it instead of rotating pixels, and a canvas re-encode bakes it into upright pixels.
+- **CVE**: a public ID for one known security bug in one piece of software (CVE-2026-112403), so advisories, scanners and release notes can name the same bug.
+- **Heap overflow**: a C program writing past the end of a memory buffer; a crafted file can trigger it in a decoder, from a crash up to running the attacker's code.
+- **Decompression bomb**: a small file whose header claims huge dimensions, so decoding it eats gigabytes of memory; stopped by checking the header size before decoding.
+- **File signature (magic bytes)**: the first bytes of a file that identify its format (JPEG starts `FF D8 FF`), checked without decoding the rest.
+- **sRGB vs Display P3**: two colour ranges; sRGB is the web's default, P3 is wider and what iPhones shoot in, so converting P3 to sRGB slightly dulls the most saturated colours.
+- **Canvas (`<canvas>`)**: a browser drawing surface holding only pixels; drawing an image onto it and exporting with `toBlob` makes a new image with no metadata.
