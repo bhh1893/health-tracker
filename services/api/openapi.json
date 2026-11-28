@@ -786,6 +786,58 @@
         "title": "PatchMe",
         "type": "object"
       },
+      "PatchRestaurant": {
+        "additionalProperties": false,
+        "properties": {
+          "allow_similar": {
+            "default": false,
+            "title": "Allow Similar",
+            "type": "boolean"
+          },
+          "archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ate_out",
+                  "drinks",
+                  "dessert"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "PatchRestaurant",
+        "type": "object"
+      },
       "Problem": {
         "properties": {
           "detail": {
@@ -1048,6 +1100,37 @@
         "title": "PutItem",
         "type": "object"
       },
+      "PutRestaurant": {
+        "additionalProperties": false,
+        "properties": {
+          "allow_similar": {
+            "default": false,
+            "title": "Allow Similar",
+            "type": "boolean"
+          },
+          "category": {
+            "default": "ate_out",
+            "enum": [
+              "ate_out",
+              "drinks",
+              "dessert"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PutRestaurant",
+        "type": "object"
+      },
       "PutRestaurantMeal": {
         "additionalProperties": false,
         "properties": {
@@ -1155,6 +1238,52 @@
         "title": "ReferenceFood",
         "type": "object"
       },
+      "Restaurant": {
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "category": {
+            "enum": [
+              "ate_out",
+              "drinks",
+              "dessert"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_day": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used Day"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived",
+          "category"
+        ],
+        "title": "Restaurant",
+        "type": "object"
+      },
       "RestaurantMeal": {
         "properties": {
           "day": {
@@ -1198,12 +1327,12 @@
             "type": "string"
           },
           "restaurant": {
-            "$ref": "#/components/schemas/CatalogRef",
+            "$ref": "#/components/schemas/RestaurantRef",
             "deprecated": true
           },
           "restaurants": {
             "items": {
-              "$ref": "#/components/schemas/CatalogRef"
+              "$ref": "#/components/schemas/RestaurantRef"
             },
             "title": "Restaurants",
             "type": "array"
@@ -1220,6 +1349,41 @@
           "restaurant"
         ],
         "title": "RestaurantMeal",
+        "type": "object"
+      },
+      "RestaurantRef": {
+        "description": "How a Restaurant Meal points at its Restaurants: with the Category, so a Meal is drawn\nwithout asking for each Restaurant. Foods and Exercises keep the plain CatalogRef.",
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "category": {
+            "enum": [
+              "ate_out",
+              "drinks",
+              "dessert"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived",
+          "category"
+        ],
+        "title": "RestaurantRef",
         "type": "object"
       },
       "SessionSet": {
@@ -3334,7 +3498,7 @@
     },
     "/api/v1/meal-days": {
       "get": {
-        "description": "List Days with their Meals newest first, one page of whole Days at a time, optionally only Days with a Food or Restaurant whose name contains q.",
+        "description": "List Days with their Meals newest first, one page of whole Days at a time, optionally only Days with a Food or Restaurant whose name contains q, or with a Restaurant of a Category. A Day must match both when both are sent.",
         "operationId": "list_meal_days",
         "parameters": [
           {
@@ -3381,6 +3545,27 @@
               "pattern": "^[^\\x00]*$",
               "title": "Q",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "ate_out",
+                    "drinks",
+                    "dessert"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
             }
           },
           {
@@ -4190,7 +4375,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/CatalogItem"
+                    "$ref": "#/components/schemas/Restaurant"
                   },
                   "title": "Response Suggest Restaurants",
                   "type": "array"
@@ -4378,7 +4563,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogItem"
+                  "$ref": "#/components/schemas/Restaurant"
                 }
               }
             },
@@ -4459,7 +4644,7 @@
         ]
       },
       "patch": {
-        "description": "Rename, archive or unarchive a Restaurant.",
+        "description": "Rename, archive or unarchive a Restaurant, or change its Category.",
         "operationId": "patch_restaurant",
         "parameters": [
           {
@@ -4477,7 +4662,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchItem"
+                "$ref": "#/components/schemas/PatchRestaurant"
               }
             }
           },
@@ -4488,7 +4673,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogItem"
+                  "$ref": "#/components/schemas/Restaurant"
                 }
               }
             },
@@ -4589,7 +4774,7 @@
         ]
       },
       "put": {
-        "description": "Create a Restaurant at a client-generated UUIDv7, or replace its name.",
+        "description": "Create a Restaurant at a client-generated UUIDv7, or replace its name and Category.",
         "operationId": "put_restaurant",
         "parameters": [
           {
@@ -4607,7 +4792,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PutItem"
+                "$ref": "#/components/schemas/PutRestaurant"
               }
             }
           },
@@ -4618,7 +4803,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogItem"
+                  "$ref": "#/components/schemas/Restaurant"
                 }
               }
             },
@@ -4628,7 +4813,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogItem"
+                  "$ref": "#/components/schemas/Restaurant"
                 }
               }
             },

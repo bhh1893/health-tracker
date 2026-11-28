@@ -358,6 +358,22 @@ def test_food_entry_values_are_checked(
     assert_rejected(caught, CHECK_VIOLATION, constraint)
 
 
+@pytest.mark.parametrize("category", ["bar", "Drinks", ""])
+def test_restaurant_category_is_checked(session: Session, user: UUID, category: str) -> None:
+    with pytest.raises(IntegrityError) as caught:
+        insert(session, "restaurants", user_id=user, name="Spot", category=category)
+
+    assert_rejected(caught, CHECK_VIOLATION, "restaurants_category_check")
+
+
+def test_restaurant_category_cannot_be_null(session: Session, user: UUID) -> None:
+    with pytest.raises(IntegrityError) as caught:
+        insert(session, "restaurants", user_id=user, name="Spot", category=None)
+
+    error: Any = caught.value.orig
+    assert (error.sqlstate, error.diag.column_name) == (NOT_NULL_VIOLATION, "category")
+
+
 @pytest.mark.parametrize(
     ("values", "constraint"),
     [

@@ -115,6 +115,24 @@ class CatalogItem(CatalogRef):
     last_used_day: date | None = None
 
 
+# What a Restaurant is for, separate from a Meal's label (ADR 0041). It changes no number: a
+# Restaurant Day counts the same whatever its Categories. The same three values as the CHECK
+# in migration 0007.
+RestaurantCategory = Literal["ate_out", "drinks", "dessert"]
+DEFAULT_RESTAURANT_CATEGORY: RestaurantCategory = "ate_out"
+
+
+class RestaurantRef(CatalogRef):
+    """How a Restaurant Meal points at its Restaurants: with the Category, so a Meal is drawn
+    without asking for each Restaurant. Foods and Exercises keep the plain CatalogRef."""
+
+    category: RestaurantCategory
+
+
+class Restaurant(CatalogItem):
+    category: RestaurantCategory
+
+
 class Food(CatalogItem):
     last_unit: Literal["g", "count"] | None = None
     last_quantity: float | None = None
@@ -152,6 +170,17 @@ class PutFood(PutItem):
     # Leaving either out clears it: a PUT replaces the whole Food.
     nutrition: Nutrition | None = None
     piece_g: PieceWeight | None = None
+
+
+class PutRestaurant(PutItem):
+    # Leaving it out means ate out, as on a new Restaurant: a PUT replaces the whole item.
+    # Logging creates Restaurants this way and never sends it (ADR 0041).
+    category: RestaurantCategory = DEFAULT_RESTAURANT_CATEGORY
+
+
+class PatchRestaurant(PatchItem):
+    # Left out or null keeps it, as for name: a Restaurant always has a Category.
+    category: RestaurantCategory | None = None
 
 
 class PatchFood(PatchItem):
@@ -512,6 +541,42 @@ def add_name_writes(router: APIRouter, catalog: Catalog) -> None:
         return patch_item(session, catalog, user, item_id, body, {})
 
 
+def add_restaurant_writes(router: APIRouter, catalog: Catalog) -> None:
+    """PUT and PATCH for Restaurants, which also carry a Category (ADR 0041)."""
+
+    @router.put(
+        "/{item_id}",
+        operation_id="put_restaurant",
+        response_model=Restaurant,
+        description=(
+            "Create a Restaurant at a client-generated UUIDv7, or replace its name and Category."
+        ),
+        responses=put_responses(catalog),
+    )
+    def put(
+        item_id: UUID7,
+        body: PutRestaurant,
+        response: Response,
+        user: CurrentUser,
+        session: DbSession,
+    ) -> CatalogItem:
+        values = {"category": body.category}
+        return put_item(session, catalog, user, item_id, body, response, values)
+
+    @router.patch(
+        "/{item_id}",
+        operation_id="patch_restaurant",
+        response_model=Restaurant,
+        description="Rename, archive or unarchive a Restaurant, or change its Category.",
+        responses=problems(404, 409),
+    )
+    def patch(
+        item_id: UUID, body: PatchRestaurant, user: CurrentUser, session: DbSession
+    ) -> CatalogItem:
+        values = {} if body.category is None else {"category": body.category}
+        return patch_item(session, catalog, user, item_id, body, values)
+
+
 def add_food_writes(router: APIRouter, catalog: Catalog) -> None:
     """PUT and PATCH for Foods, which also carry Nutrition and Piece Weight (ADR 0023)."""
 
@@ -636,8 +701,8 @@ CATALOGS = (
         table="restaurants",
         item="restaurant",
         label="Restaurant",
-        model=CatalogItem,
-        add_writes=add_name_writes,
+        model=Restaurant,
+        add_writes=add_restaurant_writes,
         last_use="""
             SELECT m.day, m.occurred_at
             FROM meal_restaurants mr JOIN meals m ON m.id = mr.meal_id
@@ -645,5 +710,7 @@ CATALOGS = (
             ORDER BY m.day DESC, m.occurred_at DESC
             LIMIT 1
         """,
+        columns=("category",),
+        from_row=Restaurant.model_validate,
     ),
 )

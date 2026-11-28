@@ -136,3 +136,23 @@ def test_meal_restaurants_migration_backfills_every_restaurant_meal(
     owner.dispose()
 
     assert copied == [True]
+
+
+def test_restaurant_category_migration_makes_every_restaurant_ate_out(
+    empty_database: dict[str, URL],
+) -> None:
+    """Restaurants from before 0007 read as ate out, with no backfill to run (ADR 0041)."""
+    alembic_upgrade(empty_database["app"], "0006")
+    owner = create_engine(empty_database["app"])
+    with owner.begin() as connection:
+        connection.execute(
+            text("INSERT INTO restaurants (user_id, name) SELECT id, 'Diner' FROM users")
+        )
+
+    alembic_upgrade(empty_database["app"])
+
+    with owner.connect() as connection:
+        categories = connection.execute(text("SELECT category FROM restaurants")).scalars().all()
+    owner.dispose()
+
+    assert categories == ["ate_out"]

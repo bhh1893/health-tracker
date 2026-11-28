@@ -71,6 +71,12 @@ CASES = (
         "/meal-days?q=diner",
         ("meals_user_day", "restaurants_name_trgm", "meal_restaurants_user_restaurant"),
     ),
+    # About a tenth of a User's Restaurants are drinks: the uncommon case a filter is for.
+    Case(
+        "Meal Days filtered by Category",
+        "/meal-days?category=drinks",
+        ("meals_user_day", "meal_restaurants_user_restaurant"),
+    ),
     Case("Sets on a Day", "/exercise-entries?from={day}&to={day}", ("exercise_entries_user_day",)),
     Case("Sets newest first", "/exercise-entries", ("exercise_entries_user_day",)),
     Case(

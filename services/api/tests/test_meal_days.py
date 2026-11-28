@@ -247,6 +247,107 @@ def test_q_pages_by_matching_days(client: TestClient, rice: UUID) -> None:
     assert second["next_cursor"] is None
 
 
+# Category filter (ADR 0041).
+
+
+def restaurant_of(client: TestClient, name: str, category: str) -> UUID:
+    item = uuid7()
+    response = client.put(
+        f"/api/v1/restaurants/{item}",
+        json={"name": name, "category": category, "allow_similar": True},
+    )
+    assert response.status_code == 201, response.text
+    return item
+
+
+def test_category_keeps_days_with_a_restaurant_of_it(client: TestClient, rice: UUID) -> None:
+    diner = restaurant_of(client, "Golden diner", "ate_out")
+    bar = restaurant_of(client, "Corner bar", "drinks")
+    gelato = restaurant_of(client, "Gelato stand", "dessert")
+    eat_out(client, "2026-11-01", diner)
+    eat_out(client, "2026-11-02", bar)
+    eat_out(client, "2026-11-03", gelato)
+    eat(client, "2026-11-04", rice)
+
+    assert days(client, category="drinks") == ["2026-11-02"]
+    assert days(client, category="ate_out") == ["2026-11-01"]
+    assert days(client, category="dessert") == ["2026-11-03"]
+
+
+def test_category_matches_any_restaurant_of_a_meal(client: TestClient) -> None:
+    diner = restaurant_of(client, "Golden diner", "ate_out")
+    bar = restaurant_of(client, "Corner bar", "drinks")
+    eat_out(client, "2026-11-03", diner, bar)
+
+    assert days(client, category="drinks") == ["2026-11-03"]
+
+
+def test_a_day_kept_by_category_shows_all_its_meals(client: TestClient, rice: UUID) -> None:
+    bar = restaurant_of(client, "Corner bar", "drinks")
+    eat(client, "2026-11-03", rice, at="08:00:00")
+    eat_out(client, "2026-11-03", bar)
+
+    assert len(page(client, category="drinks")["items"][0]["meals"]) == 2
+
+
+def test_category_and_q_must_both_match(client: TestClient, rice: UUID) -> None:
+    bar = restaurant_of(client, "Corner bar", "drinks")
+    pub = restaurant_of(client, "Old pub", "drinks")
+    diner = restaurant_of(client, "Corner diner", "ate_out")
+    eat_out(client, "2026-11-01", bar)
+    eat_out(client, "2026-11-02", pub)
+    eat_out(client, "2026-11-03", diner)
+
+    assert days(client, category="drinks", q="corner") == ["2026-11-01"]
+
+
+def test_category_follows_a_change_to_the_restaurant(client: TestClient) -> None:
+    spot = restaurant_of(client, "Corner spot", "ate_out")
+    eat_out(client, "2026-11-03", spot)
+
+    client.patch(f"/api/v1/restaurants/{spot}", json={"category": "dessert"})
+
+    assert days(client, category="dessert") == ["2026-11-03"]
+    assert days(client, category="ate_out") == []
+
+
+def test_category_never_finds_another_users_restaurant(
+    client: TestClient, session: Session
+) -> None:
+    other = session.execute(text("INSERT INTO users DEFAULT VALUES RETURNING id")).scalar_one()
+    theirs = session.execute(
+        text(
+            "INSERT INTO restaurants (user_id, name, category) "
+            "VALUES (:user, 'Their bar', 'drinks') RETURNING id"
+        ),
+        {"user": other},
+    ).scalar_one()
+    session.execute(
+        text(
+            """
+            WITH meal AS (
+                INSERT INTO meals (user_id, kind, restaurant_id, occurred_at, occurred_tz, day)
+                VALUES (:user, 'restaurant', :restaurant, '2026-11-03T19:00:00Z', 'UTC',
+                        '2026-11-03')
+                RETURNING id
+            )
+            INSERT INTO meal_restaurants (user_id, meal_id, restaurant_id)
+            SELECT :user, id, :restaurant FROM meal
+            """
+        ),
+        {"user": other, "restaurant": theirs},
+    )
+
+    assert days(client, category="drinks") == []
+
+
+@pytest.mark.parametrize("category", ["bar", "Drinks", ""])
+def test_an_unknown_category_is_invalid(client: TestClient, category: str) -> None:
+    response = client.get("/api/v1/meal-days", params={"category": category})
+
+    assert response.status_code == 422
+
+
 @pytest.mark.parametrize("cursor", ["junk", "", "!!!", "aGVsbG8="])
 def test_bad_cursor_is_invalid(client: TestClient, cursor: str) -> None:
     response = client.get("/api/v1/meal-days", params={"cursor": cursor})

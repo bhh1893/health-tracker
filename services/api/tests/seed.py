@@ -79,6 +79,9 @@ RESTAURANT_BASES = (
     "kitchen", "diner", "grill", "cafe", "bistro", "taqueria", "noodles", "pizza", "sushi", "deli",
 )
 # fmt: on
+# Most Restaurants are somewhere to eat (ADR 0041). Taken from the name, not drawn from the
+# random stream, so adding it left every other seeded row as it was.
+RESTAURANT_CATEGORIES = {"cafe": "dessert", "bistro": "drinks"}
 FOOD_NAMES = tuple(f"{style} {base}" for style in FOOD_STYLES for base in FOOD_BASES)
 EXERCISE_NAMES = tuple(f"{style} {base}" for style in EXERCISE_STYLES for base in EXERCISE_BASES)
 RESTAURANT_NAMES = tuple(
@@ -90,7 +93,7 @@ COLUMNS = {
     "users": ("id",),
     "foods": ("id", "user_id", "name", "archived_at"),
     "exercises": ("id", "user_id", "name", "archived_at"),
-    "restaurants": ("id", "user_id", "name", "archived_at"),
+    "restaurants": ("id", "user_id", "name", "archived_at", "category"),
     "meals": ("id", "user_id", "kind", "restaurant_id", "occurred_at", "occurred_tz", "day"),
     "meal_restaurants": ("user_id", "meal_id", "restaurant_id"),
     "food_entries": ("user_id", "meal_id", "food_id", "quantity", "unit"),
@@ -218,7 +221,10 @@ def generate(scale: Scale) -> Iterator[Batch]:
             catalogs["users"].append((user_id,))
         foods = catalog_rows(rng, user_id, FOOD_NAMES, FOODS_PER_USER, created)
         exercises = catalog_rows(rng, user_id, EXERCISE_NAMES, EXERCISES_PER_USER, created)
-        restaurants = catalog_rows(rng, user_id, RESTAURANT_NAMES, RESTAURANTS_PER_USER, created)
+        restaurants: list[tuple[Any, ...]] = [
+            (*row, RESTAURANT_CATEGORIES.get(row[2].split()[-1], "ate_out"))
+            for row in catalog_rows(rng, user_id, RESTAURANT_NAMES, RESTAURANTS_PER_USER, created)
+        ]
         catalogs["foods"] += foods
         catalogs["exercises"] += exercises
         catalogs["restaurants"] += restaurants
