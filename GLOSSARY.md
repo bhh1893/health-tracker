@@ -39,7 +39,7 @@ All Exercise Entries for one Exercise on one Day. Derived, never started or ende
 _Avoid_: Workout (a workout spans several Exercises)
 
 **Meal Photo**:
-A picture the user attached to one of their Meals, kept only as part of that Meal's record. A Meal of either kind holds up to ten. Private to its owner, and deleted with its Meal.
+A picture the user attached to one of their Meals, kept only as part of that Meal's record. A Meal of either kind holds up to ten. The picture is kept as the User picked it, as well as in the sizes the app shows. Private to its owner, and deleted with its Meal.
 _Avoid_: Image, upload, attachment
 
 ## Catalogs
