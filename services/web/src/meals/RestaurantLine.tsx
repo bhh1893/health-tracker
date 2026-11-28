@@ -24,7 +24,9 @@ export function RestaurantLine({
       <span className="flex h-6 items-center">
         <ForkKnifeIcon />
       </span>
-      <span>
+      {/* min-w-0 lets this flex item shrink, so a name with no spaces breaks
+          instead of pushing past the edge. */}
+      <span className="min-w-0 wrap-break-word">
         {restaurants.map((restaurant, index) => (
           <Fragment key={restaurant.id}>
             {index > 0 && " · "}

@@ -128,12 +128,65 @@ describe("Meals Recent Days", () => {
 
     await userEvent.click(newest);
     expect(newest).toHaveAttribute("aria-expanded", "true");
-    // A closed Day's list is hidden, so these are the open Day's Foods only.
+    // A closed Day's list is hidden, so this is the open Day's Meal only: its
+    // Foods on one line, without amounts.
     expect(
       within(recentDays())
         .getAllByRole("listitem")
         .map((item) => item.textContent),
-    ).toEqual(["Oats80 g", "Banana× 1"]);
+    ).toEqual(["Oats · Banana"]);
+  });
+
+  it("offers the arrow to Home only on an open Day, and opens the Day there", async () => {
+    const day = daysAgo(3);
+    fakeMealDaysApi([foodsDay(day)]);
+    renderAt("/history", <HistoryScreen />);
+
+    const row = await screen.findByRole("button", {
+      name: formatDayTitle(day),
+    });
+    const arrow = { name: `Open ${formatDayTitle(day)} on Home` };
+    expect(screen.queryByRole("link", arrow)).toBeNull();
+
+    await userEvent.click(row);
+    await userEvent.click(screen.getByRole("link", arrow));
+    expect(url()).toHaveTextContent(`/meals?day=${day}`);
+  });
+
+  it("gives each Meal of a Day its own line", async () => {
+    const day = daysAgo(1);
+    fakeMealDaysApi([
+      {
+        day,
+        meals: [
+          aMeal({
+            id: `${day}-1`,
+            day,
+            food_entries: [
+              { food: oats, quantity: 80, unit: "g" },
+              { food: oats, quantity: 40, unit: "g" },
+            ],
+          }),
+          aMeal({
+            id: `${day}-2`,
+            day,
+            number: 2,
+            food_entries: [{ food: banana, quantity: 1, unit: "count" }],
+          }),
+        ],
+      },
+    ]);
+    renderAt("/history", <HistoryScreen />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: formatDayTitle(day) }),
+    );
+    // The same Food twice in a Meal is listed twice.
+    expect(
+      within(recentDays())
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual(["Oats · Oats", "Banana"]);
   });
 
   it("shows the ate out pill only on a Restaurant Day, with its Restaurant", async () => {
@@ -329,7 +382,7 @@ describe("the Meals filter", () => {
       within(recentDays())
         .getAllByRole("listitem")
         .map((item) => item.textContent),
-    ).toEqual(["Oats80 g", "Chicken breast200 g"]);
+    ).toEqual(["Oats · Chicken breast"]);
     await userEvent.click(
       screen.getByRole("button", {
         name: `${formatDayTitle(daysAgo(3))}, ate out`,

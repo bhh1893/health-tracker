@@ -1,4 +1,5 @@
-import { formatAmount } from "../meals/meals";
+import { Fragment } from "react";
+
 import { RestaurantLine } from "../meals/RestaurantLine";
 import { Highlight } from "./Highlight";
 import { useMealDays, type MealDay } from "./queries";
@@ -35,6 +36,7 @@ export function MealDays({ from, to, q }: MealDaysProps) {
         <DayRow
           key={day.day}
           day={day.day}
+          homePath="/meals"
           // A Restaurant Day is any Day with a Restaurant Meal (ADR 0023).
           pill={isRestaurantDay(day) ? "ate out" : undefined}
         >
@@ -56,12 +58,14 @@ function matchCount(loaded: number, more: boolean, q: string) {
   return `${String(loaded)}${more ? "+" : ""} ${days} with a Food or Restaurant matching "${q}"`;
 }
 
-// Each Food with its amount, or on a Restaurant Day, its Restaurants in pink.
-// Only names are marked: they are what the filter matches.
+// One line per Meal: its Foods' names, or on a Restaurant Meal its Restaurants in
+// pink, joined by " · " and wrapping as needed. Amounts are left to Add's Meal
+// card: History answers "what did I eat?". Only names are marked: they are what
+// the filter matches.
 function MealList({ day, q }: { day: MealDay; q: string }) {
   return (
     <ul className="px-3 pb-2">
-      {day.meals.flatMap((meal) =>
+      {day.meals.map((meal) =>
         meal.kind === "restaurant" ? (
           <RestaurantLine
             key={meal.id}
@@ -70,21 +74,18 @@ function MealList({ day, q }: { day: MealDay; q: string }) {
             renderName={(name) => <Highlight text={name} q={q} />}
           />
         ) : (
-          meal.food_entries.map((entry, index) => (
-            <li
+          // One run of text, so a long Meal wraps like a sentence. A name with
+          // no spaces may break mid-word rather than run off the screen.
+          <li key={meal.id} className="py-1.5 wrap-break-word">
+            {meal.food_entries.map((entry, index) => (
               // A Meal may hold the same Food twice, so the Food id cannot be
               // the key.
-              key={`${meal.id}-${String(index)}`}
-              className="flex justify-between gap-3 py-1.5"
-            >
-              <span>
+              <Fragment key={index}>
+                {index > 0 && " · "}
                 <Highlight text={entry.food.name} q={q} />
-              </span>
-              <span className="whitespace-nowrap text-muted">
-                {formatAmount(entry)}
-              </span>
-            </li>
-          ))
+              </Fragment>
+            ))}
+          </li>
         ),
       )}
     </ul>
