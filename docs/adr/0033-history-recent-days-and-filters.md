@@ -30,7 +30,7 @@ History becomes one screen per kind that answers both "what happened?" and "how 
 1. **Meals | Exercise** toggle, a full row. The **Range** sits beside the search field (amended below).
 2. **The search field**, which differs by kind (below).
 3. **Dashboard**, a collapsible section holding ADR 0024's tiles and chart. It starts closed, and `dash=open` keeps it open. The chart chunk loads the first time it opens, not when History opens, so a History visit no longer pays for the chart library.
-4. **Recent Days**, the Days in the Range with something logged, newest first. The list loads more as it scrolls, never the whole Range at once. Each row is titled `(Weekday) MM-DD-YY:`, e.g. `(Monday) 11-16-26:` (was `11-16-26 [Monday]` until 2026-11-28), and opens to show the Day's contents. This format is History's own; Add's Day pager keeps `formatDay`.
+4. **Recent Days**, the Days in the Range with something logged, newest first. The list loads more as it scrolls, never the whole Range at once. Each row is titled `Weekday (MM/DD/YY):`, e.g. `Monday (11/16/26):` (was `11-16-26 [Monday]`, then `(Monday) 11-16-26:`, until 2026-11-28), and opens to show the Day's contents. This format is History's own; Add's Day pager keeps `formatDay`.
 
 ### Meals
 
