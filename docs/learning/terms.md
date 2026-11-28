@@ -695,3 +695,15 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **`@theme` (Tailwind)**: the CSS block where Tailwind reads tokens and generates classes from them: `--color-food` gives `bg-food`, `text-food` and `border-food`.
 - **Contrast ratio (WCAG AA)**: how far apart two colors are in lightness, from 1:1 to 21:1; the AA accessibility standard asks 4.5:1 for normal text and 3:1 for large text and graphics.
 - **Anchored regex**: a pattern pinned to the whole string with `^` and `$`; without them `/icon.png` would also match `/icon.png/secret`, so an auth exemption should always be anchored.
+- **`bytea`**: Postgres's column type for raw binary; it can hold a file, but every byte then rides in the table, its replica, the WAL and every backup.
+- **Synchronous acknowledgement**: the server answers success only after the data is durably stored, so anything the client shows as saved really is.
+- **Bucket quota (Garage)**: a cap on a bucket's total size or object count; writes fail once it is reached, a backstop independent of the API's own checks.
+- **Scoped access key**: an object-store credential allowed on named buckets only, so leaking one exposes only those buckets (here `api` cannot touch `backups`).
+- **SSE-C**: server-side encryption with a customer-provided key; the client sends the key on every request and the store encrypts with it but never keeps it.
+- **S3Proxy**: an open-source gateway that serves the S3 API in front of non-S3 stores such as Azure Blob, dropping some features (CORS rules, lifecycle).
+- **Presigned URL**: a URL the server signs so the holder can GET or PUT one object in storage directly until it expires; a bearer token in the query string.
+- **Proxy path (uploads)**: the client sends file bytes to the app server, which checks auth and forwards them to storage; simpler and safer here, but the server carries every byte.
+- **Raw request body**: the HTTP body is the file's bytes alone with its own `Content-Type`, instead of `multipart/form-data`, which wraps files and fields in labelled parts.
+- **Chunked transfer encoding**: an HTTP/1.1 body sent in pieces with no `Content-Length` up front, so a server enforcing a size cap must count bytes as they arrive.
+- **`Cache-Control: private, immutable`**: shared caches such as a CDN must not store the response; the browser may, and `immutable` tells it the bytes at this URL never change.
+- **`boto3`**: the most widely used Python S3 client; pointed at any S3-compatible endpoint, it is not tied to AWS.

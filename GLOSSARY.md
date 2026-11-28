@@ -38,6 +38,10 @@ _Avoid_: Breakfast/lunch/dinner as identifiers (they are only labels)
 All Exercise Entries for one Exercise on one Day. Derived, never started or ended by the user.
 _Avoid_: Workout (a workout spans several Exercises)
 
+**Meal Photo**:
+A picture the user attached to one of their Meals, kept only as part of that Meal's record. A Meal of either kind holds up to ten. Private to its owner, and deleted with its Meal.
+_Avoid_: Image, upload, attachment
+
 ## Catalogs
 
 **Food Catalog**:
