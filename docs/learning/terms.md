@@ -726,3 +726,4 @@ Tech terms defined while teaching, one line each. Domain language lives in `GLOS
 - **File signature (magic bytes)**: the first bytes of a file that identify its format (JPEG starts `FF D8 FF`), checked without decoding the rest.
 - **sRGB vs Display P3**: two colour ranges; sRGB is the web's default, P3 is wider and what iPhones shoot in, so converting P3 to sRGB slightly dulls the most saturated colours.
 - **Canvas (`<canvas>`)**: a browser drawing surface holding only pixels; drawing an image onto it and exporting with `toBlob` makes a new image with no metadata.
+- **Postgres enum type**: a custom column type (`CREATE TYPE ... AS ENUM`) that only accepts listed values; adding a value needs `ALTER TYPE` and removing one means rebuilding the type, which is why a `CHECK` on `text` is often preferred.
