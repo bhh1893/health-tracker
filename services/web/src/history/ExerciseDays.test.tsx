@@ -160,6 +160,23 @@ describe("Exercise Recent Days", () => {
     ]);
   });
 
+  it("opens an open Day's Session on Home with the arrow", async () => {
+    fakeExerciseApi([aSession(daysAgo(2), [135])]);
+    renderAt(`/history?${benchUrl}`, <HistoryScreen />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: formatDayTitle(daysAgo(2)) }),
+    );
+    await userEvent.click(
+      screen.getByRole("link", {
+        name: `Open ${formatDayTitle(daysAgo(2))} on Home`,
+      }),
+    );
+    expect(screen.getByLabelText("url")).toHaveTextContent(
+      `/exercise?day=${daysAgo(2)}`,
+    );
+  });
+
   it("follows the Range", async () => {
     const requests = fakeExerciseApi([
       aSession(daysAgo(1), [135]),

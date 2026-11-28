@@ -30,14 +30,14 @@ History becomes one screen per kind that answers both "what happened?" and "how 
 1. **Meals | Exercise** toggle, a full row. The **Range** sits beside the search field (amended below).
 2. **The search field**, which differs by kind (below).
 3. **Dashboard**, a collapsible section holding ADR 0024's tiles and chart. It starts closed, and `dash=open` keeps it open. The chart chunk loads the first time it opens, not when History opens, so a History visit no longer pays for the chart library.
-4. **Recent Days**, the Days in the Range with something logged, newest first. The list loads more as it scrolls, never the whole Range at once. Each row is titled `MM-DD-YY [Weekday]`, e.g. `11-16-26 [Monday]`, and opens to show the Day's contents. This format is History's own; Add's Day pager keeps `formatDay`.
+4. **Recent Days**, the Days in the Range with something logged, newest first. The list loads more as it scrolls, never the whole Range at once. Each row is titled `(Weekday) MM-DD-YY:`, e.g. `(Monday) 11-16-26:` (was `11-16-26 [Monday]` until 2026-11-28), and opens to show the Day's contents. This format is History's own; Add's Day pager keeps `formatDay`.
 
 ### Meals
 
 - **The filter is optional.** Empty, Recent Days lists every Day with a Meal. With text, it keeps only the Days where some Food or Restaurant name contains it, ignoring case: `chicken` keeps a Day with "Chicken breast" and a Day at "BBQ Chicken Shack".
 - **A kept Day shows all of its contents**, with the matching text highlighted, so the rest of that Day stays in view.
 - **The filter never narrows the Dashboard.** The averages and chart stay "all eating in the Range".
-- **A Day's contents:** each Food with its quantity, or, on a Restaurant Day, its Restaurants. A Restaurant Day's row shows an orange **Ate out** pill.
+- **A Day's contents:** one line per Meal: its Foods' names, or a Restaurant Meal's Restaurants, joined by " · " and wrapping as needed. No quantities (amended 2026-11-28; was each Food with its quantity). A Restaurant Day's row shows an orange **Ate out** pill. An open Day ends with a → link to the same Day on Home: `/meals?day=` from Meals, `/exercise?day=` from Exercise (added 2026-11-28).
 - **Chart:** a Restaurant Day is an orange point on the calories line itself. The legend names it "ate out" next to the "incomplete" ring (amended 2026-11-19: the first cut had no legend and left the Ate out pills to explain the orange). The tiles, labeled avg | ate out | incomplete, sit under the chart, and a chart | table switch replaces ADR 0024's "as a table" disclosure: one view at a time, chart by default.
 
 ### Exercise

@@ -9,6 +9,7 @@ import {
   DisclosurePanel,
   Heading,
 } from "react-aria-components";
+import { Link } from "react-router";
 
 import { Chevron } from "../components/Chevron";
 import { LoadMore } from "../components/LoadMore";
@@ -140,13 +141,16 @@ function Status({
 
 interface DayRowProps {
   day: string;
+  // The Home window the arrow opens the Day in: "/meals" or "/exercise".
+  homePath: "/meals" | "/exercise";
   // A pill in the Restaurant color after the title, e.g. "ate out" on a Restaurant Day.
   pill?: string | undefined;
   children: ReactNode;
 }
 
-// One Day of Recent Days: its title, which opens to the Day's contents.
-export function DayRow({ day, pill, children }: DayRowProps) {
+// One Day of Recent Days: its title, which opens to the Day's contents and an
+// arrow to the same Day on Home, where it can be changed.
+export function DayRow({ day, homePath, pill, children }: DayRowProps) {
   const title = formatDayTitle(day);
   return (
     <Disclosure className="group border-t border-edge first:border-t-0">
@@ -155,12 +159,12 @@ export function DayRow({ day, pill, children }: DayRowProps) {
       <Heading level={2}>
         <Button
           slot="trigger"
-          // Spoken as "11-13-26 [Friday], ate out": the spans alone would run
-          // together.
+          // Spoken as "(Friday) 11-13-26, ate out": the spans alone would run
+          // together. The colon is visual only, so the label leaves it out.
           aria-label={pill === undefined ? title : `${title}, ${pill}`}
           className="flex min-h-11 w-full items-center gap-2 px-3 text-left font-semibold"
         >
-          <span>{title}</span>
+          <span>{title}:</span>
           {pill !== undefined && (
             <span className="rounded-full bg-restaurant-soft px-2 py-0.5 text-xs font-semibold text-restaurant-ink">
               {pill}
@@ -171,7 +175,37 @@ export function DayRow({ day, pill, children }: DayRowProps) {
           </span>
         </Button>
       </Heading>
-      <DisclosurePanel>{children}</DisclosurePanel>
+      <DisclosurePanel>
+        {children}
+        {/* A plain link, not a button: it changes the URL, so long-press and
+            the back button work, and Home reads the Day from ?day= (ADR 0013). */}
+        <div className="flex justify-end px-1 pb-1">
+          <Link
+            to={`${homePath}?day=${day}`}
+            aria-label={`Open ${title} on Home`}
+            className="flex size-11 items-center justify-center rounded-full text-action active:bg-action-soft"
+          >
+            <ArrowRight />
+          </Link>
+        </div>
+      </DisclosurePanel>
     </Disclosure>
+  );
+}
+
+function ArrowRight() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="size-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12h14m-6-6 6 6-6 6" />
+    </svg>
   );
 }
