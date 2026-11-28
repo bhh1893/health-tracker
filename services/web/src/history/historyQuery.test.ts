@@ -16,6 +16,7 @@ describe("History in the URL", () => {
       range: "30d",
       exercise: null,
       q: "",
+      category: null,
       dash: false,
     });
   });
@@ -29,22 +30,26 @@ describe("History in the URL", () => {
 
   it("reads each choice", () => {
     expect(
-      parse("tab=meals&range=1y&id=e1&name=Bench+Press&q=chicken&dash=open"),
+      parse(
+        "tab=meals&range=1y&id=e1&name=Bench+Press&q=chicken&category=drinks&dash=open",
+      ),
     ).toEqual({
       tab: "meals",
       range: "1y",
       exercise: { id: "e1", name: "Bench Press" },
       q: "chicken",
+      category: "drinks",
       dash: true,
     });
   });
 
   it("falls back field by field on a hand-edited URL", () => {
-    expect(parse("tab=sleep&range=2w&id=e1&dash=yes")).toEqual({
+    expect(parse("tab=sleep&range=2w&id=e1&category=brunch&dash=yes")).toEqual({
       tab: "exercise",
       range: "30d",
       exercise: { id: "e1", name: "" },
       q: "",
+      category: null,
       dash: false,
     });
   });
@@ -60,6 +65,7 @@ describe("History in the URL", () => {
       range: "30d",
       exercise: null,
       q: "",
+      category: null,
       dash: false,
     };
     const bench = { id: "e1", name: "Bench Press" };
@@ -81,10 +87,11 @@ describe("History in the URL", () => {
         range: "all",
         exercise: bench,
         q: "BBQ & chicken",
+        category: "dessert",
         dash: true,
       }).toString(),
     ).toBe(
-      "tab=meals&range=all&id=e1&name=Bench+Press&q=BBQ+%26+chicken&dash=open",
+      "tab=meals&range=all&id=e1&name=Bench+Press&q=BBQ+%26+chicken&category=dessert&dash=open",
     );
   });
 
@@ -96,6 +103,8 @@ describe("History in the URL", () => {
     "tab=meals&range=90d&id=e1&name=Squat",
     "q=chicken",
     "tab=exercise&q=C%2B%2B",
+    "category=ate_out",
+    "tab=exercise&category=drinks",
   ])("round-trips %j", (search) => {
     const query = parse(search);
     expect(parse(toHistoryParams(query).toString())).toEqual(query);

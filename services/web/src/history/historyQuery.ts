@@ -1,3 +1,7 @@
+import {
+  parseCategory,
+  type RestaurantCategory,
+} from "../catalog/restaurantCategory";
 import { addDays } from "../lib/day";
 
 // What the History screen shows, all of it in the URL (ADR 0033): a reload, the
@@ -22,6 +26,9 @@ export interface HistoryQuery {
   // The Meals filter (`q`), already trimmed. Empty when there is none. Kept while
   // the Exercise tab is shown, like the Exercise pick on Meals.
   q: string;
+  // The Meals Category chip (`category`), or null for none (ADR 0041). Kept while
+  // the Exercise tab is shown, like `q`.
+  category: RestaurantCategory | null;
   // Whether the Dashboard section is open (`dash=open`).
   dash: boolean;
 }
@@ -61,6 +68,7 @@ export function parseHistory(params: URLSearchParams): HistoryQuery {
       RANGES.find((range) => range === params.get("range")) ?? DEFAULT_RANGE,
     exercise,
     q: params.get("q")?.trim() ?? "",
+    category: parseCategory(params.get("category")),
     dash: params.get("dash") === "open",
   };
 }
@@ -82,6 +90,9 @@ export function toHistoryParams(query: HistoryQuery) {
   }
   if (query.q !== "") {
     params.set("q", query.q);
+  }
+  if (query.category !== null) {
+    params.set("category", query.category);
   }
   if (query.dash) {
     params.set("dash", "open");

@@ -14,7 +14,13 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from health_api.catalogs import MAX_NAME_LENGTH, NO_NUL, escape_like, normalize_name
+from health_api.catalogs import (
+    MAX_NAME_LENGTH,
+    NO_NUL,
+    RestaurantCategory,
+    escape_like,
+    normalize_name,
+)
 from health_api.db import DbSession
 from health_api.entries import Day, invalid_field
 from health_api.identity import CurrentUser
@@ -44,6 +50,19 @@ NAME_FILTER = r"""
             WHERE mr.user_id = :user AND r.user_id = :user
               AND lower(r.name) LIKE lower(:contains) ESCAPE '\'
         )
+    )
+"""
+
+
+# Days that have a Restaurant Meal with a Restaurant of this Category (ADR 0041). Starts from the
+# User's Restaurants, a few hundred rows, then finds their Meals through the same
+# (user_id, restaurant_id) index the name filter uses. No index on category: it would only
+# narrow a list that is already that small.
+CATEGORY_FILTER = """
+    m.id IN (
+        SELECT mr.meal_id FROM meal_restaurants mr
+        JOIN restaurants r ON r.id = mr.restaurant_id
+        WHERE mr.user_id = :user AND r.user_id = :user AND r.category = :category
     )
 """
 
@@ -102,7 +121,8 @@ def meal_days_router() -> APIRouter:
         response_model=MealDayPage,
         description=(
             "List Days with their Meals newest first, one page of whole Days at a time, "
-            "optionally only Days with a Food or Restaurant whose name contains q."
+            "optionally only Days with a Food or Restaurant whose name contains q, "
+            "or with a Restaurant of a Category. A Day must match both when both are sent."
         ),
     )
     def list_meal_days(
@@ -111,6 +131,7 @@ def meal_days_router() -> APIRouter:
         from_day: Annotated[Day | None, Query(alias="from")] = None,
         to_day: Annotated[Day | None, Query(alias="to")] = None,
         q: Annotated[str, Query(max_length=MAX_NAME_LENGTH, pattern=NO_NUL)] = "",
+        category: RestaurantCategory | None = None,
         cursor: str | None = None,
         limit: Annotated[int, Query(ge=1, le=MAX_DAY_PAGE_SIZE)] = DEFAULT_DAY_PAGE_SIZE,
     ) -> MealDayPage:
@@ -131,6 +152,9 @@ def meal_days_router() -> APIRouter:
         if query:
             where.append(NAME_FILTER)
             params["contains"] = f"%{escape_like(query)}%"
+        if category is not None:
+            where.append(CATEGORY_FILTER)
+            params["category"] = category
 
         # One extra Day answers "is there a next page?" without a count.
         days = select_days(session, user, where, limit + 1, **params)

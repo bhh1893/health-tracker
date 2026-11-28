@@ -562,11 +562,14 @@ def test_a_never_used_food_has_no_last_values(client: TestClient) -> None:
     assert read["last_quantity"] is None
 
 
-@pytest.mark.parametrize("table", ["exercises", "restaurants"])
-def test_other_catalogs_have_no_last_values(client: TestClient, table: str) -> None:
+@pytest.mark.parametrize(
+    ("table", "own"), [("exercises", set[str]()), ("restaurants", {"category"})]
+)
+def test_other_catalogs_have_no_last_values(client: TestClient, table: str, own: set[str]) -> None:
     item = create(client, table, "Thing")
 
-    assert set(client.get(url(table, item)).json()) == {"id", "name", "archived", "last_used_day"}
+    shared = {"id", "name", "archived", "last_used_day"}
+    assert set(client.get(url(table, item)).json()) == shared | own
 
 
 @every_catalog
@@ -910,3 +913,134 @@ def test_another_users_food_cannot_be_given_nutrition(client: TestClient, sessio
 
     assert (put.status_code, patch.status_code) == (404, 404)
     assert session.scalar(text("SELECT kcal FROM foods WHERE id = :id"), {"id": food}) is None
+
+
+# Restaurant Categories (ADR 0041).
+
+
+def restaurant_url(restaurant: UUID) -> str:
+    return url("restaurants", restaurant)
+
+
+def test_a_new_restaurant_is_ate_out(client: TestClient) -> None:
+    restaurant = create(client, "restaurants", "Golden diner")
+
+    assert client.get(restaurant_url(restaurant)).json()["category"] == "ate_out"
+
+
+@pytest.mark.parametrize("category", ["ate_out", "drinks", "dessert"])
+def test_put_sets_the_category(client: TestClient, category: str) -> None:
+    restaurant = uuid7()
+
+    created = client.put(restaurant_url(restaurant), json={"name": "Spot", "category": category})
+
+    assert created.status_code == 201, created.text
+    assert created.json()["category"] == category
+    assert client.get(restaurant_url(restaurant)).json()["category"] == category
+
+
+def test_put_without_a_category_replaces_it_with_ate_out(client: TestClient) -> None:
+    """A PUT replaces the whole item, as for a Food's Nutrition."""
+    restaurant = create(client, "restaurants", "Corner bar", category="drinks")
+
+    replaced = client.put(restaurant_url(restaurant), json={"name": "Corner bar"})
+
+    assert replaced.status_code == 200, replaced.text
+    assert replaced.json()["category"] == "ate_out"
+
+
+def test_a_retried_put_with_a_category_is_harmless(client: TestClient) -> None:
+    restaurant = uuid7()
+    body = {"name": "Corner bar", "category": "drinks"}
+
+    first = client.put(restaurant_url(restaurant), json=body)
+    second = client.put(restaurant_url(restaurant), json=body)
+
+    assert (first.status_code, second.status_code) == (201, 200)
+    assert second.json()["category"] == "drinks"
+
+
+def test_patch_changes_the_category_and_keeps_the_rest(client: TestClient) -> None:
+    restaurant = create(client, "restaurants", "Sweet spot")
+
+    patched = client.patch(restaurant_url(restaurant), json={"category": "dessert"})
+
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["category"] == "dessert"
+    assert patched.json()["name"] == "Sweet spot"
+
+
+@pytest.mark.parametrize("body", [{"name": "Corner tavern"}, {"category": None}, {}])
+def test_patch_without_a_category_keeps_it(client: TestClient, body: dict[str, Any]) -> None:
+    restaurant = create(client, "restaurants", "Corner bar", category="drinks")
+
+    patched = client.patch(restaurant_url(restaurant), json=body)
+
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["category"] == "drinks"
+
+
+@pytest.mark.parametrize("category", ["bar", "Drinks", "", 1])
+@pytest.mark.parametrize("method", ["put", "patch"])
+def test_an_unknown_category_is_invalid(client: TestClient, method: str, category: Any) -> None:
+    restaurant = create(client, "restaurants", "Spot")
+
+    response = client.request(
+        method, restaurant_url(restaurant), json={"name": "Spot", "category": category}
+    )
+
+    assert response.status_code == 422
+    assert response.headers["content-type"] == PROBLEM_MEDIA_TYPE
+    assert client.get(restaurant_url(restaurant)).json()["category"] == "ate_out"
+
+
+def test_the_list_carries_each_category(client: TestClient) -> None:
+    create(client, "restaurants", "Golden diner")
+    create(client, "restaurants", "Corner bar", category="drinks")
+
+    listed = client.get(url("restaurants")).json()
+
+    assert {item["name"]: item["category"] for item in listed} == {
+        "Golden diner": "ate_out",
+        "Corner bar": "drinks",
+    }
+
+
+@pytest.mark.parametrize("table", ["foods", "exercises"])
+def test_only_restaurants_take_a_category(client: TestClient, table: str) -> None:
+    response = client.put(url(table, uuid7()), json={"name": "Oats", "category": "drinks"})
+
+    assert response.status_code == 422
+
+
+def test_a_category_change_is_committed(
+    committing_client: TestClient, api_rw_engine: Engine
+) -> None:
+    restaurant = create(committing_client, "restaurants", "Corner bar")
+
+    committing_client.patch(restaurant_url(restaurant), json={"category": "drinks"})
+
+    with api_rw_engine.connect() as connection:
+        category = connection.scalar(
+            text("SELECT category FROM restaurants WHERE id = :id"), {"id": restaurant}
+        )
+    assert category == "drinks"
+
+
+def test_another_users_restaurant_cannot_be_recategorized(
+    client: TestClient, session: Session
+) -> None:
+    other = session.execute(text("INSERT INTO users DEFAULT VALUES RETURNING id")).scalar_one()
+    restaurant = session.execute(
+        text("INSERT INTO restaurants (user_id, name) VALUES (:user, 'Theirs') RETURNING id"),
+        {"user": other},
+    ).scalar_one()
+
+    put = client.put(restaurant_url(restaurant), json={"name": "Theirs", "category": "drinks"})
+    patch = client.patch(restaurant_url(restaurant), json={"category": "drinks"})
+
+    assert (put.status_code, patch.status_code) == (404, 404)
+    stored = session.scalar(
+        text("SELECT category FROM restaurants WHERE id = :id"), {"id": restaurant}
+    )
+    assert stored == "ate_out"

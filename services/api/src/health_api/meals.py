@@ -18,7 +18,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from health_api.catalogs import CatalogName, problems
+from health_api.catalogs import CatalogName, RestaurantRef, problems
 from health_api.days import ENTRY_UNCOUNTED, entry_amount
 from health_api.db import DbSession, violated_constraint
 from health_api.entries import (
@@ -159,9 +159,9 @@ class FoodsMeal(MealFields):
 class RestaurantMeal(MealFields):
     kind: Literal["restaurant"] = "restaurant"
     # In the order they were saved.
-    restaurants: list[CatalogRef]
+    restaurants: list[RestaurantRef]
     # The v1 field from before ADR 0034: the first of `restaurants`.
-    restaurant: CatalogRef = Field(json_schema_extra=DEPRECATED)
+    restaurant: RestaurantRef = Field(json_schema_extra=DEPRECATED)
 
 
 Meal = Annotated[FoodsMeal | RestaurantMeal, Field(discriminator="kind")]
@@ -222,7 +222,7 @@ def load_food_entries(
 
 def load_restaurants(
     session: Session, user: UUID, meal_ids: list[UUID]
-) -> dict[UUID, list[CatalogRef]]:
+) -> dict[UUID, list[RestaurantRef]]:
     """All the Meals' Restaurants in one query, each Meal's in the order they were saved.
 
     ORDER BY id is that order: a save inserts them in request order, and UUIDv7 ids rise
@@ -231,7 +231,7 @@ def load_restaurants(
     rows = session.execute(
         text(
             """
-            SELECT mr.meal_id, r.id, r.name, r.archived_at IS NOT NULL AS archived
+            SELECT mr.meal_id, r.id, r.name, r.archived_at IS NOT NULL AS archived, r.category
             FROM meal_restaurants mr
             JOIN restaurants r ON r.id = mr.restaurant_id
             WHERE mr.user_id = :user AND mr.meal_id = ANY(:meal_ids)
@@ -240,10 +240,12 @@ def load_restaurants(
         ),
         {"user": user, "meal_ids": meal_ids},
     ).mappings()
-    restaurants: dict[UUID, list[CatalogRef]] = {meal_id: [] for meal_id in meal_ids}
+    restaurants: dict[UUID, list[RestaurantRef]] = {meal_id: [] for meal_id in meal_ids}
     for row in rows:
         restaurants[row["meal_id"]].append(
-            CatalogRef(id=row["id"], name=row["name"], archived=row["archived"])
+            RestaurantRef(
+                id=row["id"], name=row["name"], archived=row["archived"], category=row["category"]
+            )
         )
     return restaurants
 
@@ -270,7 +272,8 @@ def select_meals(
                          AND (n.occurred_at, n.id) <= (m.occurred_at, m.id)
                    ) AS number,
                    r.id AS restaurant_id, r.name AS restaurant_name,
-                   r.archived_at IS NOT NULL AS restaurant_archived
+                   r.archived_at IS NOT NULL AS restaurant_archived,
+                   r.category AS restaurant_category
             FROM (
                 SELECT * FROM meals m
                 WHERE m.user_id = :user AND {where}
@@ -310,10 +313,11 @@ def select_meals(
             # No rows means an api pod from before ADR 0034 saved this Meal mid-rollout: it
             # wrote only the old column. Read that, rather than fail every list holding it.
             stops = restaurants[row.id] or [
-                CatalogRef(
+                RestaurantRef(
                     id=row.restaurant_id,
                     name=row.restaurant_name,
                     archived=row.restaurant_archived,
+                    category=row.restaurant_category,
                 )
             ]
             meals.append(RestaurantMeal(**fields, restaurants=stops, restaurant=stops[0]))

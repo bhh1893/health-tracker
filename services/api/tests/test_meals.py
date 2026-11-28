@@ -137,7 +137,7 @@ def test_foods_meal_round_trip(client: TestClient, food: UUID) -> None:
 def test_restaurant_meal_round_trip(client: TestClient, restaurant: UUID) -> None:
     meal = put(client, restaurant_body(restaurant))
 
-    chipotle = {"id": str(restaurant), "name": "Chipotle", "archived": False}
+    chipotle = {"id": str(restaurant), "name": "Chipotle", "archived": False, "category": "ate_out"}
     assert meal["kind"] == "restaurant"
     assert meal["restaurants"] == [chipotle]
     assert meal["restaurant"] == chipotle
@@ -214,6 +214,53 @@ def test_a_meal_saved_by_the_old_api_mid_rollout_still_reads(
     assert read.status_code == 200, read.text
     assert restaurant_ids(read.json()) == [str(restaurant)]
     assert list_ids(client) == [str(meal)]
+
+
+def test_each_restaurant_of_a_meal_carries_its_category(client: TestClient) -> None:
+    """ADR 0041: a Meal is drawn with its Categories, without asking for each Restaurant."""
+    dinner = catalog_item(client, "restaurants", "Golden diner")
+    bar = uuid7()
+    client.put(f"/api/v1/restaurants/{bar}", json={"name": "Corner bar", "category": "drinks"})
+    meal = put(client, restaurants_body(dinner, bar))
+
+    read = client.get(meal_url(meal["id"])).json()
+
+    assert [r["category"] for r in meal["restaurants"]] == ["ate_out", "drinks"]
+    assert [r["category"] for r in read["restaurants"]] == ["ate_out", "drinks"]
+    assert read["restaurant"]["category"] == "ate_out"
+
+
+def test_a_meal_shows_the_restaurants_current_category(
+    client: TestClient, restaurant: UUID
+) -> None:
+    """The Category is the Restaurant's, not a copy kept per Meal (ADR 0041)."""
+    meal = put(client, restaurant_body(restaurant))
+
+    client.patch(f"/api/v1/restaurants/{restaurant}", json={"category": "dessert"})
+
+    assert client.get(meal_url(meal["id"])).json()["restaurants"][0]["category"] == "dessert"
+
+
+def test_a_meal_saved_mid_rollout_carries_its_category(
+    client: TestClient, session: Session, restaurant: UUID
+) -> None:
+    """The fallback read of meals.restaurant_id carries the Category too."""
+    session.execute(
+        text("UPDATE restaurants SET category = 'drinks' WHERE id = :id"), {"id": restaurant}
+    )
+    meal = session.execute(
+        text(
+            """
+            INSERT INTO meals (user_id, kind, restaurant_id, occurred_at, occurred_tz, day)
+            SELECT user_id, 'restaurant', id, '2026-11-03T12:00:00Z', 'UTC', '2026-11-03'
+            FROM restaurants WHERE id = :restaurant
+            RETURNING id
+            """
+        ),
+        {"restaurant": restaurant},
+    ).scalar_one()
+
+    assert client.get(meal_url(meal)).json()["restaurants"][0]["category"] == "drinks"
 
 
 @pytest.mark.parametrize("count", [0, MAX_RESTAURANTS + 1])
