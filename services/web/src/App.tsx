@@ -20,7 +20,7 @@ function NotFound() {
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-6">
       <h1 className="text-2xl font-semibold">Page not found</h1>
-      <Link className="text-action underline" to="/">
+      <Link className="text-action-ink underline" to="/">
         Back to start
       </Link>
     </main>

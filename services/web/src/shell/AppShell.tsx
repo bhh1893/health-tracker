@@ -75,7 +75,7 @@ export function AppShell() {
                 aria-current={isActive ? "page" : undefined}
                 className={`flex w-20 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1.5 text-xs ${
                   isActive
-                    ? "bg-action-soft font-semibold text-action"
+                    ? "bg-action-soft font-semibold text-on-inset"
                     : "text-faint"
                 }`}
               >

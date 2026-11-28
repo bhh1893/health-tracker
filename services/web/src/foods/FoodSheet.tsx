@@ -219,7 +219,7 @@ function FoodForm({ food, onClose, onOpen }: FoodFormProps) {
           </span>
           <Button
             aria-label="Clear Nutrition"
-            className="rounded-xl px-3 py-1 text-base text-action"
+            className="rounded-xl px-3 py-1 text-base text-action-ink"
             onPress={() => {
               change(Object.fromEntries(NUTRITION_FIELDS.map((f) => [f, ""])));
             }}

@@ -113,7 +113,7 @@ export function EditSessionSheet({
                 )}
                 <Button
                   aria-label={`${row.removed ? "Undo" : "Delete"} ${name}`}
-                  className="rounded-lg p-2 text-base text-action"
+                  className="rounded-lg p-2 text-base text-action-ink"
                   onPress={() => {
                     updateRow(id, { removed: !row.removed });
                   }}

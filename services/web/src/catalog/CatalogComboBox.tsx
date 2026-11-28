@@ -243,7 +243,7 @@ export function CatalogComboBox({
                 className="cursor-pointer p-3 text-base outline-none data-focused:bg-action-soft data-selected:font-semibold"
               >
                 {row.id === CREATE_ROW ? (
-                  <span className="text-action">+ Create "{row.name}"</span>
+                  <span className="text-action-ink">+ Create "{row.name}"</span>
                 ) : row.archived ? (
                   `${row.name} (archived)`
                 ) : (

@@ -64,7 +64,7 @@ export function SessionCard({
       <SetList sets={sets} />
       <div className="mt-2 grid grid-cols-2 gap-2">
         <Button
-          className="rounded-xl border-2 border-dashed border-action p-2 text-base text-action data-pressed:bg-action-soft"
+          className="rounded-xl border-2 border-dashed border-action p-2 text-base text-action-ink data-pressed:bg-action-soft"
           onPress={() => {
             onRepeat(last);
           }}
@@ -72,7 +72,7 @@ export function SessionCard({
           + {formatSet(last)}
         </Button>
         <Button
-          className="rounded-xl border-2 border-action p-2 text-base text-action data-pressed:bg-action-soft"
+          className="rounded-xl border-2 border-action p-2 text-base text-action-ink data-pressed:bg-action-soft"
           onPress={() => {
             onAddSet(last);
           }}

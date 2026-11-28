@@ -256,7 +256,7 @@ export function MealSheet({ day, saved, kind, onClose }: MealSheetProps) {
               )}
               <Button
                 type="submit"
-                className={`rounded-xl p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled ${draft.kind === "foods" ? "bg-food" : "bg-restaurant"}`}
+                className={`rounded-xl p-3 text-base font-semibold data-disabled:bg-disabled ${draft.kind === "foods" ? "bg-food text-on-food" : "bg-restaurant text-on-restaurant"}`}
                 isDisabled={meal === null || putMeal.isPending}
               >
                 Save
@@ -309,7 +309,7 @@ function FoodsPart({
           onChange={setPicked}
         />
         <Button
-          className="rounded-xl bg-food p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled"
+          className="rounded-xl bg-food p-3 text-base font-semibold text-on-food data-disabled:bg-disabled"
           isDisabled={picked === null}
           onPress={() => {
             if (picked) {
@@ -339,7 +339,7 @@ function FoodsPart({
                   <span className="py-2 font-medium">{row.food.name}</span>
                   <Button
                     aria-label={`Remove ${row.food.name}`}
-                    className="rounded-lg p-2 text-base text-action data-disabled:text-disabled"
+                    className="rounded-lg p-2 text-base text-action-ink data-disabled:text-disabled"
                     isDisabled={lastFoodLocked}
                     onPress={() => {
                       onRemoveRow(row.key);
@@ -427,7 +427,7 @@ function RestaurantPart({ restaurants, onAdd, onRemove }: RestaurantPartProps) {
           onChange={setPicked}
         />
         <Button
-          className="rounded-xl bg-restaurant p-3 text-base font-semibold text-on-fill data-disabled:bg-disabled"
+          className="rounded-xl bg-restaurant p-3 text-base font-semibold text-on-restaurant data-disabled:bg-disabled"
           isDisabled={picked === null || !canAdd(picked)}
           onPress={() => {
             if (picked) {
@@ -462,7 +462,7 @@ function RestaurantPart({ restaurants, onAdd, onRemove }: RestaurantPartProps) {
                 </span>
                 <Button
                   aria-label={`Remove ${restaurant.name}`}
-                  className="rounded-lg p-2 text-base text-action"
+                  className="rounded-lg p-2 text-base text-action-ink"
                   onPress={() => {
                     onRemove(restaurant.id);
                   }}
