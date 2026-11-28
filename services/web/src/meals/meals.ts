@@ -1,5 +1,9 @@
 import type { components } from "../api/schema";
-import type { CatalogItem, CatalogRef } from "../catalog/catalogs";
+import type {
+  CatalogItem,
+  CatalogRef,
+  RestaurantRef,
+} from "../catalog/catalogs";
 import { currentTimeZone, toRfc3339 } from "../lib/occurred";
 import { UNKNOWN_TOTAL } from "../nutrition/totals";
 
@@ -34,8 +38,9 @@ export interface MealDraft {
   kind: Meal["kind"];
   label: string;
   rows: FoodRow[];
-  // In the order added, which is the order the API keeps (ADR 0034).
-  restaurants: CatalogRef[];
+  // In the order added, which is the order the API keeps (ADR 0034). Each with its
+  // Category, so the feed draws a new Meal right before the server answers.
+  restaurants: RestaurantRef[];
 }
 
 export function draftOf(meal: Meal): MealDraft {

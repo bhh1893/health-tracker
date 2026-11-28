@@ -26,13 +26,27 @@ const item = (
   ...fields,
 });
 
+const restaurants = [
+  item("Golden diner", { category: "ate_out" }),
+  item("Corner bar", { category: "drinks" }),
+  item("Gelato stand", { category: "dessert" }),
+  item("Old pub", { category: "drinks", archived: true }),
+];
+
 const chicken = item("Chicken breast", { nutrition });
 const chickenSoup = item("Chicken soup", { nutrition: null });
 const oldChicken = item("Chicken thigh", { archived: true, nutrition: null });
 const rice = item("Rice", { nutrition: null });
 const ITEMS = [chicken, chickenSoup, oldChicken, rice];
 
-const none: CatalogFilters = { q: "", archived: false, missing: false };
+const none: CatalogFilters = {
+  q: "",
+  archived: false,
+  missing: false,
+  category: null,
+};
+const foods = { nutrition: true, category: false };
+const onRestaurants = { nutrition: false, category: true };
 const names = (filters: Partial<CatalogFilters>) =>
   filterItems(ITEMS, { ...none, ...filters }).map(({ name }) => name);
 
@@ -57,26 +71,59 @@ describe("filterItems", () => {
       "Chicken thigh",
     ]);
   });
+
+  it("keeps only Restaurants of the chosen Category, with the other filters", () => {
+    const of = (filters: Partial<CatalogFilters>) =>
+      filterItems(restaurants, { ...none, ...filters }).map(({ name }) => name);
+
+    expect(of({ category: "drinks" })).toEqual(["Corner bar"]);
+    expect(of({ category: "drinks", archived: true })).toEqual([
+      "Corner bar",
+      "Old pub",
+    ]);
+    expect(of({ category: "dessert", q: "bar" })).toEqual([]);
+  });
 });
 
 describe("the URL", () => {
   it("round-trips every filter", () => {
-    const filters = { q: "chicken soup", archived: true, missing: true };
+    const filters = {
+      q: "chicken soup",
+      archived: true,
+      missing: true,
+      category: "drinks" as const,
+    };
 
     const params = toSearchParams(filters);
 
-    expect(params.toString()).toBe("q=chicken+soup&archived=1&missing=1");
-    expect(parseFilters(params, true)).toEqual(filters);
+    expect(params.toString()).toBe(
+      "q=chicken+soup&archived=1&missing=1&category=drinks",
+    );
+    expect(parseFilters(params, { nutrition: true, category: true })).toEqual(
+      filters,
+    );
   });
 
   it("leaves defaults out, so an unfiltered page has a bare URL", () => {
     expect(toSearchParams(none).toString()).toBe("");
-    expect(parseFilters(new URLSearchParams(), true)).toEqual(none);
+    expect(parseFilters(new URLSearchParams(), foods)).toEqual(none);
   });
 
   it("ignores ?missing=1 on a Catalog without Nutrition", () => {
     const params = new URLSearchParams("missing=1");
 
-    expect(parseFilters(params, false).missing).toBe(false);
+    expect(parseFilters(params, onRestaurants).missing).toBe(false);
+  });
+
+  it("ignores ?category= on a Catalog without Categories", () => {
+    const params = new URLSearchParams("category=drinks");
+
+    expect(parseFilters(params, foods).category).toBeNull();
+  });
+
+  it("ignores a Category that does not exist", () => {
+    const params = new URLSearchParams("category=brunch");
+
+    expect(parseFilters(params, onRestaurants).category).toBeNull();
   });
 });

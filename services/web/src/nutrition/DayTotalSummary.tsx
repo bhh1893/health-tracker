@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 
+import {
+  categoryName,
+  type RestaurantCategory,
+} from "../catalog/restaurantCategory";
 import { formatKcal, formatMacros, type DayTotal } from "./totals";
 
 // "warn" flags a total to read with care. "restaurant" is the Restaurant color on a
@@ -33,15 +37,28 @@ const sectionClass = "flex flex-col gap-1 rounded-2xl p-4";
 // Restaurant Day shows no numbers at all: the Day is not being tracked, and its
 // flat value would read like a real count. An Incomplete Day under-reports. The
 // server never marks a Day as both.
-export function DayTotalSummary({ total }: { total: DayTotal }) {
+//
+// `categories` are the Day's Restaurants' Categories (ADR 0041), one badge each. The
+// total does not carry them, so they come from the Day's Meals.
+export function DayTotalSummary({
+  total,
+  categories,
+}: {
+  total: DayTotal;
+  categories: readonly RestaurantCategory[];
+}) {
   if (total.restaurant_day) {
     return (
       <section
         aria-label="Day total"
         className={`${sectionClass} bg-restaurant-soft text-on-restaurant`}
       >
-        <div>
-          <Badge tone="restaurant">ate out</Badge>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <Badge key={category} tone="restaurant">
+              {categoryName(category)}
+            </Badge>
+          ))}
         </div>
         <p className="text-sm">Not tracking, has become a cheat day.</p>
       </section>

@@ -229,7 +229,7 @@ export interface paths {
         };
         /**
          * List Meal Days
-         * @description List Days with their Meals newest first, one page of whole Days at a time, optionally only Days with a Food or Restaurant whose name contains q.
+         * @description List Days with their Meals newest first, one page of whole Days at a time, optionally only Days with a Food or Restaurant whose name contains q, or with a Restaurant of a Category. A Day must match both when both are sent.
          */
         get: operations["list_meal_days"];
         put?: never;
@@ -342,7 +342,7 @@ export interface paths {
         get: operations["get_restaurant"];
         /**
          * Put
-         * @description Create a Restaurant at a client-generated UUIDv7, or replace its name.
+         * @description Create a Restaurant at a client-generated UUIDv7, or replace its name and Category.
          */
         put: operations["put_restaurant"];
         post?: never;
@@ -355,7 +355,7 @@ export interface paths {
         head?: never;
         /**
          * Patch
-         * @description Rename, archive or unarchive a Restaurant.
+         * @description Rename, archive or unarchive a Restaurant, or change its Category.
          */
         patch: operations["patch_restaurant"];
         trace?: never;
@@ -690,6 +690,20 @@ export interface components {
             /** Restaurant Day Kcal */
             restaurant_day_kcal?: number | null;
         };
+        /** PatchRestaurant */
+        PatchRestaurant: {
+            /**
+             * Allow Similar
+             * @default false
+             */
+            allow_similar: boolean;
+            /** Archived */
+            archived?: boolean | null;
+            /** Category */
+            category?: ("ate_out" | "drinks" | "dessert") | null;
+            /** Name */
+            name?: string | null;
+        };
         /** Problem */
         Problem: {
             /** Detail */
@@ -785,6 +799,22 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** PutRestaurant */
+        PutRestaurant: {
+            /**
+             * Allow Similar
+             * @default false
+             */
+            allow_similar: boolean;
+            /**
+             * Category
+             * @default ate_out
+             * @enum {string}
+             */
+            category: "ate_out" | "drinks" | "dessert";
+            /** Name */
+            name: string;
+        };
         /** PutRestaurantMeal */
         PutRestaurantMeal: {
             /**
@@ -825,6 +855,25 @@ export interface components {
             /** Piece G */
             piece_g?: number | null;
         };
+        /** Restaurant */
+        Restaurant: {
+            /** Archived */
+            archived: boolean;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "ate_out" | "drinks" | "dessert";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Used Day */
+            last_used_day?: string | null;
+            /** Name */
+            name: string;
+        };
         /** RestaurantMeal */
         RestaurantMeal: {
             /**
@@ -854,9 +903,30 @@ export interface components {
             /** Occurred Tz */
             occurred_tz: string;
             /** @deprecated */
-            restaurant: components["schemas"]["CatalogRef"];
+            restaurant: components["schemas"]["RestaurantRef"];
             /** Restaurants */
-            restaurants: components["schemas"]["CatalogRef"][];
+            restaurants: components["schemas"]["RestaurantRef"][];
+        };
+        /**
+         * RestaurantRef
+         * @description How a Restaurant Meal points at its Restaurants: with the Category, so a Meal is drawn
+         *     without asking for each Restaurant. Foods and Exercises keep the plain CatalogRef.
+         */
+        RestaurantRef: {
+            /** Archived */
+            archived: boolean;
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "ate_out" | "drinks" | "dessert";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** SessionSet */
         SessionSet: {
@@ -2358,6 +2428,7 @@ export interface operations {
                 from?: string | null;
                 to?: string | null;
                 q?: string;
+                category?: ("ate_out" | "drinks" | "dessert") | null;
                 cursor?: string | null;
                 limit?: number;
             };
@@ -2841,7 +2912,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogItem"][];
+                    "application/json": components["schemas"]["Restaurant"][];
                 };
             };
             /** @description No signed-in User. */
@@ -2910,7 +2981,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogItem"];
+                    "application/json": components["schemas"]["Restaurant"];
                 };
             };
             /** @description No signed-in User. */
@@ -2982,7 +3053,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PutItem"];
+                "application/json": components["schemas"]["PutRestaurant"];
             };
         };
         responses: {
@@ -2992,7 +3063,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogItem"];
+                    "application/json": components["schemas"]["Restaurant"];
                 };
             };
             /** @description Created. */
@@ -3001,7 +3072,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogItem"];
+                    "application/json": components["schemas"]["Restaurant"];
                 };
             };
             /** @description The body could not be read as JSON text. */
@@ -3167,7 +3238,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PatchItem"];
+                "application/json": components["schemas"]["PatchRestaurant"];
             };
         };
         responses: {
@@ -3177,7 +3248,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogItem"];
+                    "application/json": components["schemas"]["Restaurant"];
                 };
             };
             /** @description The body could not be read as JSON text. */

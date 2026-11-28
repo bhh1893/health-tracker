@@ -66,6 +66,27 @@ const squat = {
   last_used_day: null,
 };
 
+const diner = {
+  id: "0190a000-0000-7000-8000-000000000601",
+  name: "Golden Diner",
+  archived: false,
+  last_used_day: "2026-11-02",
+  category: "ate_out" as const,
+};
+const pub = {
+  id: "0190a000-0000-7000-8000-000000000602",
+  name: "Corner Pub",
+  archived: false,
+  last_used_day: "2026-11-01",
+  category: "drinks" as const,
+};
+
+function restaurants() {
+  const api = fakeCatalogApi("restaurants", [diner, pub]);
+  server.use(signedInAs("member"), ...api.handlers);
+  return api;
+}
+
 function foods() {
   const api = fakeCatalogApi("foods", [chicken, soup, thigh, rice]);
   server.use(signedInAs("member"), ...api.handlers);
@@ -520,6 +541,129 @@ describe("the Food sheet on Profile", () => {
     ).toBeInTheDocument();
     expect(
       within(sheet).queryByRole("button", { name: "Delete" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("Restaurant Categories on Profile", () => {
+  const tag = async (name: string) =>
+    within(
+      within(
+        await screen.findByRole("list", { name: "Restaurants" }),
+      ).getByRole("button", { name: new RegExp(name) }),
+    );
+
+  it("tags each Restaurant with its Category", async () => {
+    restaurants();
+    renderAt("/profile/restaurants", <App />);
+
+    expect((await tag("Golden Diner")).getByText("ate out")).toBeVisible();
+    expect((await tag("Corner Pub")).getByText("drinks")).toBeVisible();
+  });
+
+  it("filters by one Category at a time and keeps it in the URL", async () => {
+    restaurants();
+    renderAt("/profile/restaurants", <App />);
+    await rows("Restaurants");
+
+    await userEvent.click(screen.getByRole("button", { name: "Drinks" }));
+
+    expect(await rows("Restaurants")).toEqual(["Corner Pub"]);
+    expect(url()).toBe("/profile/restaurants?category=drinks");
+
+    await userEvent.click(screen.getByRole("button", { name: "Dessert" }));
+    expect(
+      await screen.findByText("No Restaurants match."),
+    ).toBeInTheDocument();
+    expect(url()).toBe("/profile/restaurants?category=dessert");
+
+    await userEvent.click(screen.getByRole("button", { name: "Dessert" }));
+    expect(await rows("Restaurants")).toEqual(["Golden Diner", "Corner Pub"]);
+    expect(url()).toBe("/profile/restaurants");
+  });
+
+  it("changes a Restaurant's Category with one PATCH, and the row follows", async () => {
+    const api = restaurants();
+    renderAt("/profile/restaurants", <App />);
+
+    const sheet = await openRow("Golden Diner", "Restaurants");
+    const picker = within(sheet).getByRole("radiogroup", { name: "Category" });
+    expect(
+      within(picker).getByRole("radio", { name: "Ate out" }),
+    ).toBeChecked();
+    await userEvent.click(
+      within(picker).getByRole("radio", { name: "Dessert" }),
+    );
+    await userEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+
+    await waitFor(async () => {
+      expect((await tag("Golden Diner")).getByText("dessert")).toBeVisible();
+    });
+    expect(api.writes).toEqual([
+      {
+        method: "PATCH",
+        id: diner.id,
+        body: {
+          name: "Golden Diner",
+          allow_similar: false,
+          category: "dessert",
+        },
+      },
+    ]);
+  });
+
+  it("sends nothing when neither the name nor the Category changed", async () => {
+    const api = restaurants();
+    renderAt("/profile/restaurants", <App />);
+
+    const sheet = await openRow("Corner Pub", "Restaurants");
+    await userEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(api.writes).toEqual([]);
+  });
+
+  it("creates a Restaurant with the Category picked, ate out unless changed", async () => {
+    const api = restaurants();
+    renderAt("/profile/restaurants", <App />);
+    await rows("Restaurants");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Add Restaurant" }),
+    );
+    const sheet = await screen.findByRole("dialog", { name: "New Restaurant" });
+    await userEvent.type(
+      within(sheet).getByRole("textbox", { name: "Name" }),
+      "Gelato Stand",
+    );
+    await userEvent.click(
+      within(sheet).getByRole("radio", { name: "Dessert" }),
+    );
+    await userEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(api.writes).toHaveLength(1);
+    });
+    expect(api.writes[0]?.body).toEqual({
+      name: "Gelato Stand",
+      allow_similar: false,
+      category: "dessert",
+    });
+  });
+
+  it("offers no Category for an Exercise", async () => {
+    exercises();
+    renderAt("/profile/exercises", <App />);
+
+    const sheet = await openRow("Squat", "Exercises");
+
+    expect(
+      within(sheet).queryByRole("radiogroup", { name: "Category" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Drinks" }),
     ).not.toBeInTheDocument();
   });
 });

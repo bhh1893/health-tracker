@@ -1,39 +1,46 @@
 import { Fragment, type ReactNode } from "react";
 
-import type { CatalogRef } from "../catalog/catalogs";
-import { ForkKnifeIcon } from "../components/ForkKnifeIcon";
+import type { RestaurantRef } from "../catalog/catalogs";
+import { DEFAULT_CATEGORY, categoryName } from "../catalog/restaurantCategory";
+import { CategoryIcon } from "../components/CategoryIcon";
 
 interface RestaurantLineProps {
-  restaurants: CatalogRef[];
+  restaurants: RestaurantRef[];
   // How each name is drawn: History marks the filter's matches in it.
   renderName?: (name: string) => ReactNode;
   className?: string;
 }
 
-// A Restaurant Meal's Restaurants in pink with the fork and knife, in the order
-// they were added, wrapping onto more lines as needed (ADR 0034). The names are one
-// run of text, so a long list wraps like a sentence instead of overflowing.
+// A Restaurant Meal's Restaurants in pink, in the order they were added, wrapping
+// onto more lines as needed (ADR 0034). Each name follows its Category's icon (ADR
+// 0041), so a night of dinner then drinks shows both. The names are one run of
+// text, so a long list wraps like a sentence instead of overflowing.
 export function RestaurantLine({
   restaurants,
   renderName = (name) => name,
   className = "",
 }: RestaurantLineProps) {
   return (
-    <li className={`flex items-start gap-2 text-restaurant-ink ${className}`}>
-      {/* As tall as one line of text, so the icon sits beside the first line. */}
-      <span className="flex h-6 items-center">
-        <ForkKnifeIcon />
-      </span>
-      {/* min-w-0 lets this flex item shrink, so a name with no spaces breaks
-          instead of pushing past the edge. */}
-      <span className="min-w-0 wrap-break-word">
-        {restaurants.map((restaurant, index) => (
-          <Fragment key={restaurant.id}>
-            {index > 0 && " · "}
-            {renderName(restaurant.name)}
-          </Fragment>
-        ))}
-      </span>
+    // min-w-0 lets a name with no spaces break instead of pushing past the edge.
+    <li className={`min-w-0 wrap-break-word text-restaurant-ink ${className}`}>
+      {restaurants.map((restaurant, index) => (
+        <Fragment key={restaurant.id}>
+          {index > 0 && " · "}
+          {/* The icon is hidden from screen readers. They hear the Category
+              after the name instead, but only drinks or dessert: almost every
+              Restaurant is ate out, and "(ate out)" after each would be noise. */}
+          <span className="mr-1 inline-block align-[-2px]">
+            <CategoryIcon category={restaurant.category} />
+          </span>
+          {renderName(restaurant.name)}
+          {restaurant.category !== DEFAULT_CATEGORY && (
+            <span className="sr-only">
+              {" "}
+              ({categoryName(restaurant.category)})
+            </span>
+          )}
+        </Fragment>
+      ))}
     </li>
   );
 }

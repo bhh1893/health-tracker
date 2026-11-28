@@ -44,8 +44,16 @@ const names = ({ meals }: MealDay) =>
       : meal.food_entries.map((entry) => entry.food.name),
   );
 
-// Stands in for GET /meal-days. Like the API it filters by the inclusive range and
-// by `q` ignoring case, answers newest first, and pages by whole Days. Its cursor
+// The Categories of a Day's Restaurants, which is what `category` matches.
+const categories = ({ meals }: MealDay) =>
+  meals.flatMap((meal) =>
+    meal.kind === "restaurant"
+      ? meal.restaurants.map(({ category }) => category)
+      : [],
+  );
+
+// Stands in for GET /meal-days. Like the API it filters by the inclusive range, by
+// `q` ignoring case and by `category`, answers newest first, and pages by whole Days. Its cursor
 // is the last Day sent, which the screen must treat as opaque. Also answers the
 // closed Dashboard's reads, and keeps them apart in `dashboard`.
 function fakeMealDaysApi(days: MealDay[]) {
@@ -59,11 +67,16 @@ function fakeMealDaysApi(days: MealDay[]) {
       const to = url.searchParams.get("to") ?? "~";
       const cursor = url.searchParams.get("cursor") ?? "~";
       const q = url.searchParams.get("q")?.toLowerCase() ?? "";
+      const category = url.searchParams.get("category");
       const limit = Number(url.searchParams.get("limit"));
       const kept = days
         .filter(({ day }) => day >= from && day <= to && day < cursor)
         .filter((day) =>
           names(day).some((name) => name.toLowerCase().includes(q)),
+        )
+        .filter(
+          (day) =>
+            category === null || categories(day).some((c) => c === category),
         )
         .toSorted((a, b) => b.day.localeCompare(a.day));
       const items = kept.slice(0, limit);
@@ -449,5 +462,112 @@ describe("the Meals filter", () => {
     expect(
       within(recentDays()).queryByText(/matching/),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("Restaurant Categories", () => {
+  const bar = {
+    id: "0190a000-0000-7000-8000-000000000202",
+    name: "Corner Bar",
+    archived: false,
+    category: "drinks" as const,
+  };
+  const gelato = {
+    id: "0190a000-0000-7000-8000-000000000203",
+    name: "Gelato Stand",
+    archived: false,
+    category: "dessert" as const,
+  };
+  // Dinner, then drinks, as one Meal (ADR 0034).
+  const nightOut = (day: string): MealDay => ({
+    day,
+    meals: [aRestaurantMeal([cafe, bar], { id: `${day}-1`, day })],
+  });
+  const dessertDay = (day: string): MealDay => ({
+    day,
+    meals: [aRestaurantMeal([gelato], { id: `${day}-1`, day })],
+  });
+
+  it("badges a Day with each of its Categories, in a fixed order", async () => {
+    fakeMealDaysApi([nightOut(daysAgo(1)), dessertDay(daysAgo(2))]);
+    renderAt("/history", <HistoryScreen />);
+
+    expect(
+      await screen.findByRole("button", {
+        name: `${formatDayTitle(daysAgo(1))}, ate out, drinks`,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: `${formatDayTitle(daysAgo(2))}, dessert`,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("names a Restaurant's Category to a screen reader, unless it is ate out", async () => {
+    fakeMealDaysApi([nightOut(daysAgo(1))]);
+    renderAt("/history", <HistoryScreen />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /, ate out, drinks$/ }),
+    );
+
+    expect(
+      within(recentDays()).getAllByRole("listitem").at(-1)?.textContent,
+    ).toBe("Corner Cafe · Corner Bar (drinks)");
+  });
+
+  it("keeps only the Days with a Restaurant of the chosen chip, and clears on a second tap", async () => {
+    const requests = fakeMealDaysApi([
+      nightOut(daysAgo(1)),
+      dessertDay(daysAgo(2)),
+      foodsDay(daysAgo(3)),
+    ]);
+    renderAt("/history", <HistoryScreen />);
+    await screen.findByRole("button", { name: /, dessert$/ });
+    const chips = screen.getByRole("group", { name: "Restaurant Category" });
+
+    await userEvent.click(
+      within(chips).getByRole("button", { name: "Drinks" }),
+    );
+
+    await waitFor(() => {
+      expect(rowButtons()).toHaveLength(1);
+    });
+    expect(rowButtons()[0]).toHaveAccessibleName(/, ate out, drinks$/);
+    expect(requests.at(-1)?.searchParams.get("category")).toBe("drinks");
+    expect(within(recentDays()).getByText("1 Day with drinks")).toBeVisible();
+
+    await userEvent.click(
+      within(chips).getByRole("button", { name: "Drinks" }),
+    );
+
+    await waitFor(() => {
+      expect(rowButtons()).toHaveLength(3);
+    });
+    // From the cache: the unfiltered list was already loaded.
+    expect(
+      within(chips).getByRole("button", { name: "Drinks" }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("opens a link with a Category and a filter on the Days that match both", async () => {
+    const requests = fakeMealDaysApi([
+      nightOut(daysAgo(1)),
+      dessertDay(daysAgo(2)),
+    ]);
+    renderAt("/history?q=gelato&category=drinks", <HistoryScreen />);
+
+    expect(
+      await within(recentDays()).findByText(
+        'No Days with a Food or Restaurant matching "gelato" and with drinks.',
+      ),
+    ).toBeInTheDocument();
+    expect(requests.at(-1)?.searchParams.get("category")).toBe("drinks");
+    expect(
+      within(
+        screen.getByRole("group", { name: "Restaurant Category" }),
+      ).getByRole("button", { name: "Drinks" }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 });
