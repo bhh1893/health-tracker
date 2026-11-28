@@ -12,6 +12,7 @@ import {
 import { Link } from "react-router";
 
 import { Chevron } from "../components/Chevron";
+import { ForkKnifeIcon } from "../components/ForkKnifeIcon";
 import { LoadMore } from "../components/LoadMore";
 import { ProblemAlert } from "../components/ProblemAlert";
 import { formatDayTitle } from "./dayTitle";
@@ -48,7 +49,8 @@ export function RecentDays<T>({
     // a name for screen readers, which list it among the page's landmarks.
     <section
       aria-label="Days"
-      className="flex flex-col rounded-2xl border-2 border-field bg-card"
+      // overflow-hidden clips the filled Day rows to the card's rounded corners.
+      className="flex flex-col overflow-hidden rounded-2xl border-2 border-field bg-card"
     >
       {summary !== undefined && (
         <p className="px-3 py-2 text-sm text-muted">{summary}</p>
@@ -143,17 +145,19 @@ interface DayRowProps {
   day: string;
   // The Home window the arrow opens the Day in: "/meals" or "/exercise".
   homePath: "/meals" | "/exercise";
-  // A pill in the Restaurant color after the title, e.g. "ate out" on a Restaurant Day.
-  pill?: string | undefined;
+  // A badge after the title, e.g. "ate out" on a Restaurant Day: drawn as the
+  // fork and knife, and read out after the title.
+  badge?: string | undefined;
   children: ReactNode;
 }
 
-// One Day of Recent Days: its title, which opens to the Day's contents and an
-// arrow to the same Day on Home, where it can be changed.
-export function DayRow({ day, homePath, pill, children }: DayRowProps) {
+// One Day of Recent Days: a pink title row, which opens to the Day's contents
+// on white, beside a round brown arrow button to the same Day on Home, where it
+// can be changed.
+export function DayRow({ day, homePath, badge, children }: DayRowProps) {
   const title = formatDayTitle(day);
   return (
-    <Disclosure className="group border-t border-edge first:border-t-0">
+    <Disclosure className="group border-t border-field first:border-t-0">
       {/* Level 2, a sibling of the Dashboard's heading: the list has no heading
           of its own to sit under. */}
       <Heading level={2}>
@@ -161,33 +165,41 @@ export function DayRow({ day, homePath, pill, children }: DayRowProps) {
           slot="trigger"
           // Spoken as "Friday (11/13/26), ate out": the spans alone would run
           // together. The colon is visual only, so the label leaves it out.
-          aria-label={pill === undefined ? title : `${title}, ${pill}`}
-          className="flex min-h-11 w-full items-center gap-2 px-3 text-left font-semibold"
+          aria-label={badge === undefined ? title : `${title}, ${badge}`}
+          // -outline-offset-2 draws the focus ring inside the row, where the
+          // card's overflow-hidden cannot clip it.
+          className="flex min-h-11 w-full items-center gap-2 bg-restaurant px-3 text-left font-semibold text-on-restaurant -outline-offset-2 data-pressed:bg-edge"
         >
           <span>{title}:</span>
-          {pill !== undefined && (
-            <span className="rounded-full bg-restaurant-soft px-2 py-0.5 text-xs font-semibold text-restaurant-ink">
-              {pill}
+          {/* The icon carries no text: the button's label says "ate out". */}
+          {badge !== undefined && (
+            <span className="flex size-7 items-center justify-center rounded-full bg-card text-restaurant-ink">
+              <ForkKnifeIcon />
             </span>
           )}
           <span className="ml-auto">
-            <Chevron />
+            <Chevron className="text-on-restaurant" />
           </span>
         </Button>
       </Heading>
       <DisclosurePanel>
-        {children}
-        {/* A plain link, not a button: it changes the URL, so long-press and
-            the back button work, and Home reads the Day from ?day= (ADR 0013).
-            -mt-3 pulls it up over the list's bottom padding and the last row's,
-            so it sits close to the items while keeping its 44px tap target. */}
-        <div className="-mt-3 flex justify-end px-1 pb-1">
+        <div className="flex bg-card">
+          {/* min-w-0 lets a long Meal wrap instead of pushing the arrow out. */}
+          <div className="min-w-0 flex-1 pt-2">{children}</div>
+          {/* A plain link, not a button: it changes the URL, so long-press and
+              the back button work, and Home reads the Day from ?day= (ADR 0013).
+              Its own column the full height of the contents: a tall target
+              that adds no row under the list. Only the round button inside
+              is drawn, but a tap anywhere in the column follows the link;
+              group/arrow lets the button show the column's pressed state. */}
           <Link
             to={`${homePath}?day=${day}`}
             aria-label={`Open ${title} on Home`}
-            className="flex size-11 items-center justify-center rounded-full text-action active:bg-action-soft"
+            className="group/arrow flex w-14 shrink-0 items-center justify-center -outline-offset-2"
           >
-            <ArrowRight />
+            <span className="flex size-10 items-center justify-center rounded-full bg-action text-on-fill group-active/arrow:bg-action-pressed">
+              <ArrowRight />
+            </span>
           </Link>
         </div>
       </DisclosurePanel>

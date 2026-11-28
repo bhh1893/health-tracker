@@ -38,7 +38,7 @@ export function MealDays({ from, to, q }: MealDaysProps) {
           day={day.day}
           homePath="/meals"
           // A Restaurant Day is any Day with a Restaurant Meal (ADR 0023).
-          pill={isRestaurantDay(day) ? "ate out" : undefined}
+          badge={isRestaurantDay(day) ? "ate out" : undefined}
         >
           <MealList day={day} q={q} />
         </DayRow>

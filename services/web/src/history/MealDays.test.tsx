@@ -189,7 +189,7 @@ describe("Meals Recent Days", () => {
     ).toEqual(["Oats · Oats", "Banana"]);
   });
 
-  it("shows the ate out pill only on a Restaurant Day, with its Restaurant", async () => {
+  it("marks only a Restaurant Day as ate out, with its Restaurant", async () => {
     fakeMealDaysApi([restaurantDay(daysAgo(1)), foodsDay(daysAgo(2))]);
     renderAt("/history", <HistoryScreen />);
 
@@ -201,7 +201,9 @@ describe("Meals Recent Days", () => {
     expect(
       screen.getByRole("button", { name: formatDayTitle(daysAgo(2)) }),
     ).toBeInTheDocument();
-    expect(within(recentDays()).getAllByText("ate out")).toHaveLength(1);
+    expect(
+      within(recentDays()).getAllByRole("button", { name: /, ate out$/ }),
+    ).toHaveLength(1);
     expect(within(recentDays()).getByText(cafe.name)).toBeInTheDocument();
   });
 

@@ -23,8 +23,8 @@ The owner picked five colors, each with the text color that goes on it:
 
 | Color | Fill | Text on it | Tokens | Used for |
 | --- | --- | --- | --- | --- |
-| Brown | `#8b6a5b` | `#ffffff` | `action`, `on-fill` | buttons, borders, icons, the Exercise chart line, `theme-color` |
-| Pink | `#eed9d4` | `#7d5556` | `restaurant`, `restaurant-soft`, `restaurant-ink`, `on-restaurant` | Restaurant buttons, names, the "ate out" pill and section |
+| Brown | `#8b6a5b` | `#ffffff` | `action`, `on-fill` | buttons (including Recent Days' arrow), borders, icons, the Exercise chart line, `theme-color` |
+| Pink | `#eed9d4` | `#7d5556` | `restaurant`, `restaurant-soft`, `restaurant-ink`, `on-restaurant` | Restaurant buttons, names, the "ate out" badge and section, and Recent Days' Day rows (an exception: there pink is the list's color, not a Restaurant mark) |
 | Cream | `#f6efe9` | `#79685f` | `page`, `ink`, `muted`, `faint`, `action-ink` | the page and all plain text; cards are white |
 | Green | `#c0c9b4` | `#454f34` | `food`, `on-food` | Food buttons |
 | Ivory | `#e8ddcb` | `#66563f` | `inset`, `action-soft`, `on-inset` | toggles, stat tiles, the selected tab |
