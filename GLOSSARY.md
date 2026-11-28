@@ -56,6 +56,10 @@ _Avoid_: Movement list
 The user's growing list of distinct Restaurants. A Restaurant Meal refers to one or more Restaurants in it.
 _Avoid_: Place, venue
 
+**Restaurant Category**:
+What a Restaurant is for: ate out, drinks or dessert. Set per Restaurant, ate out unless the User changes it. Separate from a Meal's label.
+_Avoid_: Type, tag
+
 **Archived**:
 A Catalog item hidden from suggestions because the user no longer wants it offered, while past Entries that refer to it keep showing it.
 _Avoid_: Deleted, removed
