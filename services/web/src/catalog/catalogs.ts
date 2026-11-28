@@ -4,18 +4,24 @@ import { EXERCISE_DAYS_KEY, MEAL_DAYS_KEY } from "../history/queries";
 
 export type CatalogRef = components["schemas"]["CatalogRef"];
 export type Food = components["schemas"]["Food"];
+export type Restaurant = components["schemas"]["Restaurant"];
+// A Restaurant inside a Restaurant Meal: the reference plus its Category (ADR 0041).
+export type RestaurantRef = components["schemas"]["RestaurantRef"];
+type PutRestaurant = components["schemas"]["PutRestaurant"];
 
 // The API's bound on every Catalog name (services/api catalogs.py), so a form refuses
 // a longer one in its own words before any request.
 export const MAX_NAME_LENGTH = 200;
 
-// Any row a Catalog returns. Its own endpoints add the Day it was last used, and Foods
-// add what was last eaten and their Nutrition (ADR 0008, ADR 0032). The items inside a
-// duplicate Problem are plain CatalogRefs, which is why the extras are optional.
+// Any row a Catalog returns. Its own endpoints add the Day it was last used, Foods
+// add what was last eaten and their Nutrition (ADR 0008, ADR 0032), and Restaurants
+// their Category (ADR 0041). The items inside a duplicate Problem are plain
+// CatalogRefs, which is why the extras are optional.
 export type CatalogItem = CatalogRef &
   Partial<
     Pick<components["schemas"]["CatalogItem"], "last_used_day"> &
-      Pick<Food, "last_quantity" | "last_unit" | "nutrition">
+      Pick<Food, "last_quantity" | "last_unit" | "nutrition"> &
+      Pick<Restaurant, "category">
   >;
 
 interface NewItem {
@@ -182,7 +188,11 @@ export const restaurantCatalog: Catalog = {
     unwrap(
       api.PUT("/api/v1/restaurants/{item_id}", {
         params: { path: { item_id: id } },
-        body: { name, allow_similar: allowSimilar },
+        // Until the web half of ADR 0041, no category: both images deploy at
+        // once, and an api pod from before it refuses the field mid-rollout.
+        // Left out, the API makes the Restaurant ate out. The contract marks a
+        // field with a default as required, hence the cast.
+        body: { name, allow_similar: allowSimilar } as PutRestaurant,
       }),
     ),
   rename: (id, change) =>

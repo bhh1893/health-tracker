@@ -33,6 +33,8 @@ export const noSuggestions = http.get<never, never, ExerciseSuggestions>(
 );
 
 type CatalogRef = components["schemas"]["CatalogRef"];
+type RestaurantRef = components["schemas"]["RestaurantRef"];
+type RestaurantCategory = RestaurantRef["category"];
 type ExerciseEntry = components["schemas"]["ExerciseEntry"];
 type ExerciseEntryPage = components["schemas"]["ExerciseEntryPage"];
 type PutExerciseEntry = components["schemas"]["PutExerciseEntry"];
@@ -173,10 +175,11 @@ export const banana: Food = {
   last_used_day: null,
 };
 
-export const cafe: CatalogRef = {
+export const cafe: RestaurantRef = {
   id: "0190a000-0000-7000-8000-000000000201",
   name: "Corner Cafe",
   archived: false,
+  category: "ate_out",
 };
 
 const ref = ({ id, name, archived }: CatalogRef): CatalogRef => ({
@@ -212,7 +215,7 @@ export function aMeal(fields: Partial<Meal> = {}): Meal {
 // A Restaurant Meal as the API reads it back: `restaurants` in order, and the
 // deprecated `restaurant` as the first of them (ADR 0034).
 export function aRestaurantMeal(
-  [first, ...rest]: [CatalogRef, ...CatalogRef[]],
+  [first, ...rest]: [RestaurantRef, ...RestaurantRef[]],
   fields: Partial<Meal> = {},
 ): Meal {
   return aMeal({
@@ -231,7 +234,7 @@ const LAST_FOOD_ENTRY = "urn:health-tracker:problem:last-food-entry";
 export function fakeMealApi(
   seed: Meal[] = [],
   seedFoods: Food[] = [oats, banana],
-  restaurants: CatalogRef[] = [cafe],
+  restaurants: RestaurantRef[] = [cafe],
   references: ReferenceFood[] = [rolledOats],
 ) {
   const meals = new Map(seed.map((meal) => [meal.id, meal]));
@@ -284,10 +287,13 @@ export function fakeMealApi(
           }
           return ref(item);
         };
+        // A Restaurant in a Meal carries its Category (ADR 0041).
         const restaurantMeal = (ids: string[]): Meal => {
-          const [first, ...rest] = ids.map((wanted) =>
-            find(restaurants, wanted),
-          );
+          const [first, ...rest] = ids.map((wanted) => ({
+            ...find(restaurants, wanted),
+            category:
+              restaurants.find((i) => i.id === wanted)?.category ?? "ate_out",
+          }));
           if (first === undefined) {
             throw new Error("A Restaurant Meal needs a Restaurant");
           }
@@ -436,7 +442,9 @@ export function fakeMealApi(
 }
 
 type CatalogItem = components["schemas"]["CatalogItem"] &
-  Partial<Pick<Food, "nutrition" | "piece_g">>;
+  Partial<Pick<Food, "nutrition" | "piece_g">> & {
+    category?: RestaurantCategory;
+  };
 type CatalogTable = "foods" | "restaurants" | "exercises";
 interface CatalogWrite {
   name?: string | null;
@@ -444,6 +452,7 @@ interface CatalogWrite {
   allow_similar?: boolean;
   nutrition?: Nutrition | null;
   piece_g?: number | null;
+  category?: RestaurantCategory | null;
 }
 
 const EXACT_DUPLICATE = "urn:health-tracker:problem:exact-duplicate";
@@ -502,6 +511,8 @@ export function fakeCatalogApi(
       ...(body.archived != null && { archived: body.archived }),
       ...("nutrition" in body && { nutrition: body.nutrition ?? null }),
       ...("piece_g" in body && { piece_g: body.piece_g ?? null }),
+      // Null or left out keeps it, as the API does.
+      ...(body.category != null && { category: body.category }),
     };
   }
 
@@ -539,6 +550,7 @@ export function fakeCatalogApi(
           archived: false,
           last_used_day: null,
           ...(table === "foods" && { nutrition: null, piece_g: null }),
+          ...(table === "restaurants" && { category: "ate_out" as const }),
         };
         const item = write(items.get(params.id) ?? blank, body);
         items.set(params.id, item);
