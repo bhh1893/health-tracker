@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "generate:api": "openapi-typescript ../api/openapi.json --output src/api/schema.d.ts"
+    "generate:api": "openapi-typescript ../api/openapi.json --output src/api/schema.d.ts",
+    "prototype:photos": "vite prototype-meal-photos --host"
   },
   "dependencies": {
     "@tanstack/react-query": "5.106.1",
